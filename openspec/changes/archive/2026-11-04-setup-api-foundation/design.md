@@ -36,7 +36,7 @@ Adicionar um valor depois é uma migration simples (trocar o `CHECK`), sem as li
 **6. Ids `uuid` com `gen_random_uuid()`** (nativo no PostgreSQL 13+). Os `pluggy_*_id` têm índice único parcial (`WHERE ... IS NOT NULL`), para aceitar vários nulos.
 
 **7. Migrations SQL geradas pelo `drizzle-kit` e versionadas.**
-O migrator do Drizzle roda no `buildApp`, antes do `listen`. O projeto tem um único processo, então não precisa de lock de migration.
+O migrator do Drizzle roda no `server.ts`, antes do `listen` (o `buildApp` não migra, para os testes montarem o app sem banco). O projeto tem um único processo, então não precisa de lock de migration.
 
 **8. Erros de domínio.**
 - `AppError` base, com `code`, `statusCode` e `details`; subclasses `ValidationError` (400), `NotFoundError` (404), `ConflictError` (409).
@@ -55,7 +55,9 @@ O migrator do Drizzle roda no `buildApp`, antes do `listen`. O projeto tem um ú
 `todayInSaoPaulo()`, `toSaoPauloDate(instant)` e `firstDayOfMonth()` usam `Intl.DateTimeFormat` com `timeZone: 'America/Sao_Paulo'`, sem biblioteca extra.
 
 **12. Desenvolvimento e testes.**
-- `infra/compose.dev.yml` tem só o PostgreSQL, preso ao `127.0.0.1:5432`.
+- `infra/compose.dev.yml` tem só o PostgreSQL 18, preso ao `127.0.0.1:5432`. A partir do PostgreSQL 18 o volume monta em `/var/lib/postgresql`, e não em `.../data`.
+- A API escuta em `HOST` (padrão `127.0.0.1`, para não expor a API sem login na rede em desenvolvimento); o container usa `0.0.0.0`.
+- O `dev` usa `tsx watch --env-file=.env`; o build usa `tsconfig.build.json` (só `src/`).
 - A API roda em desenvolvimento com `tsx watch`; o build de produção usa `tsc`, com saída em `dist/`, como no CellCare.
 - Os testes de integração sobem um PostgreSQL com `@testcontainers/postgresql` uma vez por execução, aplicam as migrations e limpam as tabelas entre os testes.
 
@@ -71,4 +73,4 @@ Primeira migration do projeto. Num banco vazio, não há o que migrar; o rollbac
 
 ## Open Questions
 
-- Versão do PostgreSQL: a estável mais recente com imagem oficial no dia da implementação, a mesma no `infra/compose.dev.yml`, nos testes e na produção.
+- ~~Versão do PostgreSQL~~: resolvido, PostgreSQL 18 (`postgres:18-alpine`) no `infra/compose.dev.yml`, nos testes e, depois, na produção.

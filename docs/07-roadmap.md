@@ -29,12 +29,12 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 ### Back-end
 
-- [ ] Docker Compose com PostgreSQL para desenvolvimento.
-- [ ] Drizzle configurado, com a primeira migration (tabelas da v1 do [modelo de dados](04-modelo-de-dados.md)).
-- [ ] Fastify com `GET /api/v1/health` (checa o banco).
-- [ ] Configuração lida do `.env` e validada com Zod; o app para com mensagem clara se faltar algo.
-- [ ] Formato padrão de erro e logger que não registra dados financeiros.
-- [ ] Teste de integração com Testcontainers rodando.
+- [x] Docker Compose com PostgreSQL para desenvolvimento.
+- [x] Drizzle configurado, com a primeira migration (tabelas da v1 do [modelo de dados](04-modelo-de-dados.md)).
+- [x] Fastify com `GET /api/v1/health` (checa o banco).
+- [x] Configuração lida do `.env` e validada com Zod; o app para com mensagem clara se faltar algo.
+- [x] Formato padrão de erro e logger que não registra dados financeiros.
+- [x] Teste de integração com Testcontainers rodando.
 
 ### Front-end
 
