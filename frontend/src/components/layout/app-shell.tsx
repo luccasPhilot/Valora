@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router';
 
 import { ScreenSkeleton } from '@/components/states/skeletons';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { useSidebarPreference } from '@/hooks/use-sidebar-preference';
 import { findAreaByPath } from '@/lib/areas';
 
 import { AppSidebar } from './app-sidebar';
@@ -13,9 +14,10 @@ const FALLBACK_TITLE = 'Valora';
 export function AppShell() {
   const { pathname } = useLocation();
   const title = findAreaByPath(pathname)?.title ?? FALLBACK_TITLE;
+  const { isSidebarOpen, setSidebarOpen } = useSidebarPreference();
 
   return (
-    <SidebarProvider>
+    <SidebarProvider open={isSidebarOpen} onOpenChange={setSidebarOpen}>
       <AppSidebar />
       <SidebarInset className="min-w-0">
         <ScreenHeader title={title} />

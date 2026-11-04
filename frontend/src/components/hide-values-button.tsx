@@ -13,7 +13,7 @@ export function HideValuesButton() {
     <Button
       variant="ghost"
       size="icon"
-      className="size-11"
+      className="size-11 rounded-full"
       aria-label={label}
       aria-pressed={areValuesHidden}
       onClick={toggleValuesHidden}

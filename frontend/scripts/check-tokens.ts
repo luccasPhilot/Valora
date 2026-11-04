@@ -3,28 +3,58 @@ import { join, relative } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-// O Design System manda usar tokens (bg-card, text-muted-foreground...), nunca hex direto.
+// O Design System manda usar tokens (bg-card, text-muted-foreground...), nunca hex direto,
+// e proíbe gradiente e desfoque de fundo nas superfícies.
 // O globals.css é a única fonte de hex e fica fora da verificação.
 const CHECKED_DIRECTORIES = ['src/components', 'src/features'];
 const HEX_COLOR_PATTERN = /#[0-9a-fA-F]{3,8}\b/g;
+const FORBIDDEN_EFFECT_PATTERN = /\b(?:bg-gradient-|bg-linear-|backdrop-blur)[\w-]*/g;
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|css)$/;
 const TEST_FILE_PATTERN = /\.test\.(ts|tsx)$/;
 // Os componentes do shadcn/ui (src/components/ui) usam tokens, então também passam na verificação.
 
-export interface HexColorViolation {
+export interface TokenViolation {
   readonly file: string;
   readonly line: number;
-  readonly color: string;
+  readonly found: string;
+  readonly reason: string;
+}
+
+function findMatches(source: string, pattern: RegExp): { line: number; found: string }[] {
+  const matches: { line: number; found: string }[] = [];
+  source.split('\n').forEach((lineText, lineIndex) => {
+    for (const match of lineText.matchAll(pattern)) {
+      matches.push({ line: lineIndex + 1, found: match[0] });
+    }
+  });
+  return matches;
 }
 
 export function findHexColors(source: string): { line: number; color: string }[] {
-  const violations: { line: number; color: string }[] = [];
-  source.split('\n').forEach((lineText, lineIndex) => {
-    for (const match of lineText.matchAll(HEX_COLOR_PATTERN)) {
-      violations.push({ line: lineIndex + 1, color: match[0] });
-    }
-  });
-  return violations;
+  return findMatches(source, HEX_COLOR_PATTERN).map(({ line, found }) => ({ line, color: found }));
+}
+
+export function findForbiddenEffects(source: string): { line: number; effect: string }[] {
+  return findMatches(source, FORBIDDEN_EFFECT_PATTERN).map(({ line, found }) => ({
+    line,
+    effect: found,
+  }));
+}
+
+function findViolations(file: string, source: string): TokenViolation[] {
+  const hexViolations = findHexColors(source).map(({ line, color }) => ({
+    file,
+    line,
+    found: color,
+    reason: 'usa cor direta; use um token do Design System',
+  }));
+  const effectViolations = findForbiddenEffects(source).map(({ line, effect }) => ({
+    file,
+    line,
+    found: effect,
+    reason: 'usa gradiente ou desfoque de fundo, proibidos pelo Design System',
+  }));
+  return [...hexViolations, ...effectViolations];
 }
 
 function listSourceFiles(directory: string): string[] {
@@ -34,7 +64,7 @@ function listSourceFiles(directory: string): string[] {
     .map((entry) => join(entry.parentPath, entry.name));
 }
 
-export function checkDirectories(rootDirectory: string): HexColorViolation[] {
+export function checkDirectories(rootDirectory: string): TokenViolation[] {
   return CHECKED_DIRECTORIES.flatMap((directory) => {
     let files: string[];
     try {
@@ -43,10 +73,7 @@ export function checkDirectories(rootDirectory: string): HexColorViolation[] {
       return []; // Pasta ainda não existe (ex.: src/features antes da primeira tela).
     }
     return files.flatMap((file) =>
-      findHexColors(readFileSync(file, 'utf8')).map((violation) => ({
-        file: relative(rootDirectory, file),
-        ...violation,
-      })),
+      findViolations(relative(rootDirectory, file), readFileSync(file, 'utf8')),
     );
   });
 }
@@ -55,10 +82,8 @@ function main(): void {
   const rootDirectory = process.cwd();
   const violations = checkDirectories(rootDirectory);
   if (violations.length === 0) return;
-  for (const { file, line, color } of violations) {
-    process.stderr.write(
-      `${file}:${line} usa cor direta ${color}; use um token do Design System\n`,
-    );
+  for (const { file, line, found, reason } of violations) {
+    process.stderr.write(`${file}:${line} ${reason} (${found})\n`);
   }
   process.exitCode = 1;
 }

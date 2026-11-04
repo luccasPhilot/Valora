@@ -14,11 +14,13 @@ export function ErrorState({ onRetry, message = DEFAULT_ERROR_MESSAGE }: ErrorSt
   return (
     <div
       role="alert"
-      className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-12 text-center"
+      className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-12 text-center shadow-card"
     >
-      <TriangleAlert className="size-8 text-destructive" aria-hidden="true" />
-      <p className="font-medium">{message}</p>
-      <Button variant="outline" className="min-h-11" onClick={onRetry}>
+      <span className="flex size-14 items-center justify-center rounded-full bg-warning-surface text-destructive">
+        <TriangleAlert className="size-6" aria-hidden="true" />
+      </span>
+      <p className="text-xl font-semibold font-display">{message}</p>
+      <Button variant="outline" onClick={onRetry}>
         Tentar de novo
       </Button>
     </div>

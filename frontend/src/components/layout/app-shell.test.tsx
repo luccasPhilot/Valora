@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AppProviders } from '@/app/providers';
 import { appRoutes } from '@/app/router';
@@ -129,5 +129,104 @@ describe('AppShell on mobile', () => {
     await userEvent.keyboard('{Escape}');
     // Assert
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('AppShell collapsible menu on desktop', () => {
+  it('should_name_the_button_expand_menu_when_collapse_button_is_pressed', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Recolher menu' }));
+    // Assert
+    expect(screen.getByRole('button', { name: 'Expandir menu' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('should_mark_the_collapse_button_as_expanded_when_menu_opens_expanded', async () => {
+    // Arrange / Act
+    renderApp('/', DESKTOP_WIDTH);
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Recolher menu' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('should_keep_the_menu_collapsed_when_user_collapsed_it_before_reloading', async () => {
+    // Arrange
+    const firstVisit = renderApp('/', DESKTOP_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Recolher menu' }));
+    firstVisit.unmount();
+    // Act
+    renderApp('/', DESKTOP_WIDTH);
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Expandir menu' })).toBeInTheDocument();
+  });
+
+  it('should_open_expanded_and_still_collapse_when_local_storage_is_unavailable', async () => {
+    // Arrange
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+    renderApp('/', DESKTOP_WIDTH);
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Recolher menu' }));
+    // Assert
+    expect(screen.getByRole('button', { name: 'Expandir menu' })).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('should_show_the_area_name_in_a_tooltip_when_collapsed_icon_receives_focus', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Recolher menu' }));
+    // Act
+    screen.getByRole('link', { name: 'Orçamentos' }).focus();
+    // Assert
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Orçamentos');
+  });
+
+  it('should_hide_the_collapse_button_when_viewport_is_390px', async () => {
+    // Arrange
+    renderApp('/', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    const menu = await screen.findByRole('dialog');
+    // Act
+    const collapseButton = within(menu).getByRole('button', { name: 'Recolher menu' });
+    // Assert
+    expect(collapseButton).toHaveClass('hidden');
+  });
+});
+
+describe('AppShell logo', () => {
+  it('should_name_the_logo_link_valora_when_menu_is_expanded', async () => {
+    // Arrange / Act
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Valora' })).toHaveAttribute('href', '/');
+  });
+
+  it('should_keep_the_logo_link_when_menu_is_collapsed', async () => {
+    // Arrange
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Recolher menu' }));
+    // Assert
+    expect(screen.getByRole('link', { name: 'Valora' })).toBeInTheDocument();
+  });
+
+  it('should_open_the_home_screen_when_user_presses_the_logo', async () => {
+    // Arrange
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    // Act
+    await userEvent.click(await screen.findByRole('link', { name: 'Valora' }));
+    // Assert
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
   });
 });

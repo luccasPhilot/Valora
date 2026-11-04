@@ -1,6 +1,7 @@
-import { X } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 
+import { ValoraLogo } from '@/components/brand/valora-logo';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -16,8 +17,10 @@ import {
 } from '@/components/ui/sidebar';
 import { type AppArea, listAreasByGroup } from '@/lib/areas';
 
-const ACTIVE_ITEM_CLASSES =
-  'min-h-11 data-[active=true]:bg-secondary data-[active=true]:font-bold data-[active=true]:text-secondary-foreground';
+// Item de 44 px; recolhido vira um quadrado de 44 px só com o ícone. O ativo é o único com fundo.
+const MENU_ITEM_CLASSES =
+  'h-11 gap-3 rounded-sm px-3 text-sm [&>svg]:size-5 group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:[&>span]:hidden data-[active=true]:bg-secondary data-[active=true]:font-bold data-[active=true]:text-secondary-foreground data-[active=true]:[&>svg]:text-primary';
+const SIDE_PADDING_CLASSES = 'px-4 group-data-[collapsible=icon]:px-3.5';
 
 interface AreaMenuProps {
   areas: AppArea[];
@@ -33,8 +36,9 @@ function AreaMenu({ areas }: AreaMenuProps) {
         <SidebarMenuItem key={area.path}>
           <SidebarMenuButton
             asChild
+            tooltip={area.title}
             isActive={pathname === area.path}
-            className={ACTIVE_ITEM_CLASSES}
+            className={MENU_ITEM_CLASSES}
           >
             <Link
               to={area.path}
@@ -51,30 +55,54 @@ function AreaMenu({ areas }: AreaMenuProps) {
   );
 }
 
+// Só a partir de 1024 px: abaixo disso o menu abre por cima e fecha pelo "x".
+function CollapseButton() {
+  const { open, setOpen } = useSidebar();
+  const Icon = open ? ChevronsLeft : ChevronsRight;
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="hidden text-muted-foreground lg:inline-flex"
+      aria-label={open ? 'Recolher menu' : 'Expandir menu'}
+      aria-expanded={open}
+      onClick={() => setOpen(!open)}
+    >
+      <Icon className="size-5" aria-hidden="true" />
+    </Button>
+  );
+}
+
 export function AppSidebar() {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <Sidebar>
-      <SidebarHeader className="flex-row items-center justify-between px-4 py-3">
-        <span className="font-display text-xl font-bold">Valora</span>
+    <Sidebar collapsible="icon">
+      <SidebarHeader
+        className={`h-[72px] flex-row items-center justify-between gap-2 py-0 group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:py-4 ${SIDE_PADDING_CLASSES}`}
+      >
+        <ValoraLogo />
+        <CollapseButton />
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 lg:hidden"
+          className="lg:hidden"
           aria-label="Fechar menu"
           onClick={() => setOpenMobile(false)}
         >
           <X className="size-5" aria-hidden="true" />
         </Button>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Dia a dia</SidebarGroupLabel>
+      <SidebarContent className="pt-2">
+        <SidebarGroup className={`py-0 ${SIDE_PADDING_CLASSES}`}>
+          <SidebarGroupLabel className="mb-2 px-3">Dia a dia</SidebarGroupLabel>
           <AreaMenu areas={listAreasByGroup('daily')} />
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <SidebarFooter
+        className={`mt-6 gap-0 border-t border-sidebar-border pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] ${SIDE_PADDING_CLASSES}`}
+      >
         <AreaMenu areas={listAreasByGroup('footer')} />
       </SidebarFooter>
     </Sidebar>
