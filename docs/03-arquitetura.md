@@ -78,7 +78,8 @@ valora/
 │   │   └── server.ts
 │   ├── test/
 │   ├── package.json, package-lock.json, tsconfig.json, eslint.config.js, vitest.config.ts
-│   ├── .env.example
+│   ├── README.md, CLAUDE.md         como rodar / regras só do backend
+│   ├── .env.example, drizzle.config.ts, drizzle/ (migrations)
 │   └── Dockerfile
 ├── frontend/                        projeto Node independente (@valora/frontend)
 │   ├── src/
@@ -90,11 +91,13 @@ valora/
 │   │   │   └── api/                 schemas Zod das respostas da API
 │   │   └── styles/                  tokens do Design System
 │   ├── package.json, package-lock.json, tsconfig.json, eslint.config.js, vitest.config.ts
+│   ├── README.md, CLAUDE.md         como rodar / regras só do frontend
 │   ├── nginx.conf
 │   └── Dockerfile
 ├── infra/                          Docker Compose e scripts do servidor
 │   ├── compose.dev.yml              PostgreSQL para desenvolvimento
 │   ├── compose.yml                  produção: frontend, backend, db
+│   ├── README.md, CLAUDE.md
 │   ├── .env.example
 │   └── scripts/                     backup e conferência da restauração
 ├── docs/  openspec/  docs/design/
@@ -199,6 +202,7 @@ O Pluggy pode usar convenções de sinal diferentes para conta e cartão. O `Plu
 | Lançamento manual só como complemento | Cobre dinheiro em espécie e o que o Open Finance não trouxer. "Dinheiro" é uma conta sem saldo, não uma carteira |
 | Possível duplicata é sugerida, nunca juntada sozinha | Um par parecido pode ser de duas compras reais; a decisão fica com você |
 | Um repositório com `backend/`, `frontend/` e `infra/` independentes | Mesma organização do CellCare; cada parte se instala, testa e vira imagem sozinha. Monorepo com pacote compartilhado foi descartado |
+| README.md e CLAUDE.md em cada parte | O README diz como rodar; o CLAUDE.md guarda só as regras daquela pasta e é carregado pelo Claude Code quando se trabalha nela. O CLAUDE.md da raiz fica com o que vale para tudo, o que economiza contexto |
 | Nomes das pastas | `backend/` e `frontend/` como no CellCare; `infra/` em vez de `deploy/` porque guarda também o banco de desenvolvimento; guia visual em `docs/design/`. Pastas em inglês, minúsculas, sem espaço e sem prefixo `valora-` (o repositório e os pacotes `@valora/*` já identificam o projeto) |
 | Back e front sem código compartilhado | Cada parte se entende sozinha. O custo é repetir alguns schemas e utilitários; o front valida as respostas da API com os dele |
 | Front servido por nginx, em container próprio | Como no CellCare; o nginx entrega o front e repassa `/api` para o backend, que não publica porta |

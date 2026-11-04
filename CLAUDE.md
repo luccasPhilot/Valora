@@ -6,7 +6,7 @@ Instruções específicas deste projeto. As convenções gerais (nomes, funçõe
 
 App de finanças pessoais para **um único usuário**, rodando num **servidor Linux em casa**. Os dados chegam pelo Open Finance via **Meu Pluggy** e ficam num PostgreSQL próprio.
 
-**Status:** Fase 0 do [roadmap](docs/07-roadmap.md) em andamento. A change `setup-repository` está implementada; a próxima é `setup-api-foundation`.
+**Status:** Fase 0 do [roadmap](docs/07-roadmap.md) em andamento. As changes `setup-repository` e `setup-api-foundation` estão implementadas; a próxima é `setup-web-foundation`.
 
 ## Onde está cada coisa
 
@@ -126,20 +126,27 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
 
 Requisitos: Node 26 (`nvm use` lê o `.nvmrc` da raiz) e o npm que vem com ele.
 
-**Os comandos do backend e do frontend rodam dentro da pasta da parte** (`cd backend` ou `cd frontend`). Os dois têm os mesmos scripts:
+**Cada parte tem o próprio `README.md` (como rodar) e `CLAUDE.md` (regras só dela).** O Claude Code carrega o `CLAUDE.md` da pasta quando você trabalha nela, então regras específicas ficam lá e não neste arquivo.
+
+- [backend/README.md](backend/README.md) e [backend/CLAUDE.md](backend/CLAUDE.md)
+- [frontend/README.md](frontend/README.md) e [frontend/CLAUDE.md](frontend/CLAUDE.md)
+- [infra/README.md](infra/README.md) e [infra/CLAUDE.md](infra/CLAUDE.md)
+
+Os comandos rodam dentro da pasta da parte (`cd backend` ou `cd frontend`). As duas partes têm os mesmos scripts de qualidade:
 
 | Comando | O que faz |
 |---|---|
-| `npm install` / `npm ci` | Instala as dependências da parte (`npm ci` segue exatamente o `package-lock.json`) |
+| `npm ci` | Instala as dependências da parte, seguindo exatamente o `package-lock.json` |
 | `npm run typecheck` | Verifica os tipos (TypeScript `strict`) |
 | `npm run lint` / `npm run lint:fix` | ESLint (`any` proibido, ordem dos imports) / com correção automática |
-| `npm run format` / `npm run format:check` | Formata / confere a formatação com o Prettier (estilo único, definido na raiz) |
-| `npm test` / `npm run test:watch` | Roda os testes Vitest / em modo observação |
-| `npm run dev` / `npm run build` | Sobe em desenvolvimento / compila (chegam com `setup-api-foundation` e `setup-web-foundation`) |
+| `npm run format` / `npm run format:check` | Formata / confere com o Prettier (estilo único, definido na raiz) |
+| `npm test` | Roda os testes Vitest |
 
-Antes de dar uma tarefa por pronta, rode `typecheck`, `lint`, `format:check` e `test` **em cada parte que mudou**.
+O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration` e `db:generate` (veja o README dele). O `dev` do frontend chega com `setup-web-foundation`.
 
-Deploy (a partir da raiz): `docker compose -f infra/compose.dev.yml up -d` sobe o banco de desenvolvimento (chega com `setup-api-foundation`). Os comandos de produção estão em [docs/05-deploy.md](docs/05-deploy.md).
+Antes de dar uma tarefa por pronta, rode `typecheck`, `lint`, `format:check` e `test` **em cada parte que mudou**. Os testes de integração do backend precisam do Docker rodando.
+
+Banco de desenvolvimento (a partir da raiz): `docker compose -f infra/compose.dev.yml up -d`. Os comandos de produção estão em [docs/05-deploy.md](docs/05-deploy.md).
 
 ## Manter a documentação em dia
 

@@ -1,6 +1,6 @@
 # Deploy no servidor de casa
 
-O alvo é um **PC ou notebook com Linux** (Ubuntu Server, Debian ou parecido), ligado 24 horas. Os comandos abaixo são referência. Os arquivos de verdade nascem nas changes `setup-api-foundation` (Compose de desenvolvimento) e `deploy-home-server` (produção); veja o [roadmap](07-roadmap.md).
+O alvo é um **PC ou notebook com Linux** (Ubuntu Server, Debian ou parecido), ligado 24 horas. Os comandos abaixo são referência. O Compose de desenvolvimento já existe (`setup-api-foundation`); os arquivos de produção nascem na `deploy-home-server`; veja o [roadmap](07-roadmap.md).
 
 Tudo o que é de deploy fica na pasta [`infra/`](../infra/README.md), separado do código. Cada parte tem o próprio `Dockerfile`: `backend/Dockerfile` e `frontend/Dockerfile`.
 

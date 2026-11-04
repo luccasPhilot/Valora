@@ -4,7 +4,7 @@
 
 App pessoal de finanças que junta contas, cartões, orçamentos, metas e investimentos num lugar só. As transações chegam sozinhas pelo Open Finance (via Meu Pluggy); o que não vier, como gastos em dinheiro, pode ser lançado à mão. Tudo fica num banco de dados próprio, num servidor em casa, acessado pelo celular através da Tailscale.
 
-**Status:** Fase 0 do roadmap em andamento. O repositório já tem as três partes separadas; o backend e o frontend estão com TypeScript, ESLint, Prettier e Vitest configurados, e a API e o front vêm a seguir.
+**Status:** Fase 0 do roadmap em andamento. A API tem a base pronta (Fastify, banco com as tabelas da v1, erros e logs padronizados); o frontend está só com o ferramental, e as telas vêm a seguir.
 
 ## Estrutura
 
@@ -12,11 +12,11 @@ Um único repositório git com três partes independentes:
 
 | Pasta | O que é |
 |---|---|
-| [`backend/`](backend/) | API em Node + Fastify, com a sincronização do Open Finance. Projeto próprio (`package.json`, testes, `Dockerfile`) |
-| [`frontend/`](frontend/) | App em React + Vite. Projeto próprio, servido por nginx em produção |
+| [`backend/`](backend/README.md) | API em Node + Fastify, com a sincronização do Open Finance. Projeto próprio (`package.json`, testes, `Dockerfile`) |
+| [`frontend/`](frontend/README.md) | App em React + Vite. Projeto próprio, servido por nginx em produção |
 | [`infra/`](infra/README.md) | Docker Compose de desenvolvimento e de produção, e os scripts de backup |
 
-Cada parte roda os próprios comandos dentro da sua pasta (`npm install`, `npm test`...). A lista completa está no [CLAUDE.md](CLAUDE.md#comandos).
+Cada parte tem o próprio `README.md` (como rodar) e `CLAUDE.md` (regras só dela), e roda os comandos dentro da sua pasta (`npm ci`, `npm test`...). Resumo no [CLAUDE.md](CLAUDE.md#comandos).
 
 ## Documentação
 
