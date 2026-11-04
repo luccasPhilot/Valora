@@ -1,0 +1,178 @@
+# Roadmap
+
+Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o critério de **pronto**. Marque os itens conforme forem concluídos.
+
+| Fase | Tema | Resultado |
+|---|---|---|
+| 0 | Fundação | Projeto rodando localmente, com o visual do Valora e banco de dados |
+| 1 (v1) | Dia a dia | Transações chegando sozinhas, categorizadas, com orçamento; rodando no servidor de casa |
+| 2 (v2) | Planejamento | Faturas, previsões, projeção do mês, metas e alertas; app instalável no celular |
+| 3 (v3) | Patrimônio | Investimentos, evolução do patrimônio e relatórios |
+
+---
+
+## Fase 0 — Fundação
+
+### Passos manuais (você)
+
+- [ ] Criar conta no [Meu Pluggy](https://meu.pluggy.ai) e conectar todos os bancos (até 5).
+- [ ] Criar conta no [dashboard do Pluggy](https://dashboard.pluggy.ai), criar a aplicação e ativar o conector MeuPluggy ([passo a passo](02-open-finance.md#passo-a-passo-de-configuração)).
+- [ ] Guardar o Client ID e o Client Secret num gerenciador de senhas. Nunca no repositório.
+
+### Projeto
+
+- [x] Repositório git com `.gitignore` (inclui `.env`) e `.env.example`.
+- [x] Um repositório com `backend/`, `frontend/` e `infra/` independentes ([estrutura](03-arquitetura.md#estrutura-do-repositório)).
+- [x] TypeScript com `strict: true` no backend e no frontend.
+- [x] ESLint e Prettier.
+- [x] Vitest configurado no backend e no frontend.
+
+### Back-end
+
+- [ ] Docker Compose com PostgreSQL para desenvolvimento.
+- [ ] Drizzle configurado, com a primeira migration (tabelas da v1 do [modelo de dados](04-modelo-de-dados.md)).
+- [ ] Fastify com `GET /api/v1/health` (checa o banco).
+- [ ] Configuração lida do `.env` e validada com Zod; o app para com mensagem clara se faltar algo.
+- [ ] Formato padrão de erro e logger que não registra dados financeiros.
+- [ ] Teste de integração com Testcontainers rodando.
+
+### Front-end
+
+- [ ] React + Vite + Tailwind v4 + shadcn/ui.
+- [ ] Tokens do [Design System](06-design-system.md#tokens-em-css) no `globals.css`, fontes Inter e Manrope servidas localmente.
+- [ ] Temas claro e escuro, com escolha Claro, Escuro e Sistema.
+- [ ] Layout base responsivo: menu lateral que abre pelo botão de menu no celular e no tablet e fica fixo no computador, áreas seguras do celular ([regras](06-design-system.md#responsividade)).
+- [ ] Funções de formatação (moeda, sinal, datas pt-BR, fuso `America/Sao_Paulo`) com testes.
+- [ ] Componentes base com os estados: carregando, vazio, erro.
+
+**Pronto quando:**
+- o banco sobe com `docker compose -f infra/compose.dev.yml up -d`, e o backend e o frontend sobem com `npm run dev`, cada um na sua pasta;
+- a tela inicial abre com o layout do Valora nos dois temas, sem rolagem horizontal em 320, 390, 768, 1024 e 1440 px;
+- os testes passam.
+
+---
+
+## Fase 1 (v1) — Dia a dia
+
+### Sincronização
+
+- [ ] `PluggyClient` com o `pluggy-sdk`, validando as respostas com Zod e convertendo valores para centavos.
+- [ ] **Confirmar com dados reais** a convenção de sinal do Pluggy para conta e cartão, e registrar no [modelo de dados](04-modelo-de-dados.md).
+- [ ] Sincronização de conexões, contas e transações ([regras](03-arquitetura.md#sincronização)):
+  - [ ] carga inicial de 12 meses, depois janela de 30 dias;
+  - [ ] gravação pelo id do Pluggy, sem duplicar;
+  - [ ] remoção de transações pendentes que sumiram;
+  - [ ] um banco com erro não trava os outros.
+- [ ] Fotos diárias de saldo (`balance_snapshots`).
+- [ ] Investimentos e fotos diárias (`investments`, `investment_snapshots`) já gravados, mesmo sem tela. Histórico não volta depois.
+- [ ] Agendamento diário (`SYNC_CRON`) + `POST /api/v1/sync-runs` + lock contra execução dupla.
+- [ ] Registro em `sync_runs`.
+- [ ] Testes de integração da sincronização com respostas do Pluggy gravadas e anonimizadas.
+
+### Categorias
+
+- [ ] Categorias padrão criadas na primeira execução. Incluem "Pagamento de fatura" e "Transferência entre contas", do tipo `transfer`, e "Saque", do tipo `expense`.
+- [ ] Mapeamento das categorias do Pluggy para as suas (`pluggy_category_mappings`).
+- [ ] Regras: contém, começa com, igual; com prioridade.
+- [ ] Ordem de decisão: você → regra → Pluggy → "Sem categoria". A sincronização nunca muda uma categoria escolhida por você.
+- [ ] Ao corrigir uma categoria, opção "Aplicar sempre para '<descrição>'", que cria a regra.
+- [ ] Tela de categorias e regras.
+
+### Lançamento manual
+
+Regras em [produto](01-produto.md#lançamento-manual).
+
+- [ ] Conta "Dinheiro" (tipo `cash`) criada na primeira execução, sem saldo e fora do saldo total.
+- [ ] Formulário de receita e despesa: tipo, valor, descrição, data, categoria, conta (Dinheiro ou uma conta conectada).
+- [ ] Editar e excluir transação manual. Transação do Open Finance continua só com a categoria editável.
+- [ ] Sincronização nunca altera nem apaga transação manual (com teste).
+- [ ] Aviso de possível duplicata (mesma conta, mesmo valor, até 3 dias), com as ações "Juntar" e "São diferentes" (com testes).
+- [ ] Filtro de origem na lista de transações: Open Finance, manual.
+
+### Telas
+
+- [ ] **Contas e cartões:** saldo de cada conta, total, limite do cartão, status de cada conexão e última sincronização.
+- [ ] **Transações:**
+  - [ ] lista agrupada por dia, paginada;
+  - [ ] filtros por período, categoria, tipo e conta;
+  - [ ] pesquisa;
+  - [ ] detalhe;
+  - [ ] troca de categoria.
+- [ ] **Orçamentos:** limite por categoria e mês, consumo, status com ícone e texto, "copiar do mês anterior".
+- [ ] **Início:**
+  - [ ] card de saldo;
+  - [ ] atalhos (Adicionar receita, Registrar despesa, Transações, Orçamentos);
+  - [ ] receitas e despesas do mês;
+  - [ ] receitas x despesas (6 meses);
+  - [ ] gastos por categoria (lista de barras);
+  - [ ] orçamentos perto do limite;
+  - [ ] últimas transações.
+- [ ] Ocultar valores.
+- [ ] Faixa de aviso quando um banco não sincroniza.
+
+### Servidor de casa
+
+- [ ] `Dockerfile` do backend, `Dockerfile` do frontend (nginx) e `infra/compose.yml` de produção com `frontend`, `backend` e `db` ([deploy](05-deploy.md)).
+- [ ] Só o front publica porta, presa ao `127.0.0.1`, e o app é publicado só pela Tailscale com HTTPS.
+- [ ] Backup diário com retenção de 30 dias, e **uma restauração testada**.
+
+**Pronto quando:**
+- o app roda no servidor e abre no celular pela Tailscale;
+- as transações de todos os bancos chegam sozinhas todo dia;
+- um gasto em dinheiro lançado à mão aparece nas despesas e no orçamento da categoria;
+- uma transação lançada à mão e depois trazida pelo Open Finance gera o aviso de possível duplicata;
+- pagamento de fatura não conta como despesa duas vezes;
+- uma categoria corrigida por você continua corrigida depois da sincronização seguinte;
+- o backup foi restaurado com sucesso pelo menos uma vez.
+
+---
+
+## Fase 2 (v2) — Planejamento
+
+- [ ] **Faturas do cartão:** fatura atual, próximas faturas, vencimento, parcelas futuras (`credit_card_bills`).
+- [ ] **Receitas e despesas previstas** (`planned_entries`), avulsas ou recorrentes. Definir como marcar uma previsão como realizada.
+- [ ] **Projeção do fim do mês:** saldo de hoje + receitas previstas − despesas previstas − parcelas que vencem.
+- [ ] **Metas** (`goals`): nome, ícone, valor desejado, valor acumulado informado à mão, progresso, prazo estimado pelo ritmo de aporte.
+- [ ] **Alertas** (`alerts`):
+  - [ ] cobrança duplicada: mesmo valor e mesmo estabelecimento em poucos dias;
+  - [ ] assinatura detectada: mesmo valor se repetindo todo mês;
+  - [ ] orçamento em 80% e estourado;
+  - [ ] conexão com banco caída ou consentimento expirado.
+- [ ] Sino de alertas no topo; resumo de metas e projeção no Início.
+- [ ] **PWA instalável** (`vite-plugin-pwa`): ícone, tela de abertura, funciona com os dados já carregados mesmo sem rede.
+
+**Pronto quando:**
+- dá para planejar o mês com previsões e ver a projeção do saldo;
+- metas aparecem no Início;
+- os quatro tipos de alerta disparam em dados reais;
+- o app está instalado no celular.
+
+---
+
+## Fase 3 (v3) — Patrimônio
+
+- [ ] **Investimentos:** posição de cada um, agrupada por tipo, e o total. Os dados já existem desde a Fase 1.
+- [ ] **Evolução do patrimônio:** contas + investimentos − fatura em aberto, mês a mês, a partir das fotos diárias.
+- [ ] **Metas vinculadas** a um investimento ou conta, que se atualizam sozinhas.
+- [ ] **Relatórios**, todos com a opção "Ver em tabela":
+  - [ ] evolução financeira;
+  - [ ] histórico de receitas e despesas;
+  - [ ] análise por categoria ao longo dos meses;
+  - [ ] evolução do patrimônio.
+- [ ] Variação do patrimônio no card de saldo do Início.
+
+**Pronto quando:**
+- o patrimônio total confere com a soma dos bancos e corretoras;
+- o gráfico de evolução mostra o histórico guardado desde a Fase 1.
+
+---
+
+## Ideias para depois
+
+Sem compromisso. Entram no roadmap só se fizerem falta no uso real.
+
+- Notificações no celular (alerta de orçamento, conexão caída).
+- Exportar transações em CSV.
+- Importar extrato OFX de bancos que não estão no Open Finance.
+- Renovação de consentimento facilitada, quando a Resolução Conjunta nº 7 estiver valendo ([consentimento](02-open-finance.md#consentimento)).
+- Tela de login, se um dia o app precisar ficar acessível fora da Tailscale.

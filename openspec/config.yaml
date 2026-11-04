@@ -1,0 +1,58 @@
+schema: spec-driven
+
+context: |
+  Projeto: Valora, app de finanças pessoais para UM único usuário, rodando num servidor Linux em casa.
+  Os dados chegam pelo Open Finance via Meu Pluggy e ficam num PostgreSQL próprio.
+
+  Fontes de verdade (ler antes de propor):
+  - CLAUDE.md: regras do projeto que não podem ser quebradas e o fluxo de trabalho.
+  - docs/01-produto.md: escopo, funcionalidades por fase e o que fica de fora.
+  - docs/02-open-finance.md: limites do Meu Pluggy e do Open Finance.
+  - docs/03-arquitetura.md: stack, estrutura do repositório, sincronização, decisões.
+  - docs/04-modelo-de-dados.md: tabelas e regras do banco.
+  - docs/05-deploy.md: Docker Compose, Tailscale, backup.
+  - docs/06-design-system.md: tokens, componentes e gráficos. Vence qualquer sugestão de skill.
+  - docs/07-roadmap.md: fases e itens. Cada change cobre um item ou um grupo pequeno de itens.
+
+  Repositório: um único repositório git com backend/, frontend/ e infra/ independentes (como no CellCare).
+  backend/ e frontend/ são projetos Node separados (package.json próprio); a raiz não é projeto Node.
+  Back e front não dividem código: o front tem os próprios schemas para validar as respostas da API,
+  e toda change que muda um endpoint atualiza os dois lados.
+  Stack: TypeScript strict nas duas partes, npm;
+  Node + Fastify + Zod; PostgreSQL + Drizzle; pluggy-sdk; React + Vite + Tailwind v4 + shadcn/ui,
+  Recharts, TanStack Query, React Router, Lucide; PWA; Vitest + Testcontainers;
+  Docker Compose (app + db) acessado só pela Tailscale.
+
+  Regras de domínio:
+  - Dinheiro em centavos inteiros (bigint, colunas *_cents). Negativo = saída de dinheiro.
+  - A sincronização grava pelo id do Pluggy, não duplica e nunca sobrescreve categoria escolhida pelo usuário.
+  - JSON bruto do Pluggy em raw jsonb. Fotos diárias de saldo e de investimentos.
+  - Transferências internas (categorias kind = 'transfer') ficam fora dos totais de receita e despesa.
+  - Só leitura: sem pagamento, Pix ou transferência.
+  - Lançamento manual só como complemento: dinheiro em espécie (conta "Dinheiro", sem saldo,
+    fora do saldo total) e transações que o Open Finance não trouxe. Transação manual
+    (source = 'manual') é editável por inteiro e a sincronização nunca a altera nem apaga.
+    Possível duplicata entre manual e Open Finance é sugerida, nunca juntada sozinha.
+  - Sem carteira de dinheiro com saldo, sem IA conversacional, sem multiusuário, sem tela de login na v1.
+
+  Idioma: identificadores, tabelas, colunas, rotas e nomes de change e de capability em inglês (kebab-case);
+  texto dos artefatos e da interface em português do Brasil.
+
+rules:
+  proposal:
+    - 'Citar o item ou os itens de docs/07-roadmap.md que a change cobre.'
+    - 'Incluir a seção "Fora do escopo" e conferir contra a seção "Fora do escopo" de docs/01-produto.md.'
+    - 'Se a change contrariar algum documento de docs/ ou o CLAUDE.md, dizer isso explicitamente. A decisão é do usuário.'
+  specs:
+    - 'Escrever em português, mas manter em inglês os marcadores que o OpenSpec valida - cabeçalhos (## ADDED Requirements, ### Requirement:, #### Scenario:), **WHEN** e **THEN**, e a palavra-chave SHALL ou MUST no corpo de cada requisito (ex.: "O sistema MUST gravar cada transação pelo id do Pluggy.").'
+    - 'Valores em dinheiro nos cenários em centavos ou no formato exato da interface (ex.: "− R$ 89,90").'
+  design:
+    - 'Seguir a arquitetura de docs/03-arquitetura.md - Controller → Service → Repository, com o PluggyClient como único ponto de contato com o Pluggy.'
+    - 'Toda tabela ou coluna nova também entra em docs/04-modelo-de-dados.md.'
+    - 'Telas e componentes seguem docs/06-design-system.md e são feitos com as skills /frontend-design:frontend-design e /ui-ux-pro-max carregadas.'
+    - 'Decisão nova de arquitetura entra na tabela "Decisões" de docs/03-arquitetura.md.'
+  tasks:
+    - 'Toda tarefa com regra de negócio inclui testes (Vitest; Testcontainers para o banco; Pluggy sempre mockado com respostas gravadas).'
+    - 'Tarefas de tela incluem os estados carregando, vazio e erro, nos temas claro e escuro.'
+    - 'Toda tela é responsiva (docs/06-design-system.md, seção Responsividade) e tem uma tarefa para conferir em 320, 390, 768, 1024 e 1440 px, sem rolagem horizontal.'
+    - 'A última tarefa atualiza os documentos de docs/ afetados e marca os itens do roadmap.'

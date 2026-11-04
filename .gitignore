@@ -1,0 +1,18 @@
+# Dependências e build (em backend/ e frontend/)
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Segredos: só os exemplos vão para o git
+.env
+.env.*
+!.env.example
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+*.log
+
+# Configuração local do Claude Code
+.claude/settings.local.json

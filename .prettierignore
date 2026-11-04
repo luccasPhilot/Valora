@@ -1,0 +1,9 @@
+# Documentação escrita à mão: tabelas e listas ficam como foram escritas
+*.md
+openspec/
+.claude/
+
+node_modules
+dist
+coverage
+**/package-lock.json
