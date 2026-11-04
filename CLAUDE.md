@@ -142,7 +142,7 @@ Os comandos rodam dentro da pasta da parte (`cd backend` ou `cd frontend`). As d
 | `npm run format` / `npm run format:check` | Formata / confere com o Prettier (estilo único, definido na raiz) |
 | `npm test` | Roda os testes Vitest |
 
-O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration` e `db:generate` (veja o README dele). O `dev` do frontend chega com `setup-web-foundation`.
+O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration` e `db:generate` (veja o README dele). O frontend ainda tem `dev` (Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000`), `build`, `preview` e `check:tokens` (falha se achar cor em hex em `src/components` ou `src/features`; roda junto com o `lint`).
 
 Antes de dar uma tarefa por pronta, rode `typecheck`, `lint`, `format:check` e `test` **em cada parte que mudou**. Os testes de integração do backend precisam do Docker rodando.
 

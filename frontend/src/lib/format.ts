@@ -1,0 +1,101 @@
+import { todayInSaoPaulo } from './dates';
+import { APP_TIMEZONE } from './timezone';
+
+const LOCALE = 'pt-BR';
+const CENTS_PER_REAL = 100;
+const MINUS_SIGN = '−';
+const NON_BREAKING_SPACES = new RegExp('[\u00A0\u202F]', 'g');
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const currencyFormat = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'BRL' });
+const compactCurrencyFormat = new Intl.NumberFormat(LOCALE, {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+const percentFormat = new Intl.NumberFormat(LOCALE, { style: 'percent', maximumFractionDigits: 1 });
+
+const fullDateFormat = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: APP_TIMEZONE,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+const monthFormat = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: APP_TIMEZONE,
+  month: 'long',
+  year: 'numeric',
+});
+const dayHeaderFormat = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: APP_TIMEZONE,
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+
+// O Intl usa espaços especiais (NBSP) e hífen; o app usa espaço comum e o sinal tipográfico.
+function normalize(text: string): string {
+  return text.replace(NON_BREAKING_SPACES, ' ').replace('-', MINUS_SIGN);
+}
+
+function assertCents(cents: number): void {
+  if (!Number.isInteger(cents)) {
+    throw new RangeError(`Valor em centavos deve ser inteiro, recebido: ${cents}`);
+  }
+}
+
+function assertIsoDate(isoDate: string): void {
+  if (!ISO_DATE_PATTERN.test(isoDate)) {
+    throw new RangeError(`Data inválida, esperado AAAA-MM-DD: ${isoDate}`);
+  }
+}
+
+// Meio-dia UTC cai no mesmo dia em São Paulo (UTC-3), então a data não escorrega.
+function isoDateToInstant(isoDate: string): Date {
+  assertIsoDate(isoDate);
+  return new Date(`${isoDate}T12:00:00Z`);
+}
+
+function previousDay(isoDate: string): string {
+  const instant = isoDateToInstant(isoDate);
+  instant.setUTCDate(instant.getUTCDate() - 1);
+  return instant.toISOString().slice(0, 10);
+}
+
+export function formatCurrency(cents: number): string {
+  assertCents(cents);
+  return normalize(currencyFormat.format(cents / CENTS_PER_REAL));
+}
+
+export function formatSignedCurrency(cents: number): string {
+  assertCents(cents);
+  if (cents === 0) return formatCurrency(0);
+  const sign = cents > 0 ? '+' : MINUS_SIGN;
+  return `${sign} ${formatCurrency(Math.abs(cents))}`;
+}
+
+export function formatCompactCurrency(cents: number): string {
+  assertCents(cents);
+  return normalize(compactCurrencyFormat.format(cents / CENTS_PER_REAL));
+}
+
+export function formatPercent(ratio: number): string {
+  return normalize(percentFormat.format(ratio));
+}
+
+export function formatDate(isoDate: string): string {
+  return fullDateFormat.format(isoDateToInstant(isoDate));
+}
+
+export function formatMonth(isoDate: string): string {
+  return monthFormat.format(isoDateToInstant(isoDate));
+}
+
+export function formatDayHeader(isoDate: string, now: Date = new Date()): string {
+  assertIsoDate(isoDate);
+  const today = todayInSaoPaulo(now);
+  if (isoDate === today) return 'Hoje';
+  if (isoDate === previousDay(today)) return 'Ontem';
+  return dayHeaderFormat.format(isoDateToInstant(isoDate));
+}

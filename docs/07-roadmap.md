@@ -15,8 +15,8 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 ### Passos manuais (você)
 
-- [ ] Criar conta no [Meu Pluggy](https://meu.pluggy.ai) e conectar todos os bancos (até 5).
-- [ ] Criar conta no [dashboard do Pluggy](https://dashboard.pluggy.ai), criar a aplicação e ativar o conector MeuPluggy ([passo a passo](02-open-finance.md#passo-a-passo-de-configuração)).
+- [x] Criar conta no [Meu Pluggy](https://meu.pluggy.ai) e conectar todos os bancos (até 5).
+- [x] Criar conta no [dashboard do Pluggy](https://dashboard.pluggy.ai), criar a aplicação e ativar o conector MeuPluggy ([passo a passo](02-open-finance.md#passo-a-passo-de-configuração)).
 - [ ] Guardar o Client ID e o Client Secret num gerenciador de senhas. Nunca no repositório.
 
 ### Projeto
@@ -38,12 +38,12 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 ### Front-end
 
-- [ ] React + Vite + Tailwind v4 + shadcn/ui.
-- [ ] Tokens do [Design System](06-design-system.md#tokens-em-css) no `globals.css`, fontes Inter e Manrope servidas localmente.
-- [ ] Temas claro e escuro, com escolha Claro, Escuro e Sistema.
-- [ ] Layout base responsivo: menu lateral que abre pelo botão de menu no celular e no tablet e fica fixo no computador, áreas seguras do celular ([regras](06-design-system.md#responsividade)).
-- [ ] Funções de formatação (moeda, sinal, datas pt-BR, fuso `America/Sao_Paulo`) com testes.
-- [ ] Componentes base com os estados: carregando, vazio, erro.
+- [x] React + Vite + Tailwind v4 + shadcn/ui.
+- [x] Tokens do [Design System](06-design-system.md#tokens-em-css) no `globals.css`, fontes Inter e Manrope servidas localmente.
+- [x] Temas claro e escuro, com escolha Claro, Escuro e Sistema.
+- [x] Layout base responsivo: menu lateral que abre pelo botão de menu no celular e no tablet e fica fixo no computador, áreas seguras do celular ([regras](06-design-system.md#responsividade)).
+- [x] Funções de formatação (moeda, sinal, datas pt-BR, fuso `America/Sao_Paulo`) com testes.
+- [x] Componentes base com os estados: carregando, vazio, erro.
 
 **Pronto quando:**
 - o banco sobe com `docker compose -f infra/compose.dev.yml up -d`, e o backend e o frontend sobem com `npm run dev`, cada um na sua pasta;
@@ -107,7 +107,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [ ] gastos por categoria (lista de barras);
   - [ ] orçamentos perto do limite;
   - [ ] últimas transações.
-- [ ] Ocultar valores.
+- [x] Ocultar valores.
 - [ ] Faixa de aviso quando um banco não sincroniza.
 
 ### Servidor de casa

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Valora</title>
+    <script>
+      // Aplica o tema antes da primeira pintura para não piscar o tema errado.
+      // Mantenha em sincronia com src/lib/theme.ts (chave e valores).
+      (function () {
+        var storedTheme = null;
+        try {
+          storedTheme = window.localStorage.getItem('valora.theme');
+        } catch (_error) {
+          storedTheme = null;
+        }
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark);
+        document.documentElement.classList.toggle('dark', isDark);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

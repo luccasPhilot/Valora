@@ -2,7 +2,7 @@
 
 Interface do Valora: React + Vite + Tailwind v4 + shadcn/ui. Projeto independente (tem o próprio `package.json` e `package-lock.json`). Visão geral em [docs/03-arquitetura.md](../docs/03-arquitetura.md).
 
-**Status:** só o ferramental está pronto (TypeScript, ESLint, Prettier, Vitest). React, Vite e as telas chegam com a change `setup-web-foundation`; os comandos `dev` e `build` aparecem nela.
+**Status:** base pronta (tokens, temas, menu lateral responsivo, rotas, formatação, estados de tela e ocultar valores). As áreas ainda mostram "ainda não está pronta"; cada uma chega na sua change da Fase 1.
 
 ## Comandos
 
@@ -15,8 +15,11 @@ npm ci
 
 | Comando | O que faz |
 |---|---|
+| `npm run dev` | Sobe o Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000` |
+| `npm run build` / `npm run preview` | Verifica os tipos e gera o `dist/` / serve o `dist/` localmente |
 | `npm run typecheck` | Verifica os tipos |
-| `npm run lint` / `npm run lint:fix` | ESLint / com correção automática |
+| `npm run lint` / `npm run lint:fix` | `check:tokens` + ESLint / ESLint com correção automática |
+| `npm run check:tokens` | Falha se achar cor em hex em `src/components` ou `src/features` (use os tokens) |
 | `npm run format` / `npm run format:check` | Prettier |
 | `npm test` / `npm run test:watch` | Testes Vitest |
 
