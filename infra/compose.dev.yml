@@ -1,0 +1,23 @@
+# PostgreSQL de desenvolvimento. Só o banco: a API roda na sua máquina com `npm run dev`.
+# Suba com: docker compose -f infra/compose.dev.yml up -d
+# O PostgreSQL 18+ guarda os dados num subdiretório de /var/lib/postgresql, por isso o volume monta nessa pasta.
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: valora
+      POSTGRES_PASSWORD: valora_dev
+      POSTGRES_DB: valora
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - valora_dev_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U valora -d valora']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  valora_dev_data:
