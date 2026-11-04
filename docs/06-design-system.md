@@ -4,17 +4,17 @@ Construído a partir do [guia de identidade visual](design/identidade-visual.md)
 
 Os tokens já estão no formato do shadcn/ui com Tailwind v4 (seção [Tokens em CSS](#tokens-em-css)), para virar código direto na Fase 0.
 
-**Figma:** o [arquivo do Valora](https://www.figma.com/design/MNdGWT8ZnSZkTRxlvoI0Ie/Valora) tem as variáveis com os mesmos nomes destes tokens, os estilos de texto e de sombra, os ícones e os componentes. As telas do celular estão em construção. O plano gratuito do Figma só permite um modo por coleção, então as cores ficam em duas coleções com os mesmos nomes, **Color · Light** e **Color · Dark**, em vez de uma coleção com dois modos. **Este documento é a fonte da verdade:** se o Figma e este texto divergirem, vale o texto.
+**Figma:** o [arquivo do Valora](https://www.figma.com/design/MNdGWT8ZnSZkTRxlvoI0Ie/Valora) tem as variáveis com os mesmos nomes destes tokens, os estilos de texto e de sombra, os ícones e os componentes. As telas do celular estão em construção. O plano gratuito do Figma só permite um modo por coleção, então as cores ficam em duas coleções com os mesmos nomes, **Color · Light** e **Color · Dark**, em vez de uma coleção com dois modos. **Este documento é a fonte da verdade:** se o Figma e este texto divergirem, vale o texto. Hoje eles divergem: as cores, os raios e os estilos de texto mudaram na change `refresh-visual-identity`, e o Figma ainda tem os valores antigos até ser atualizado.
 
 ## Princípios
 
 - **O dinheiro em primeiro lugar.** Saldo, gasto do mês e limite do orçamento são as informações mais fortes da tela. O resto fica em segundo plano.
-- **Calma.** Fundo claro e quente, verde como identidade, vermelho só quando algo pede atenção de verdade.
+- **Calma, com cor só onde importa.** Fundo neutro (quase preto no tema escuro), verde vivo nos detalhes (ação, item ativo, foco, valores positivos), vermelho só quando algo pede atenção de verdade.
 - **Uma coisa por vez.** Cada card responde uma pergunta. Nada de card dentro de card sem necessidade.
 - **Detalhe acima de efeito.** Alinhamento, espaçamento e números bem formatados valem mais que gradiente, sombra ou animação.
 - **Responsivo em qualquer tela.** Do celular pequeno ao monitor largo, cada tela funciona e fica bem cuidada. Veja [Responsividade](#responsividade).
 
-**Evitar** (do guia): gradientes exagerados, glassmorphism, sombras fortes, cores muito saturadas, muitos elementos competindo, cara de painel administrativo, decoração que não ajuda a entender.
+**Evitar:** gradientes (só o símbolo do logotipo tem), glassmorphism (desfoque de fundo), sombras fortes, verde saturado em superfícies grandes (ele fica nos detalhes), muitos elementos competindo, cara de painel administrativo, decoração que não ajuda a entender. O `check:tokens` falha se achar gradiente ou `backdrop-blur` em componentes.
 
 ## Cores
 
@@ -22,43 +22,47 @@ Os tokens já estão no formato do shadcn/ui com Tailwind v4 (seção [Tokens em
 
 | Nome | Hex | Uso |
 |---|---|---|
-| Forest Green | `#173D32` | Texto sobre fundos verdes claros; superfícies de destaque |
-| Primary Green | `#286B50` | Ações principais, links, valores positivos (tema claro) |
-| Sage Green | `#75A98A` | Base do verde do tema escuro; ícones e detalhes decorativos. **Nunca como texto no tema claro** (2,69:1 sobre branco) |
-| Mint | `#DDE9DF` | Fundo de destaque suave, chips, hover |
-| Off-white | `#F5F6F1` | Fundo da página no tema claro |
-| Charcoal | `#202923` | Texto principal no tema claro |
+| Forest Green | `#05603A` | Texto sobre fundos verdes claros (`secondary-foreground`) |
+| Primary Green | `#027A48` | Ações principais, links, foco, valores positivos (tema claro) |
+| Bright Green | `#32D583` | Base do verde do tema escuro (ação, foco, valores positivos). **Nunca como texto no tema claro** |
+| Mint | `#E7F6EC` | Fundo de destaque suave, item ativo do menu, chips (tema claro) |
+| Off-white | `#F7F8F7` | Fundo da página no tema claro |
+| Charcoal | `#141C17` | Texto principal no tema claro |
+| Near-black | `#0A0A0B` | Fundo da página no tema escuro (cinza neutro, sem tom de verde) |
 
-As seis cores do guia foram mantidas. Os ajustes ficaram nos tons derivados (texto secundário, bordas, estados), escolhidos para passar no contraste.
+O verde tem vários tons, com papéis fixos: o forte (`#027A48`) leva texto e botão no claro; o vivo (`#32D583`) leva o mesmo papel no escuro; os claros ficam para fundos. Tons como `#039855` (3,73:1 sobre branco) só servem para detalhes sem texto. As seis cores do guia original viraram sete: Primary e Forest Green ficaram mais vivos, o Sage Green deu lugar ao Bright Green e entrou o Near-black. Os tons derivados (texto secundário, bordas, estados) foram escolhidos para passar no contraste.
 
 ### Tokens semânticos
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
-| `background` | `#F5F6F1` | `#111915` | Fundo da página |
-| `foreground` | `#202923` | `#E8EEE9` | Texto principal |
-| `card` | `#FFFFFF` | `#18241E` | Cards e superfícies |
-| `card-foreground` | `#202923` | `#E8EEE9` | Texto em cards |
-| `popover` | `#FFFFFF` | `#1C2B24` | Menus, popovers, tooltips |
-| `popover-foreground` | `#202923` | `#E8EEE9` | |
-| `primary` | `#286B50` | `#7DB894` | Botão principal, link, item ativo |
-| `primary-foreground` | `#FFFFFF` | `#0F1F17` | Texto sobre `primary` |
-| `secondary` | `#DDE9DF` | `#243A30` | Botão secundário, card de destaque (saldo) |
-| `secondary-foreground` | `#173D32` | `#DDE9DF` | Texto sobre `secondary` |
-| `muted` | `#ECEEE7` | `#1F2D26` | Fundos neutros, skeleton |
-| `muted-foreground` | `#5C665F` | `#9DAEA4` | Texto secundário, legendas, eixos |
-| `accent` | `#DDE9DF` | `#243A30` | Hover de menus e botões fantasma |
-| `accent-foreground` | `#173D32` | `#DDE9DF` | |
+| `background` | `#F7F8F7` | `#0A0A0B` | Fundo da página |
+| `foreground` | `#141C17` | `#EDEDEF` | Texto principal |
+| `card` | `#FFFFFF` | `#121214` | Cards e superfícies |
+| `card-foreground` | `#141C17` | `#EDEDEF` | Texto em cards |
+| `popover` | `#FFFFFF` | `#18181B` | Menus, popovers, tooltips |
+| `popover-foreground` | `#141C17` | `#EDEDEF` | |
+| `primary` | `#027A48` | `#32D583` | Botão principal, link, item ativo (ícone) |
+| `primary-foreground` | `#FFFFFF` | `#04150C` | Texto sobre `primary` |
+| `secondary` | `#E7F6EC` | `#222226` | Botão secundário, item ativo do menu, círculo dos ícones, card de destaque (saldo). No escuro é cinza, não verde |
+| `secondary-foreground` | `#05603A` | `#EDEDEF` | Texto sobre `secondary` |
+| `muted` | `#EEF1EE` | `#1B1B1F` | Fundos neutros, skeleton |
+| `muted-foreground` | `#5A655E` | `#A1A1AA` | Texto secundário, rótulos de seção, legendas, eixos |
+| `accent` | `#EDF7F1` | `#1B1B1F` | Hover de menus e botões fantasma |
+| `accent-foreground` | `#05603A` | `#EDEDEF` | |
 | `destructive` | `#B4372E` | `#E5776C` | Erro, orçamento estourado, saldo negativo |
 | `destructive-foreground` | `#FFFFFF` | `#1B0F0D` | Texto sobre `destructive` |
-| `positive` | `#286B50` | `#7DB894` | Receitas e variações positivas |
+| `positive` | `#027A48` | `#32D583` | Receitas e variações positivas |
 | `warning` | `#8A5A00` | `#E3B04B` | Texto de atenção |
 | `warning-surface` | `#FBF1DC` | `#2E2716` | Fundo de aviso |
-| `border` | `#E2E5DD` | `#2A3B33` | Bordas e divisórias (decorativas) |
-| `input` | `#889189` | `#5D7266` | Borda de campos (precisa ser visível: ≥ 3:1) |
-| `ring` | `#286B50` | `#7DB894` | Foco do teclado |
+| `border` | `#E3E8E4` | `#27272B` | Bordas e divisórias (decorativas) |
+| `input` | `#848F88` | `#6B6B73` | Borda de campos (precisa ser visível: ≥ 3:1) |
+| `ring` | `#027A48` | `#32D583` | Foco do teclado |
+| `sidebar` | `#FFFFFF` | `#0E0E10` | Fundo do menu lateral |
 
-O tema escuro usa verdes muito escuros em vez de preto puro, como pede o guia. O verde de ação fica mais claro (`#7DB894`) e o texto sobre ele fica escuro.
+O tema escuro é **quase preto e neutro**: todas as superfícies e bordas são cinzas sem tom de verde (a diferença entre os canais R, G e B é de no máximo 4, e um teste confere isso). O verde só aparece nos detalhes: botão, ícone e texto do item ativo, foco e valores positivos. O verde de ação fica mais claro (`#32D583`) e o texto sobre ele fica escuro.
+
+Os tokens `--logo-ribbon-deep`, `--logo-ribbon` e `--logo-ribbon-light` (`#0E7A47`, `#2FA866`, `#5FCB86` no claro; `#17894F`, `#3FB873`, `#A6EBB4` no escuro) são só do [logotipo](#logotipo).
 
 ### Contraste verificado
 
@@ -66,24 +70,28 @@ Calculado com a fórmula WCAG 2. Mínimo: 4,5:1 para texto e 3:1 para bordas de 
 
 | Par | Claro | Escuro |
 |---|---|---|
-| `foreground` sobre `background` | 13,78 | 15,20 |
-| `foreground` sobre `card` | 14,97 | 13,62 |
-| `foreground` sobre `muted` | 12,80 | 12,20 |
-| `muted-foreground` sobre `background` | 5,49 | 7,69 |
-| `muted-foreground` sobre `card` | 5,96 | 6,89 |
-| `muted-foreground` sobre `muted` | 5,10 | 6,17 |
-| `primary-foreground` sobre `primary` | 6,35 | 7,45 |
-| `primary` como texto sobre `card` | 6,35 | 6,99 |
-| `primary` como texto sobre `background` | 5,84 | 7,80 |
-| `secondary-foreground` sobre `secondary` | 9,60 | 9,75 |
-| `positive` sobre `secondary` (variação no card de saldo) | 5,08 | 5,31 |
-| `muted-foreground` sobre `secondary` (rótulos no card de saldo) | 4,77 | 5,24 |
-| `destructive` como texto sobre `card` | 5,95 | 5,49 |
+| `foreground` sobre `background` | 16,33 | 16,93 |
+| `foreground` sobre `card` | 17,38 | 16,00 |
+| `foreground` sobre `muted` | 15,27 | 14,68 |
+| `muted-foreground` sobre `background` | 5,70 | 7,72 |
+| `muted-foreground` sobre `card` | 6,07 | 7,30 |
+| `muted-foreground` sobre `muted` | 5,34 | 6,70 |
+| `muted-foreground` sobre `accent` | 5,55 | 6,70 |
+| `primary-foreground` sobre `primary` | 5,41 | 9,82 |
+| `primary` como texto sobre `card` | 5,41 | 9,78 |
+| `primary` como texto sobre `background` | 5,08 | 10,35 |
+| `primary` como texto sobre `secondary` (ícone, variação no card de saldo) | 4,84 | 8,29 |
+| `secondary-foreground` sobre `secondary` | 6,86 | 13,56 |
+| `accent-foreground` sobre `accent` | 7,00 | 14,68 |
+| `muted-foreground` sobre `secondary` (rótulos no card de saldo) | 5,43 | 6,18 |
+| `destructive` como texto sobre `card` | 5,95 | 6,40 |
 | `destructive-foreground` sobre `destructive` | 5,95 | 6,41 |
 | `warning` sobre `warning-surface` | 5,28 | 7,46 |
-| `warning` sobre `card` | 5,93 | 8,08 |
-| `input` sobre `card` | 3,25 | 3,10 |
-| `ring` sobre `background` | 5,84 | 7,80 |
+| `warning` sobre `card` | 5,93 | 9,42 |
+| `input` sobre `card` | 3,35 | 3,54 |
+| `ring` sobre `background` | 5,08 | 10,35 |
+
+Os números saem do teste `frontend/test/design-tokens.test.ts`, que também confere o status de orçamento, os oito slots dos gráficos e o "Outros" sobre `card` (mínimo de 3:1). Se um token mudar, o teste falha até este documento e o CSS voltarem a bater.
 
 ### Valores financeiros
 
@@ -99,11 +107,11 @@ Sempre com **ícone + texto**, nunca só a cor.
 
 | Estado | Regra | Claro | Escuro | Ícone Lucide | Texto |
 |---|---|---|---|---|---|
-| Dentro | abaixo de 80% do limite | `#286B50` | `#7DB894` | `circle-check` | "R$ 410 de R$ 1.000" |
+| Dentro | abaixo de 80% do limite | `#027A48` | `#32D583` | `circle-check` | "R$ 410 de R$ 1.000" |
 | Atenção | de 80% a 100% | `#BC8019` | `#E3B04B` | `triangle-alert` | "82% do limite" |
 | Estourou | acima de 100% | `#B4372E` | `#E5776C` | `circle-alert` | "R$ 120 acima do limite" |
 
-Todas passam de 3:1 sobre `card` nos dois temas (claro: 6,35 / 3,37 / 5,95; escuro: 6,99 / 8,08 / 5,49). Trilho da barra: `#E6EAE3` no claro e `#26352D` no escuro.
+Todas passam de 3:1 sobre `card` nos dois temas (claro: 5,41 / 3,37 / 5,95; escuro: 9,78 / 9,42 / 6,40). Trilho da barra: `#E8ECE8` no claro e `#27272B` no escuro.
 
 ### Paleta de gráficos
 
@@ -123,11 +131,11 @@ Oito cores para gráficos com **mais de uma série** (receitas x despesas, patri
 
 **Validação** (simulação de protanopia e deuteranopia de Machado et al. 2009; distância em OKLab ×100; meta ≥ 8 para daltonismo e ≥ 15 para visão normal):
 
-| | Claro (sobre `#FFFFFF`) | Escuro (sobre `#18241E`) |
+| | Claro (sobre `#FFFFFF`) | Escuro (sobre `#121214`) |
 |---|---|---|
 | Pior par vizinho, daltonismo | 15,2 | 13,0 |
 | Pior par vizinho, visão normal | 28,4 | 24,5 |
-| Contraste mínimo com a superfície | ≥ 3:1 em todas | ≥ 3:1 em todas |
+| Contraste mínimo com a superfície | ≥ 3:1 em todas (mín. 3,17 em "Outros") | ≥ 3:1 em todas (mín. 3,51, slot 7) |
 
 A ordem foi escolhida testando todas as combinações e ficando com a que mais separa cores vizinhas. **A garantia vale para cores vizinhas na ordem** (barras agrupadas, áreas empilhadas, linhas). Duas cores distantes na ordem (por exemplo, oliva e âmbar) podem se confundir quando aparecem lado a lado. Por isso:
 
@@ -170,15 +178,18 @@ Duas famílias, servidas pelo próprio app (pacotes `@fontsource-variable/manrop
 
 | Estilo | Tamanho / altura da linha | Peso | Fonte | Uso |
 |---|---|---|---|---|
-| `display` | 32/40 (celular), 40/48 (computador) | 700 | Manrope | Saldo total |
+| `display` | 36/44 (celular), 48/56 (computador) | 700 | Manrope | Saldo total |
 | `title-1` | 24/32 | 700 | Manrope | Título da página |
-| `title-2` | 20/28 | 600 | Manrope | Título de seção, valores dos cards de resumo |
+| `value-lg` | 28/32 | 700 | Manrope | Valores dos cards de resumo |
+| `title-2` | 20/28 | 600 | Manrope | Título de seção, título de estado vazio e de erro |
 | `title-3` | 16/24 | 600 | Manrope | Título de card |
 | `body` | 16/24 | 400 | Inter | Texto padrão e campos (16 px evita o zoom automático no iPhone) |
 | `body-sm` | 14/20 | 400 ou 500 | Inter | Listas, tabelas, rótulos |
 | `caption` | 12/16 | 500 | Inter | Legendas, eixos de gráfico, metadados |
+| `label` | 12/16 | 600 | Inter | Título de card e nome de grupo do menu: caixa-alta, `letter-spacing: 0.06em`, `muted-foreground`, com ícone de 16 px em `primary` à esquerda (nos grupos do menu, sem ícone) |
 
 - Títulos e `display` com `letter-spacing: -0.01em` a `-0.02em`.
+- Caixa-alta só no estilo `label`, sempre curto (até 3 palavras). Não use em frases nem em botões.
 - **Números em listas e tabelas** usam `font-variant-numeric: tabular-nums`, para os valores alinharem. Números grandes e isolados (o saldo) ficam com os algarismos normais.
 
 ## Espaçamento
@@ -194,25 +205,35 @@ Base de 4 px. Escala: `4, 8, 12, 16, 20, 24, 32, 40, 48, 64`.
 
 ## Bordas e raios
 
-`--radius: 0.75rem` (12 px), com as variações do shadcn/ui:
+`--radius: 1.25rem` (20 px), com as variações do shadcn/ui:
 
 | Token | Valor | Uso |
 |---|---|---|
-| `radius-sm` | 8 px | chips, badges, campos pequenos |
-| `radius-md` | 10 px | botões, campos |
-| `radius-lg` | 12 px | cards |
-| `radius-xl` | 16 px | card de saldo, painéis inferiores (sheets) |
-| `full` | 9999 px | avatares, bolinhas de ícone, barras de progresso |
+| `radius-sm` | 12 px | itens do menu, campos pequenos |
+| `radius-md` | 16 px | botões, campos |
+| `radius-lg` | 20 px | cards |
+| `radius-xl` | 24 px | card de saldo, painéis inferiores (sheets) |
+| `full` | 9999 px | chips, badges, avatares, bolinhas de ícone, controle segmentado, barras de progresso |
 
 ## Elevação
 
 | Nível | Claro | Escuro | Uso |
 |---|---|---|---|
 | 0 | só `border` | só `border` | Itens de lista, áreas internas |
-| 1 | `border` + `0 1px 2px rgb(23 61 50 / 0.06)` | `border`, sem sombra | Cards |
-| 2 | `0 8px 24px rgb(23 61 50 / 0.10)` | `border` + fundo `popover` | Menus, popovers, diálogos, sheets |
+| 1 | `border` + `0 1px 2px rgb(20 28 23 / 0.06)` | `border`, sem sombra | Cards |
+| 2 | `0 8px 24px rgb(20 28 23 / 0.10)` | `border` + fundo `popover` | Menus, popovers, diálogos, sheets |
 
 No tema escuro, a profundidade vem da superfície mais clara e da borda, não de sombra.
+
+## Logotipo
+
+O logotipo do Valora tem o **símbolo** e o **nome**. O símbolo é um "V" de duas fitas verdes: a da esquerda mais escura, a da direita mais clara, com uma dobra no encontro. Foi redesenhado em SVG a partir da imagem do logotipo (`Valora Green Ribbon Logo.png`) e fica em `frontend/src/components/brand/`.
+
+- Menu expandido: símbolo (28 px de altura) e o nome "Valora" em Manrope 700, com 12 px entre os dois. Recolhido: só o símbolo.
+- É um link para o Início, com nome acessível "Valora".
+- As cores vêm dos tokens `--logo-ribbon-deep`, `--logo-ribbon` e `--logo-ribbon-light`, que mudam com o tema para a fita clara não sumir sobre o fundo branco.
+- **Exceção ao "sem gradiente":** o símbolo tem um degradê suave dentro de cada fita, como no logotipo original. Nenhuma outra peça da interface usa degradê.
+- Favicon, ícone do app instalável e variações do logotipo (monocromático, para impressão) ainda não existem.
 
 ## Ícones
 
@@ -242,8 +263,8 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 | Rodapé do menu | Categorias e regras, Ajustes | v1 |
 
 - O menu só mostra áreas que já existem. Um grupo aparece quando a primeira área dele fica pronta.
-- O item ativo fica com fundo `secondary` e texto `secondary-foreground`, em negrito.
-- O nome do grupo fica em `caption`, `muted-foreground`, sem caixa alta.
+- O item ativo fica com fundo `secondary`, texto `secondary-foreground` em negrito e o ícone em `primary`. Os itens têm 44 px de altura e `radius-sm`.
+- O nome do grupo usa o estilo `label` (caixa-alta, `muted-foreground`).
 
 **Celular e tablet (< 1024 px):**
 - O botão de menu (ícone `menu`, Lucide) fica à esquerda do título, no topo de cada tela.
@@ -252,10 +273,18 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 - As ações mais usadas não dependem do menu: o Início tem os atalhos e a tela de Transações tem o botão "Nova transação".
 
 **Computador (≥ 1024 px):**
-- Menu lateral fixo de 240 px, sempre visível, sem botão de menu.
+- Menu lateral fixo à esquerda, **retrátil**: 264 px expandido e 72 px recolhido, sem o botão de menu do topo.
+- O botão de recolher (`chevrons-left` e `chevrons-right`, nome acessível "Recolher menu" ou "Expandir menu") fica no cabeçalho do menu. Recolhido, o menu mostra só os ícones, cada um com 44 px e com um tooltip com o nome da área ao passar o mouse ou receber o foco. A escolha fica salva no aparelho.
 - Conteúdo com largura máxima de 1200 px.
 
-**Topo de cada tela:** botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**.
+**Espaçamento do menu** (expandido):
+- margem interna de 16 px (14 px recolhido, para centralizar o ícone de 44 px);
+- itens de 44 px de altura, 4 px entre eles, ícone de 20 px e 12 px entre o ícone e o texto;
+- nome do grupo (estilo `label`) com 8 px acima do primeiro item;
+- 24 px, no mínimo, entre o grupo "Dia a dia" e o rodapé, e uma linha divisória (`border`) acima de Categorias e regras e Ajustes;
+- cabeçalho de 72 px, sem borda abaixo; só o item ativo tem fundo (`secondary`), e o resto do menu fica sem fundo e sem borda.
+
+**Topo de cada tela:** altura de 56 px (72 px a partir de 1024 px, alinhado com o cabeçalho do menu), botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**.
 
 **Breakpoints** (os do Tailwind): `sm` 640, `md` 768, `lg` 1024, `xl` 1280.
 
@@ -274,14 +303,14 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 
 | Parte | Celular (< 768 px) | Tablet (768 a 1023 px) | Computador (≥ 1024 px) |
 |---|---|---|---|
-| Navegação | Menu que abre por cima, pelo botão no topo | Menu que abre por cima, pelo botão no topo | Menu lateral fixo de 240 px |
+| Navegação | Menu que abre por cima, pelo botão no topo | Menu que abre por cima, pelo botão no topo | Menu lateral fixo, retrátil (264 px ou 72 px) |
 | Margem lateral | 16 px | 24 px | 32 px |
 | Início | 1 coluna | 2 colunas | Grade de 12 colunas, até 1200 px |
 | Lista de transações | Item em 2 linhas (descrição em cima; categoria e conta embaixo) | Igual ao celular, com mais espaço | Linha única com colunas: data, descrição, categoria, conta, valor |
 | Formulários e detalhes | `Sheet` vindo de baixo, em tela quase cheia | `Sheet` lateral | `Dialog` centralizado |
 | Filtros | Botão "Filtros" que abre um `Sheet` | Linha de filtros acima da lista | Linha de filtros acima da lista |
 | Gráficos | Largura do card; menos marcações no eixo (meses abreviados: "jun.") | Largura do card | Largura do card |
-| Saldo (`display`) | 32 px | 32 px | 40 px |
+| Saldo (`display`) | 36 px | 36 px | 48 px |
 
 - **Texto longo** (descrição de transação, nome de conta) é cortado com reticências na lista e aparece inteiro no detalhe. Valores em dinheiro **nunca** são cortados: se não couberem, o rótulo ao lado é que encolhe.
 - **Gráficos** usam um container responsivo (`ResponsiveContainer` do Recharts) e altura fixa por faixa de tela, nunca altura proporcional à largura.
@@ -316,9 +345,9 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 
 | Componente | Base shadcn/ui | Notas |
 |---|---|---|
-| Botão | `Button` | Variantes: primária, secundária (mint), contorno, fantasma, destrutiva. Área de toque mínima de 44 px |
+| Botão | `Button` | Variantes: primária, secundária (mint), contorno, fantasma, destrutiva. Altura padrão de 44 px, `radius-md`, fonte 600. Botões só com ícone (menu, ocultar valores) são redondos (`full`) |
 | Card de saldo | `Card` | Valor em `display`, variação, gráfico pequeno, botão de ocultar valores |
-| Card de resumo | `Card` | Rótulo `body-sm` em `muted-foreground`, valor em `title-2` |
+| Card de resumo | `Card` | Título no estilo `label` com ícone em `primary`; valor em `value-lg` |
 | Item de transação | — | Bolinha com ícone da categoria; descrição; "categoria · conta" em `muted-foreground`; valor à direita com `tabular-nums`; parcela ("3/10") como badge; transação manual com o badge "Manual"; possível duplicata com o badge de aviso |
 | Cabeçalho de dia | — | "Hoje", "Ontem", "seg., 3 de nov." e o total do dia à direita |
 | Barra de orçamento | `Progress` | Trilho, preenchimento na cor do status, ícone e texto do status |
@@ -338,6 +367,7 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Notificação rápida | `Sonner` (toast) | "Sincronização concluída: 12 transações novas" |
 | Carregando | `Skeleton` | No formato do conteúdo que vai aparecer, não um spinner |
 | Abas | `Tabs` | Alternar mês, tipo de gráfico |
+| Controle segmentado | `Button` (`role="radio"`) | Pílula com borda; a opção escolhida fica em `secondary` com ícone de check (nunca só a cor). Usado na escolha de tema em Ajustes |
 | Menu | `Sidebar` (abaixo de 1024 px, no modo que abre por cima) | Grupos de áreas, item ativo, rodapé com Categorias e regras e Ajustes |
 
 ### Ocultar valores
@@ -396,7 +426,7 @@ Erros aparecem embaixo do campo, em `destructive`, em linguagem simples ("Inform
   - barras com topo arredondado de 4 px e base reta;
   - 2 px de espaço entre barras vizinhas;
   - área com preenchimento suave (cor da série a 15%, sumindo para 0%).
-- **Eixos e grade discretos:** grade horizontal fina (`#E6EAE3` no claro, `#26352D` no escuro); rótulos em `caption` e `muted-foreground`.
+- **Eixos e grade discretos:** grade horizontal fina (`#E8ECE8` no claro, `#27272B` no escuro); rótulos em `caption` e `muted-foreground`.
 - **Texto nunca na cor da série.** Valores e rótulos usam `foreground` ou `muted-foreground`. A cor fica só na marca (linha, barra, ponto da legenda).
 - **Legenda** sempre que houver 2 ou mais séries. Rótulos diretos só onde ajudam (o último ponto, o maior valor), nunca um número em cada ponto.
 - **Tooltip** ao tocar ou passar o mouse: data e valores formatados em R$. A área de toque é maior que a marca.
@@ -430,129 +460,138 @@ Toda a interface é em **português do Brasil**, com termos financeiros corretos
 
 ## Tokens em CSS
 
-Formato do shadcn/ui com Tailwind v4. Na Fase 0, isto vai para `frontend/src/styles/globals.css`.
+Formato do shadcn/ui com Tailwind v4. É a cópia exata de `frontend/src/styles/globals.css`; um teste (`frontend/test/design-tokens.test.ts`) lê esse arquivo e confere os contrastes desta página.
 
 ```css
-@import "tailwindcss";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/manrope";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.75rem;
+  --radius: 1.25rem;
 
-  --background: #F5F6F1;
-  --foreground: #202923;
-  --card: #FFFFFF;
-  --card-foreground: #202923;
-  --popover: #FFFFFF;
-  --popover-foreground: #202923;
-  --primary: #286B50;
-  --primary-foreground: #FFFFFF;
-  --secondary: #DDE9DF;
-  --secondary-foreground: #173D32;
-  --muted: #ECEEE7;
-  --muted-foreground: #5C665F;
-  --accent: #DDE9DF;
-  --accent-foreground: #173D32;
-  --destructive: #B4372E;
-  --destructive-foreground: #FFFFFF;
-  --border: #E2E5DD;
-  --input: #889189;
-  --ring: #286B50;
+  --background: #f7f8f7;
+  --foreground: #141c17;
+  --card: #ffffff;
+  --card-foreground: #141c17;
+  --popover: #ffffff;
+  --popover-foreground: #141c17;
+  --primary: #027a48;
+  --primary-foreground: #ffffff;
+  --secondary: #e7f6ec;
+  --secondary-foreground: #05603a;
+  --muted: #eef1ee;
+  --muted-foreground: #5a655e;
+  --accent: #edf7f1;
+  --accent-foreground: #05603a;
+  --destructive: #b4372e;
+  --destructive-foreground: #ffffff;
+  --border: #e3e8e4;
+  --input: #848f88;
+  --ring: #027a48;
 
-  --positive: #286B50;
-  --warning: #8A5A00;
-  --warning-surface: #FBF1DC;
-  --status-ok: #286B50;
-  --status-warning: #BC8019;
-  --status-critical: #B4372E;
-  --track: #E6EAE3;
+  --positive: #027a48;
+  --warning: #8a5a00;
+  --warning-surface: #fbf1dc;
+  --status-ok: #027a48;
+  --status-warning: #bc8019;
+  --status-critical: #b4372e;
+  --track: #e8ece8;
 
-  --chart-1: #05773B;
-  --chart-2: #DC6DA2;
-  --chart-3: #5E6B10;
-  --chart-4: #4C94EC;
+  --chart-1: #05773b;
+  --chart-2: #dc6da2;
+  --chart-3: #5e6b10;
+  --chart-4: #4c94ec;
   --chart-5: #916508;
-  --chart-6: #A083EA;
-  --chart-7: #A63C0C;
-  --chart-8: #04A19B;
-  --chart-other: #8A938C;
-  --chart-grid: #E6EAE3;
+  --chart-6: #a083ea;
+  --chart-7: #a63c0c;
+  --chart-8: #04a19b;
+  --chart-other: #8a938c;
+  --chart-grid: #e8ece8;
 
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #202923;
-  --sidebar-primary: #286B50;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #DDE9DF;
-  --sidebar-accent-foreground: #173D32;
-  --sidebar-border: #E2E5DD;
-  --sidebar-ring: #286B50;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #141c17;
+  --sidebar-primary: #027a48;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #edf7f1;
+  --sidebar-accent-foreground: #05603a;
+  --sidebar-border: #e3e8e4;
+  --sidebar-ring: #027a48;
 
-  --elevation-card: 0 1px 2px rgb(23 61 50 / 0.06);
-  --elevation-overlay: 0 8px 24px rgb(23 61 50 / 0.10);
+  --logo-ribbon-deep: #0e7a47;
+  --logo-ribbon: #2fa866;
+  --logo-ribbon-light: #5fcb86;
+
+  --elevation-card: 0 1px 2px rgb(20 28 23 / 0.06);
+  --elevation-overlay: 0 8px 24px rgb(20 28 23 / 0.1);
 }
 
 .dark {
-  --background: #111915;
-  --foreground: #E8EEE9;
-  --card: #18241E;
-  --card-foreground: #E8EEE9;
-  --popover: #1C2B24;
-  --popover-foreground: #E8EEE9;
-  --primary: #7DB894;
-  --primary-foreground: #0F1F17;
-  --secondary: #243A30;
-  --secondary-foreground: #DDE9DF;
-  --muted: #1F2D26;
-  --muted-foreground: #9DAEA4;
-  --accent: #243A30;
-  --accent-foreground: #DDE9DF;
-  --destructive: #E5776C;
-  --destructive-foreground: #1B0F0D;
-  --border: #2A3B33;
-  --input: #5D7266;
-  --ring: #7DB894;
+  --background: #0a0a0b;
+  --foreground: #ededef;
+  --card: #121214;
+  --card-foreground: #ededef;
+  --popover: #18181b;
+  --popover-foreground: #ededef;
+  --primary: #32d583;
+  --primary-foreground: #04150c;
+  --secondary: #222226;
+  --secondary-foreground: #ededef;
+  --muted: #1b1b1f;
+  --muted-foreground: #a1a1aa;
+  --accent: #1b1b1f;
+  --accent-foreground: #ededef;
+  --destructive: #e5776c;
+  --destructive-foreground: #1b0f0d;
+  --border: #27272b;
+  --input: #6b6b73;
+  --ring: #32d583;
 
-  --positive: #7DB894;
-  --warning: #E3B04B;
-  --warning-surface: #2E2716;
-  --status-ok: #7DB894;
-  --status-warning: #E3B04B;
-  --status-critical: #E5776C;
-  --track: #26352D;
+  --positive: #32d583;
+  --warning: #e3b04b;
+  --warning-surface: #2e2716;
+  --status-ok: #32d583;
+  --status-warning: #e3b04b;
+  --status-critical: #e5776c;
+  --track: #27272b;
 
-  --chart-1: #137D41;
-  --chart-2: #D16B9B;
-  --chart-3: #6E7E01;
-  --chart-4: #2D6FBE;
+  --chart-1: #137d41;
+  --chart-2: #d16b9b;
+  --chart-3: #6e7e01;
+  --chart-4: #2d6fbe;
   --chart-5: #916508;
-  --chart-6: #997FDE;
-  --chart-7: #AC502E;
-  --chart-8: #04A19B;
-  --chart-other: #7E8E85;
-  --chart-grid: #26352D;
+  --chart-6: #997fde;
+  --chart-7: #ac502e;
+  --chart-8: #04a19b;
+  --chart-other: #7e8e85;
+  --chart-grid: #27272b;
 
-  --sidebar: #141F1A;
-  --sidebar-foreground: #E8EEE9;
-  --sidebar-primary: #7DB894;
-  --sidebar-primary-foreground: #0F1F17;
-  --sidebar-accent: #243A30;
-  --sidebar-accent-foreground: #DDE9DF;
-  --sidebar-border: #2A3B33;
-  --sidebar-ring: #7DB894;
+  --sidebar: #0e0e10;
+  --sidebar-foreground: #ededef;
+  --sidebar-primary: #32d583;
+  --sidebar-primary-foreground: #04150c;
+  --sidebar-accent: #1b1b1f;
+  --sidebar-accent-foreground: #ededef;
+  --sidebar-border: #27272b;
+  --sidebar-ring: #32d583;
+
+  --logo-ribbon-deep: #17894f;
+  --logo-ribbon: #3fb873;
+  --logo-ribbon-light: #a6ebb4;
 
   --elevation-card: none;
   --elevation-overlay: none;
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", system-ui, sans-serif;
-  --font-display: "Manrope Variable", "Inter Variable", system-ui, sans-serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Manrope Variable', 'Inter Variable', system-ui, sans-serif;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
@@ -604,8 +643,60 @@ Formato do shadcn/ui com Tailwind v4. Na Fase 0, isto vai para `frontend/src/sty
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-logo-ribbon-deep: var(--logo-ribbon-deep);
+  --color-logo-ribbon: var(--logo-ribbon);
+  --color-logo-ribbon-light: var(--logo-ribbon-light);
+
   --shadow-card: var(--elevation-card);
   --shadow-overlay: var(--elevation-overlay);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}
+
+/* Estilos de texto de destaque do Design System (seção Tipografia). */
+@utility type-label {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+@utility type-display {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+
+  @media (min-width: 1024px) {
+    font-size: 3rem;
+    line-height: 3.5rem;
+  }
+}
+
+@utility type-value-lg {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 ```
 

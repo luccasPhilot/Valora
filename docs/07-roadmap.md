@@ -17,7 +17,7 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 - [x] Criar conta no [Meu Pluggy](https://meu.pluggy.ai) e conectar todos os bancos (até 5).
 - [x] Criar conta no [dashboard do Pluggy](https://dashboard.pluggy.ai), criar a aplicação e ativar o conector MeuPluggy ([passo a passo](02-open-finance.md#passo-a-passo-de-configuração)).
-- [ ] Guardar o Client ID e o Client Secret num gerenciador de senhas. Nunca no repositório.
+- [X] Guardar o Client ID e o Client Secret num gerenciador de senhas. Nunca no repositório.
 
 ### Projeto
 
@@ -44,6 +44,7 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 - [x] Layout base responsivo: menu lateral que abre pelo botão de menu no celular e no tablet e fica fixo no computador, áreas seguras do celular ([regras](06-design-system.md#responsividade)).
 - [x] Funções de formatação (moeda, sinal, datas pt-BR, fuso `America/Sao_Paulo`) com testes.
 - [x] Componentes base com os estados: carregando, vazio, erro.
+- [x] Identidade visual atualizada: verde vivo nos detalhes, tema escuro quase preto, cantos maiores, rótulos e números de destaque.
 
 **Pronto quando:**
 - o banco sobe com `docker compose -f infra/compose.dev.yml up -d`, e o backend e o frontend sobem com `npm run dev`, cada um na sua pasta;

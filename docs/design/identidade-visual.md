@@ -29,16 +29,17 @@ Quero um design minimalista, amigável e sofisticado, sem exageros visuais.
 
 O verde deve ser a principal identidade da marca.
 
-Paleta inicial sugerida:
+Paleta atual (os valores exatos e o contraste de cada par estão no [Design System](../06-design-system.md#paleta-da-marca)):
 
-- Forest Green: #173D32
-- Primary Green: #286B50
-- Sage Green: #75A98A
-- Mint: #DDE9DF
-- Off-white: #F5F6F1
-- Charcoal: #202923
+- Forest Green: #05603A
+- Primary Green: #027A48
+- Bright Green: #32D583
+- Mint: #E7F6EC
+- Off-white: #F7F8F7
+- Charcoal: #141C17
+- Near-black: #0A0A0B
 
-Essas cores são referências iniciais. Você pode propor pequenos ajustes para melhorar contraste, acessibilidade e consistência.
+O verde tem vários tons e fica nos detalhes: ação, item ativo, foco e valores positivos. A paleta inicial deste guia era Forest Green #173D32, Primary Green #286B50, Sage Green #75A98A, Mint #DDE9DF, Off-white #F5F6F1 e Charcoal #202923. Ela foi atualizada na change `refresh-visual-identity` para um verde mais vivo e um tema escuro quase preto, com o contraste recalculado.
 
 ### Tema claro (Light Mode)
 
@@ -50,11 +51,9 @@ Essas cores são referências iniciais. Você pode propor pequenos ajustes para 
 
 ### Tema escuro (Dark Mode)
 
-- Fundo em tons muito escuros de verde ou grafite.
-- Cards em tons intermediários de verde floresta.
-- Verde mais claro para ações e elementos de destaque.
+- Fundo quase preto e neutro (#0A0A0B), com cards um degrau mais claros. Todas as superfícies são cinzas sem tom de verde.
+- Verde claro e vivo (#32D583) para ações e elementos de destaque, só nos detalhes. O verde não pinta as superfícies grandes.
 - Textos claros, com contraste adequado.
-- Evitar preto puro como cor predominante.
 
 Os dois temas precisam compartilhar a mesma identidade visual e oferecer uma experiência igualmente bem trabalhada.
 
@@ -63,8 +62,8 @@ Os dois temas precisam compartilhar a mesma identidade visual e oferecer uma exp
 Quero explorar:
 
 - Layouts limpos e bem organizados.
-- Bordas arredondadas de maneira moderada.
-- Tipografia moderna, como Inter, Geist ou Manrope.
+- Bordas bem arredondadas (cards com 20 px, painéis com 24 px, botões com 16 px, chips em pílula).
+- Tipografia moderna, como Inter, Geist ou Manrope, com números grandes em destaque e rótulos pequenos em caixa-alta com ícone.
 - Ícones consistentes, preferencialmente Lucide.
 - Gráficos minimalistas e fáceis de interpretar.
 - Microinterações sutis.
@@ -73,10 +72,10 @@ Quero explorar:
 - Componentes reutilizáveis.
 
 Evite:
-- Gradientes exagerados.
-- Glassmorphism em excesso.
+- Gradientes.
+- Glassmorphism (desfoque de fundo).
 - Sombras muito fortes.
-- Cores extremamente saturadas.
+- Verde saturado em superfícies grandes (ele fica nos detalhes).
 - Muitos elementos competindo pela atenção.
 - Cards dentro de cards sem necessidade.
 - Aparência genérica de dashboard administrativo.

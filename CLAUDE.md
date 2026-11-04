@@ -104,7 +104,7 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
 - **Siga o [Design System](docs/06-design-system.md)** e carregue as [skills de design](#front-end-skills-de-design) antes de mexer em tela. Use os tokens (`bg-card`, `text-muted-foreground`...), **nunca hex direto** em componente.
 - **A aplicação tem que ser responsiva** ([regras](docs/06-design-system.md#responsividade)):
   - funciona de 320 px até monitores largos, sem rolagem horizontal da página;
-  - celular primeiro: abaixo de 1024 px o menu lateral abre por cima, pelo botão de menu no topo; a partir de 1024 px fica fixo. Não existe barra inferior;
+  - celular primeiro: abaixo de 1024 px o menu lateral abre por cima, pelo botão de menu no topo; a partir de 1024 px fica fixo e pode ser recolhido (264 px aberto, 72 px só com ícones). Não existe barra inferior;
   - toda tela nova é conferida em 320, 390, 768, 1024 e 1440 px, nos dois temas.
 - **Valores:**
   - receita em `positive` com `+`;
