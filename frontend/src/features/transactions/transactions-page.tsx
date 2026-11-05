@@ -2,6 +2,7 @@ import { ArrowLeftRight, SearchX } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { NoticeRegion } from '@/components/notice-region';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
@@ -10,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useNotice } from '@/hooks/use-notice';
 import type { Category } from '@/lib/api/categories';
-import type { Transaction } from '@/lib/api/transactions';
+import type { DuplicateResolution, Transaction } from '@/lib/api/transactions';
 import { todayInSaoPaulo } from '@/lib/dates';
 
 import { useCategories } from '../categories/categories-queries';
+import { DuplicatesBanner } from './duplicates-banner';
+import { useNewTransaction } from './new-transaction/new-transaction-provider';
 import { TransactionDetail } from './transaction-detail';
 import {
   hasFiltersBesidesPeriod,
@@ -25,12 +28,24 @@ import {
 } from './transaction-filters';
 import { type FiltersBarHandle, TransactionFiltersBar } from './transaction-filters-bar';
 import { TransactionList } from './transaction-list';
-import { useAccountOptions, useChangeCategory, useTransactionList } from './transactions-queries';
+import {
+  useAccountOptions,
+  useChangeCategory,
+  useDeleteTransaction,
+  useDuplicateCount,
+  useResolveDuplicate,
+  useTransactionList,
+} from './transactions-queries';
 
 // Faixas do Design System: celular < 768, tablet < 1024, computador a partir de 1024.
 const PHONE_QUERY = '(max-width: 767px)';
 const TABLET_QUERY = '(max-width: 1023px)';
 const EMPTY_CATEGORIES: readonly Category[] = [];
+
+const DUPLICATE_RESOLUTION_MESSAGES: Readonly<Record<DuplicateResolution, string>> = {
+  merge: 'Transações juntadas. Ficou a do banco, com a sua categoria.',
+  keep_both: 'Mantivemos as duas transações.',
+};
 
 export function Component() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,8 +55,13 @@ export function Component() {
   const categoriesQuery = useCategories();
   const accountsQuery = useAccountOptions();
   const changeCategory = useChangeCategory();
+  const deleteTransaction = useDeleteTransaction();
+  const resolveDuplicate = useResolveDuplicate();
+  const duplicateCount = useDuplicateCount(today);
+  const { openNewTransaction } = useNewTransaction();
   const { notice, showNotice } = useNotice();
   const [openTransactionId, setOpenTransactionId] = useState<string | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const filtersBarRef = useRef<FiltersBarHandle>(null);
   const isPhone = useMediaQuery(PHONE_QUERY);
   const isTablet = useMediaQuery(TABLET_QUERY);
@@ -78,8 +98,47 @@ export function Component() {
     );
   }
 
+  function editTransaction(transaction: Transaction) {
+    setOpenTransactionId(null);
+    openNewTransaction({ transaction });
+  }
+
+  function confirmDelete(transaction: Transaction) {
+    deleteTransaction.mutate(transaction, {
+      onSuccess: () => {
+        setTransactionToDelete(null);
+        setOpenTransactionId(null);
+        showNotice({ tone: 'success', message: 'Transação excluída.' });
+      },
+    });
+  }
+
+  function resolve(transaction: Transaction, action: DuplicateResolution) {
+    resolveDuplicate.mutate(
+      { transaction, action },
+      {
+        onSuccess: () => {
+          setOpenTransactionId(null);
+          showNotice({ tone: 'success', message: DUPLICATE_RESOLUTION_MESSAGES[action] });
+        },
+        onError: () =>
+          showNotice({ tone: 'error', message: 'Não foi possível resolver. Tente de novo.' }),
+      },
+    );
+  }
+
+  function reviewDuplicates() {
+    // Sem data inicial nem final a lista cairia no mês atual; "até hoje" cobre qualquer período.
+    updateFilters({ ...NO_FILTERS, period: 'custom', to: today, possibleDuplicate: true });
+  }
+
+  const pendingDuplicates = duplicateCount.data ?? 0;
+
   return (
     <div className="space-y-4">
+      {pendingDuplicates > 0 && !filters.possibleDuplicate ? (
+        <DuplicatesBanner count={pendingDuplicates} onReview={reviewDuplicates} />
+      ) : null}
       <TransactionFiltersBar
         handleRef={filtersBarRef}
         filters={filters}
@@ -100,8 +159,25 @@ export function Component() {
       <TransactionDetail
         transaction={openTransaction}
         categories={categories}
+        isResolvingDuplicate={resolveDuplicate.isPending}
         onClose={() => setOpenTransactionId(null)}
         onPickCategory={pickCategory}
+        onEdit={editTransaction}
+        onDelete={(transaction) => {
+          deleteTransaction.reset();
+          setTransactionToDelete(transaction);
+        }}
+        onResolveDuplicate={resolve}
+      />
+      <ConfirmDialog
+        open={transactionToDelete !== null}
+        onOpenChange={(isOpen) => (isOpen ? undefined : setTransactionToDelete(null))}
+        title="Excluir esta transação?"
+        description="Ela some da lista e dos totais. Não dá para desfazer."
+        confirmLabel="Excluir"
+        isPending={deleteTransaction.isPending}
+        errorMessage={deleteTransaction.isError ? 'Não foi possível excluir. Tente de novo.' : null}
+        onConfirm={() => transactionToDelete && confirmDelete(transactionToDelete)}
       />
       <NoticeRegion notice={notice} />
     </div>

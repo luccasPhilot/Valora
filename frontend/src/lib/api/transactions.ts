@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { apiGet, apiPatch } from '../api-client';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../api-client';
 
 // Contrato de /transactions e /accounts. O backend é o dono; estes schemas são a cópia do front
 // (docs/03-arquitetura.md, "Contrato da API").
@@ -36,6 +36,8 @@ const transactionSchema = z.object({
   }),
   installmentNumber: z.int().nullable(),
   installmentTotal: z.int().nullable(),
+  /** Na transação do banco marcada como possível duplicata: o id da manual parecida. */
+  possibleDuplicateOfId: z.uuid().nullable(),
 });
 
 const transactionPageSchema = z.object({
@@ -52,6 +54,7 @@ const accountOptionSchema = z.object({
 const accountOptionListSchema = z.object({ items: z.array(accountOptionSchema) });
 
 export type Transaction = z.infer<typeof transactionSchema>;
+export type TransactionSource = Transaction['source'];
 export type TransactionPage = z.infer<typeof transactionPageSchema>;
 export type AccountOption = z.infer<typeof accountOptionSchema>;
 
@@ -61,8 +64,22 @@ export interface TransactionQuery {
   readonly categoryId?: string;
   readonly type?: TransactionType;
   readonly accountId?: string;
+  readonly source?: TransactionSource;
+  readonly possibleDuplicate?: boolean;
   readonly search?: string;
 }
+
+/** Lançamento manual: o valor é sempre positivo, e o sinal vem do tipo (a API grava a despesa negativa). */
+export interface TransactionInput {
+  readonly type: 'income' | 'expense';
+  readonly amountCents: number;
+  readonly description: string;
+  readonly date: string;
+  readonly categoryId: string;
+  readonly accountId: string;
+}
+
+export type DuplicateResolution = 'merge' | 'keep_both';
 
 export interface CategoryChange {
   readonly categoryId: string;
@@ -72,7 +89,7 @@ export interface CategoryChange {
 function toQueryString(query: TransactionQuery, page: number): string {
   const params = new URLSearchParams({ page: String(page), limit: String(TRANSACTION_PAGE_SIZE) });
   for (const [name, value] of Object.entries(query)) {
-    if (value) params.set(name, value);
+    if (value) params.set(name, String(value));
   }
   return params.toString();
 }
@@ -86,6 +103,52 @@ export function changeTransactionCategory(
   change: CategoryChange,
 ): Promise<Transaction> {
   return apiPatch(`/transactions/${transactionId}`, change, transactionSchema);
+}
+
+export function getTransaction(transactionId: string): Promise<Transaction> {
+  return apiGet(`/transactions/${transactionId}`, transactionSchema);
+}
+
+export function createTransaction(input: TransactionInput): Promise<Transaction> {
+  return apiPost('/transactions', input, transactionSchema);
+}
+
+/** Só vale para transação manual: na do banco, a API recusa tudo além da categoria. */
+export function updateTransaction(
+  transactionId: string,
+  input: TransactionInput,
+): Promise<Transaction> {
+  return apiPatch(`/transactions/${transactionId}`, input, transactionSchema);
+}
+
+export function deleteTransaction(transactionId: string): Promise<void> {
+  return apiDelete(`/transactions/${transactionId}`);
+}
+
+export function resolveDuplicate(
+  transactionId: string,
+  action: DuplicateResolution,
+): Promise<Transaction> {
+  return apiPost(
+    `/transactions/${transactionId}/duplicate-resolution`,
+    { action },
+    transactionSchema,
+  );
+}
+
+/**
+ * Quantas possíveis duplicatas esperam conferência, em qualquer período: a lista sem data inicial
+ * nem final cairia no mês atual, então vai só a data final (hoje), que desliga esse padrão.
+ */
+export async function countPossibleDuplicates(today: string): Promise<number> {
+  const params = new URLSearchParams({
+    page: '1',
+    limit: '1',
+    possibleDuplicate: 'true',
+    to: today,
+  });
+  const page = await apiGet(`/transactions?${params.toString()}`, transactionPageSchema);
+  return page.pagination.total;
 }
 
 // Sem paginação: são poucas contas (no máximo 5 bancos).

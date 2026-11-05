@@ -83,12 +83,12 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 Regras em [produto](01-produto.md#lançamento-manual).
 
-- [ ] Conta "Dinheiro" (tipo `cash`) criada na primeira execução, sem saldo e fora do saldo total.
-- [ ] Formulário de receita e despesa: tipo, valor, descrição, data, categoria, conta (Dinheiro ou uma conta conectada).
-- [ ] Editar e excluir transação manual. Transação do Open Finance continua só com a categoria editável.
-- [ ] Sincronização nunca altera nem apaga transação manual (com teste).
-- [ ] Aviso de possível duplicata (mesma conta, mesmo valor, até 3 dias), com as ações "Juntar" e "São diferentes" (com testes).
-- [ ] Filtro de origem na lista de transações: Open Finance, manual.
+- [x] Conta "Dinheiro" (tipo `cash`) criada na primeira execução, sem saldo e fora do saldo total.
+- [x] Formulário de receita e despesa: tipo, valor, descrição, data, categoria, conta (Dinheiro ou uma conta conectada).
+- [x] Editar e excluir transação manual. Transação do Open Finance continua só com a categoria editável.
+- [x] Sincronização nunca altera nem apaga transação manual (com teste).
+- [x] Aviso de possível duplicata (mesma conta, mesmo valor, até 3 dias), com as ações "Juntar" e "São diferentes" (com testes).
+- [x] Filtro de origem na lista de transações: Open Finance, manual.
 
 ### Telas
 

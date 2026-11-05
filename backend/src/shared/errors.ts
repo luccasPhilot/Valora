@@ -35,6 +35,16 @@ export class ConflictError extends AppError {
   readonly statusCode = 409;
 }
 
+export class OpenFinanceReadOnlyError extends AppError {
+  readonly code = 'OPEN_FINANCE_READ_ONLY';
+  readonly statusCode = 409;
+}
+
+export class NoDuplicatePendingError extends AppError {
+  readonly code = 'NO_DUPLICATE_PENDING';
+  readonly statusCode = 409;
+}
+
 export class SyncInProgressError extends AppError {
   readonly code = 'SYNC_IN_PROGRESS';
   readonly statusCode = 409;

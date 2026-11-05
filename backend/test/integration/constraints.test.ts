@@ -43,14 +43,24 @@ describe('database constraints', () => {
       expect(stored).toHaveLength(2);
     });
 
-    it('should_accept_many_cash_accounts_when_the_pluggy_account_id_is_null', async () => {
+    it('should_accept_many_accounts_when_the_pluggy_account_id_is_null', async () => {
       // Arrange
-      const cashAccount = { type: 'cash', name: 'Dinheiro', pluggyAccountId: null };
+      const unlinkedAccount = { type: 'checking', name: 'Sem id do Pluggy', pluggyAccountId: null };
       // Act
-      await db.insert(accounts).values([cashAccount, cashAccount]);
+      await db.insert(accounts).values([unlinkedAccount, unlinkedAccount]);
       const stored = await db.select().from(accounts);
       // Assert
       expect(stored).toHaveLength(2);
+    });
+
+    it('should_reject_a_second_cash_account_when_one_already_exists', async () => {
+      // Arrange
+      const cashAccount = { type: 'cash', name: 'Dinheiro' };
+      await db.insert(accounts).values(cashAccount);
+      // Act
+      const secondInsert = db.insert(accounts).values(cashAccount);
+      // Assert
+      await expect(secondInsert).rejects.toMatchObject({ cause: { code: UNIQUE_VIOLATION } });
     });
   });
 

@@ -11,7 +11,7 @@ Proposta inicial para o PostgreSQL. Os nomes de tabelas e colunas ficam em ingl�
 - **JSON bruto:** toda linha que vem do Pluggy guarda a resposta original em `raw jsonb`.
 - **Categoria:** a categoria do Pluggy (`pluggy_category`) e a categoria efetiva (`category_id` + `category_source`) ficam separadas. A sincronização **nunca** altera uma transação com `category_source = 'user'`.
 - **Transações manuais** (`source = 'manual'`) não têm id do Pluggy nem `raw`, têm sempre `category_source = 'user'` e a sincronização nunca as altera nem apaga. Regras de uso em [produto](01-produto.md#lançamento-manual).
-- **Conta "Dinheiro"** (`type = 'cash'`): criada na primeira execução, sem conexão e sem saldo. Recebe só transações manuais e fica fora do saldo total. As transações dela entram normalmente em receitas, despesas, orçamentos e relatórios.
+- **Conta "Dinheiro"** (`type = 'cash'`): criada na primeira execução, sem conexão e sem saldo. Recebe só transações manuais e fica fora do saldo total. As transações dela entram normalmente em receitas, despesas, orçamentos e relatórios. O banco garante que só existe uma: o índice único parcial `accounts_single_cash_key` (`type` onde `type = 'cash'`) recusa uma segunda conta `cash`, e o seed (a cada subida da API, depois das migrations) procura pelo tipo, não pelo nome, então o nome pode mudar no futuro.
 - **Transferências internas não são receita nem despesa.** Pagamento da fatura do cartão e transferência entre contas suas aparecem duas vezes (sai de uma conta, entra em outra ou quita a fatura). Elas usam uma categoria do tipo `transfer` e ficam fora de todos os totais.
 
 ## Convenções do Pluggy
@@ -98,6 +98,8 @@ Se um banco novo mandar algo diferente, rode `npm run fixtures:record` em `backe
 | `created_at`, `updated_at` | timestamptz | |
 
 Índices: (`account_id`, `date`), (`category_id`, `date`), (`date`), (`source`).
+
+`possible_duplicate_of_id` usa `ON DELETE SET NULL`: se a transação manual apontada for excluída, a marcação some sozinha. A detecção marca só transações do Open Finance **recém-inseridas** e cada manual só pode ser apontada por uma transação.
 
 Transação manual tem sempre `status = 'posted'`.
 

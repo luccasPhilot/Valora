@@ -2,6 +2,8 @@ import type { Db, DbExecutor } from '../../db/database.js';
 import { createCategorizerRepositories } from '../categories/categories.module.js';
 import { Categorizer } from '../categories/categorizer.js';
 import { ConnectionsRepository } from '../connections/connections.repository.js';
+import { DuplicateDetector } from '../transactions/duplicate-detector.js';
+import { PossibleDuplicatesRepository } from '../transactions/possible-duplicates.repository.js';
 import { AccountsRepository } from './accounts.repository.js';
 import { InvestmentsRepository } from './investments.repository.js';
 import { TransactionsRepository } from './transactions.repository.js';
@@ -12,6 +14,7 @@ export interface ItemRepositories {
   readonly investments: InvestmentsRepository;
   readonly connections: ConnectionsRepository;
   readonly categorizer: Categorizer;
+  readonly duplicateDetector: DuplicateDetector;
 }
 
 function createItemRepositories(executor: DbExecutor): ItemRepositories {
@@ -21,6 +24,7 @@ function createItemRepositories(executor: DbExecutor): ItemRepositories {
     investments: new InvestmentsRepository(executor),
     connections: new ConnectionsRepository(executor),
     categorizer: new Categorizer(createCategorizerRepositories(executor)),
+    duplicateDetector: new DuplicateDetector(new PossibleDuplicatesRepository(executor)),
   };
 }
 

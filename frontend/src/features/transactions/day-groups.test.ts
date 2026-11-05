@@ -17,6 +17,7 @@ function transaction(overrides: Partial<Transaction>): Transaction {
     account: { id: crypto.randomUUID(), name: 'Conta', type: 'checking' },
     installmentNumber: null,
     installmentTotal: null,
+    possibleDuplicateOfId: null,
     ...overrides,
   };
 }

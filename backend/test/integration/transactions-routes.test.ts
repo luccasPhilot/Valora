@@ -250,6 +250,7 @@ describe('GET /api/v1/transactions', () => {
       account: { id: accountId, name: 'Conta corrente', type: 'checking' },
       installmentNumber: 3,
       installmentTotal: 10,
+      possibleDuplicateOfId: null,
     });
   });
 });

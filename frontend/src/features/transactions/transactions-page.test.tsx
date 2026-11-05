@@ -1,145 +1,22 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { HideValuesProvider } from '@/components/hide-values-provider';
-
 import { stubViewport } from '../../../test/helpers/match-media';
-import { Component as TransactionsPage } from './transactions-page';
-
-const GROCERIES = {
-  id: '11111111-1111-4111-8111-111111111111',
-  name: 'Mercado',
-  kind: 'expense',
-  icon: 'shopping-cart',
-  isArchived: false,
-};
-const TRANSPORT = {
-  id: '22222222-2222-4222-8222-222222222222',
-  name: 'Transporte',
-  kind: 'expense',
-  icon: 'car',
-  isArchived: false,
-};
-const SALARY = {
-  id: '33333333-3333-4333-8333-333333333333',
-  name: 'Salário',
-  kind: 'income',
-  icon: 'wallet',
-  isArchived: false,
-};
-const CARD_PAYMENT = {
-  id: '44444444-4444-4444-8444-444444444444',
-  name: 'Pagamento de fatura',
-  kind: 'transfer',
-  icon: 'credit-card',
-  isArchived: false,
-};
-const CATEGORIES = [GROCERIES, TRANSPORT, SALARY, CARD_PAYMENT];
-
-const ACCOUNT = {
-  id: '55555555-5555-4555-8555-555555555555',
-  name: 'Conta corrente',
-  type: 'checking',
-  institutionName: 'Nubank',
-};
-
-const PAGE_LIMIT = 50;
-
-function fixture(id: number, overrides: Record<string, unknown>) {
-  return {
-    id: `00000000-0000-4000-8000-${String(id).padStart(12, '0')}`,
-    date: '2026-11-04',
-    description: `Transação ${id}`,
-    amountCents: -1000,
-    status: 'posted',
-    source: 'open_finance',
-    category: null,
-    categorySource: 'none',
-    account: { id: ACCOUNT.id, name: ACCOUNT.name, type: ACCOUNT.type },
-    installmentNumber: null,
-    installmentTotal: null,
-    ...overrides,
-  };
-}
-
-const PHARMACY = fixture(1, {
-  description: 'FARMÁCIA SÃO JOÃO',
-  amountCents: -8990,
-  category: { id: GROCERIES.id, name: 'Mercado', icon: 'shopping-cart', kind: 'expense' },
-  categorySource: 'rule',
-});
-const SALARY_ENTRY = fixture(2, {
-  description: 'SALÁRIO ACME',
-  amountCents: 500000,
-  category: { id: SALARY.id, name: 'Salário', icon: 'wallet', kind: 'income' },
-  categorySource: 'pluggy',
-});
-const CARD_BILL = fixture(3, {
-  description: 'PAGAMENTO FATURA',
-  amountCents: -150000,
-  category: {
-    id: CARD_PAYMENT.id,
-    name: 'Pagamento de fatura',
-    icon: 'credit-card',
-    kind: 'transfer',
-  },
-  categorySource: 'pluggy',
-});
-const YESTERDAY_PURCHASE = fixture(4, {
-  date: '2026-11-03',
-  description: 'TV 3/10',
-  amountCents: -35000,
-  installmentNumber: 3,
-  installmentTotal: 10,
-});
-const DEFAULT_PAGE = [PHARMACY, SALARY_ENTRY, CARD_BILL, YESTERDAY_PURCHASE];
-
-type Handler = (url: URL, init: RequestInit) => Response | Promise<Response>;
-
-function pageResponse(items: unknown[], page = 1, total = items.length): Response {
-  return Response.json({ items, pagination: { page, limit: PAGE_LIMIT, total } });
-}
-
-/** Responde pelo método e caminho (sem query); a query é lida pelo próprio handler. */
-function stubApi(overrides: Record<string, Handler> = {}) {
-  const routes: Record<string, Handler> = {
-    'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
-    'GET /api/v1/accounts': () => Response.json({ items: [ACCOUNT] }),
-    'GET /api/v1/transactions': () => pageResponse(DEFAULT_PAGE),
-    ...overrides,
-  };
-  const fetchMock = vi.fn((input: RequestInfo | URL, init: RequestInit = {}) => {
-    const url = new URL(String(input), 'http://localhost');
-    const handler = routes[`${init.method ?? 'GET'} ${url.pathname}`];
-    if (!handler) return Promise.reject(new Error(`Teste: rota sem resposta ${url.pathname}`));
-    return Promise.resolve(handler(url, init));
-  });
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
-}
-
-function listQueries(fetchMock: ReturnType<typeof stubApi>): URLSearchParams[] {
-  return fetchMock.mock.calls
-    .map(([input, init]) => ({ url: new URL(String(input), 'http://localhost'), init }))
-    .filter(({ url, init }) => url.pathname === '/api/v1/transactions' && init?.method === 'GET')
-    .map(({ url }) => url.searchParams);
-}
-
-function renderPage(path = '/transacoes') {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <HideValuesProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <TransactionsPage />
-        </MemoryRouter>
-      </HideValuesProvider>
-    </QueryClientProvider>,
-  );
-}
+import {
+  CARD_BILL,
+  CATEGORIES,
+  DEFAULT_PAGE,
+  fixture,
+  listQueries,
+  pageResponse,
+  PHARMACY,
+  renderPage,
+  SALARY_ENTRY,
+  stubApi,
+  TRANSPORT,
+  YESTERDAY_PURCHASE,
+} from './test-support';
 
 function rowOf(description: string): HTMLElement {
   const row = screen.getByText(description).closest('button');

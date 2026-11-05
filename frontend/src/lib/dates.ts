@@ -37,3 +37,13 @@ export function lastDayOfMonth(isoDate: string, monthOffset = 0): string {
   // Dia 0 do mês seguinte é o último dia deste mês.
   return new Date(monthStart(isoDate, monthOffset + 1).getTime() - 1).toISOString().slice(0, 10);
 }
+
+/** Dia de calendário `days` dias antes de `isoDate`, sem efeito de fuso ou horário de verão. */
+export function subtractDays(isoDate: string, days: number): string {
+  if (!ISO_DATE_PATTERN.test(isoDate)) {
+    throw new RangeError(`Data inválida, esperado AAAA-MM-DD: ${isoDate}`);
+  }
+  const instant = new Date(`${isoDate}T00:00:00Z`);
+  instant.setUTCDate(instant.getUTCDate() - days);
+  return instant.toISOString().slice(0, 10);
+}

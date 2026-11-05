@@ -18,6 +18,7 @@ import type { Category } from '@/lib/api/categories';
 import {
   type AccountOption,
   TRANSACTION_TYPES,
+  type TransactionSource,
   type TransactionType,
 } from '@/lib/api/transactions';
 
@@ -29,6 +30,8 @@ import {
   PERIOD_LABELS,
   PERIOD_PRESETS,
   type PeriodPreset,
+  SOURCE_LABELS,
+  TRANSACTION_SOURCES,
   type TransactionFilters,
   TYPE_LABELS,
 } from './transaction-filters';
@@ -55,6 +58,10 @@ function findPeriod(value: string): PeriodPreset | undefined {
 
 function findType(value: string): TransactionType | null {
   return TRANSACTION_TYPES.find((type) => type === value) ?? null;
+}
+
+function findSource(value: string): TransactionSource | null {
+  return TRANSACTION_SOURCES.find((source) => source === value) ?? null;
 }
 
 interface FieldProps {
@@ -202,6 +209,22 @@ function FilterFields({ filters, categories, accounts, onChange, periodRef }: Fi
           </Select>
         )}
       </Field>
+      <Field label="Origem">
+        {(fieldId) => (
+          <Select
+            id={fieldId}
+            value={filters.source ?? ''}
+            onChange={(event) => onChange({ ...filters, source: findSource(event.target.value) })}
+          >
+            <option value="">Todas as origens</option>
+            {TRANSACTION_SOURCES.map((source) => (
+              <option key={source} value={source}>
+                {SOURCE_LABELS[source]}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
       <Field label="Conta">
         {(fieldId) => (
           <Select
@@ -294,7 +317,7 @@ export function TransactionFiltersBar({
             open={isPanelOpen}
             onOpenChange={setIsPanelOpen}
             title="Filtros"
-            description="Período, categoria, tipo e conta."
+            description="Período, categoria, tipo, origem e conta."
           >
             <div className="space-y-4">
               <FilterFields {...fieldProps} />
@@ -305,7 +328,7 @@ export function TransactionFiltersBar({
           </FormPanel>
         </div>
       ) : (
-        <div className="grid items-end gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(12rem,1.4fr)_repeat(4,minmax(0,1fr))]">
+        <div className="grid items-end gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(12rem,1.4fr)_repeat(5,minmax(0,1fr))]">
           <SearchField
             value={filters.search}
             onCommit={(search) => onChange({ ...filters, search })}

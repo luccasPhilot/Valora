@@ -25,18 +25,38 @@ interface FormPanelProps {
   onOpenChange: (isOpen: boolean) => void;
   title: string;
   description: string;
+  /** Seletor CSS do campo que recebe o foco ao abrir; sem ele vale o padrão do Radix (primeiro item). */
+  focusOnOpenSelector?: string;
   children: ReactNode;
 }
 
+function focusFieldOnOpen(selector: string | undefined) {
+  if (!selector) return undefined;
+  return (event: Event) => {
+    const field = (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>(selector);
+    if (!field) return;
+    event.preventDefault();
+    field.focus();
+  };
+}
+
 /** Formulário em painel: `Sheet` de baixo no celular, `Sheet` lateral no tablet, `Dialog` no computador. */
-export function FormPanel({ open, onOpenChange, title, description, children }: FormPanelProps) {
+export function FormPanel({
+  open,
+  onOpenChange,
+  title,
+  description,
+  focusOnOpenSelector,
+  children,
+}: FormPanelProps) {
   const isPhone = useMediaQuery(PHONE_QUERY);
   const isTablet = useMediaQuery(TABLET_QUERY);
+  const onOpenAutoFocus = focusFieldOnOpen(focusOnOpenSelector);
 
   if (!isTablet) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={onOpenAutoFocus}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
@@ -49,6 +69,7 @@ export function FormPanel({ open, onOpenChange, title, description, children }: 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        onOpenAutoFocus={onOpenAutoFocus}
         side={isPhone ? 'bottom' : 'right'}
         className={
           isPhone

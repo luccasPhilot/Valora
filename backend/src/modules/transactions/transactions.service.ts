@@ -9,6 +9,7 @@ import type {
   PageRequest,
   TransactionPage,
   TransactionRecord,
+  TransactionSource,
   TransactionsQueryRepository,
 } from './transactions.repository.js';
 
@@ -18,6 +19,8 @@ export interface TransactionListFilters {
   readonly categoryId?: string;
   readonly type?: TransactionType;
   readonly accountId?: string;
+  readonly source?: TransactionSource;
+  readonly possibleDuplicate?: boolean;
   readonly search?: string;
 }
 

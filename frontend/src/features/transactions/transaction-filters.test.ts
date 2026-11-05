@@ -89,6 +89,8 @@ describe('parseFilters and serializeFilters', () => {
       categoryId: TRANSPORT.id,
       type: 'expense' as const,
       accountId: CHECKING.id,
+      source: 'manual' as const,
+      possibleDuplicate: true,
       search: 'farmácia',
     };
     // Act
@@ -121,6 +123,43 @@ describe('toTransactionQuery', () => {
       accountId: undefined,
       search: 'salário',
     });
+  });
+});
+
+describe('filtros de origem e de duplicatas', () => {
+  it('should_send_source_and_possible_duplicate_when_building_the_query', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, source: 'manual' as const, possibleDuplicate: true };
+    // Act
+    const query = toTransactionQuery(filters, TODAY);
+    // Assert
+    expect(query).toMatchObject({ source: 'manual', possibleDuplicate: true });
+  });
+
+  it('should_not_send_possible_duplicate_when_the_filter_is_off', () => {
+    // Arrange
+    // Act
+    const query = toTransactionQuery(NO_FILTERS, TODAY);
+    // Assert
+    expect(query.possibleDuplicate).toBeUndefined();
+  });
+
+  it('should_ignore_an_unknown_source_when_the_url_is_edited_by_hand', () => {
+    // Arrange
+    const params = new URLSearchParams('source=aliens');
+    // Act
+    const filters = parseFilters(params);
+    // Assert
+    expect(filters.source).toBeNull();
+  });
+
+  it('should_name_the_source_and_the_duplicates_in_chips_when_they_are_active', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, source: 'manual' as const, possibleDuplicate: true };
+    // Act
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
+    // Assert
+    expect(chips.map((chip) => chip.label)).toEqual(['Lançamento manual', 'Possíveis duplicatas']);
   });
 });
 

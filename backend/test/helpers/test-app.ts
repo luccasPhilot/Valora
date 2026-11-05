@@ -3,6 +3,7 @@ import type { DestinationStream } from 'pino';
 
 import { buildApp } from '../../src/app.js';
 import { createDatabase, type Database } from '../../src/db/database.js';
+import type { AccountsService } from '../../src/modules/accounts/accounts.service.js';
 import type { CategorySeedService } from '../../src/modules/categories/category-seed.service.js';
 import type { PluggySdk } from '../../src/modules/sync/pluggy-sdk.js';
 import type { SyncService } from '../../src/modules/sync/sync.service.js';
@@ -31,6 +32,7 @@ export interface TestApp {
   readonly logLines: LogLine[];
   readonly syncService: SyncService;
   readonly categorySeedService: CategorySeedService;
+  readonly accountsService: AccountsService;
 }
 
 export interface TestAppOptions {
@@ -49,12 +51,12 @@ export function buildTestApp(
       logLines.push(JSON.parse(message));
     },
   };
-  const { app, syncService, categorySeedService } = buildApp({
+  const { app, syncService, categorySeedService, accountsService } = buildApp({
     config: options.config ?? TEST_CONFIG,
     database,
     logStream,
     pluggySdk: options.pluggySdk ?? new FakePluggySdk(loadPluggyFixtures()),
     now: options.now,
   });
-  return { app, logLines, syncService, categorySeedService };
+  return { app, logLines, syncService, categorySeedService, accountsService };
 }

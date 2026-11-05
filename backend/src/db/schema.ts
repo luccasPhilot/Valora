@@ -73,6 +73,10 @@ export const accounts = pgTable(
     uniqueIndex('accounts_pluggy_account_id_key')
       .on(table.pluggyAccountId)
       .where(sql`${table.pluggyAccountId} is not null`),
+    // A conta "Dinheiro" é única: o banco recusa uma segunda conta `cash`.
+    uniqueIndex('accounts_single_cash_key')
+      .on(table.type)
+      .where(sql`${table.type} = 'cash'`),
     check(
       'accounts_type_check',
       sql`${table.type} in ('checking', 'savings', 'credit_card', 'cash')`,

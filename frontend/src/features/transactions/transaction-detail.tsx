@@ -1,13 +1,16 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { FormPanel } from '@/components/form-panel';
 import { Money } from '@/components/money';
+import { Button } from '@/components/ui/button';
 import type { Category } from '@/lib/api/categories';
-import type { Transaction } from '@/lib/api/transactions';
+import type { DuplicateResolution, Transaction } from '@/lib/api/transactions';
 import { formatDate } from '@/lib/format';
 
 import { CategoryBadgeIcon } from '../categories/category-icons';
 import { CategoryPicker } from './category-picker';
+import { DuplicateComparison } from './duplicate-comparison';
 import { amountColorClass } from './transaction-item';
 
 const STATUS_LABELS: Readonly<Record<Transaction['status'], string>> = {
@@ -27,11 +30,19 @@ const CATEGORY_SOURCE_LABELS: Readonly<Record<Transaction['categorySource'], str
   none: 'Sem categoria',
 };
 
-interface TransactionDetailProps {
+interface DetailActions {
+  onPickCategory: (transaction: Transaction, category: Category, applyAlways: boolean) => void;
+  /** Editar e excluir só aparecem em transação manual. */
+  onEdit: (transaction: Transaction) => void;
+  onDelete: (transaction: Transaction) => void;
+  onResolveDuplicate: (transaction: Transaction, action: DuplicateResolution) => void;
+}
+
+interface TransactionDetailProps extends DetailActions {
   transaction: Transaction | undefined;
   categories: readonly Category[];
+  isResolvingDuplicate: boolean;
   onClose: () => void;
-  onPickCategory: (transaction: Transaction, category: Category, applyAlways: boolean) => void;
 }
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
@@ -48,13 +59,40 @@ function installmentText(transaction: Transaction): string | null {
   return `${transaction.installmentNumber} de ${transaction.installmentTotal}`;
 }
 
+function ManualActions({
+  transaction,
+  onEdit,
+  onDelete,
+}: { transaction: Transaction } & Pick<DetailActions, 'onEdit' | 'onDelete'>) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <Button variant="outline" onClick={() => onEdit(transaction)}>
+        <Pencil aria-hidden="true" />
+        Editar
+      </Button>
+      <Button variant="outline" onClick={() => onDelete(transaction)}>
+        <Trash2 aria-hidden="true" />
+        Excluir
+      </Button>
+    </div>
+  );
+}
+
+interface DetailBodyProps extends DetailActions {
+  transaction: Transaction;
+  categories: readonly Category[];
+  isResolvingDuplicate: boolean;
+}
+
 function DetailBody({
   transaction,
   categories,
+  isResolvingDuplicate,
   onPickCategory,
-}: Required<Pick<TransactionDetailProps, 'categories' | 'onPickCategory'>> & {
-  transaction: Transaction;
-}) {
+  onEdit,
+  onDelete,
+  onResolveDuplicate,
+}: DetailBodyProps) {
   const installment = installmentText(transaction);
   return (
     <div className="space-y-5">
@@ -63,6 +101,13 @@ function DetailBody({
       >
         <Money cents={transaction.amountCents} isSigned />
       </p>
+      {transaction.possibleDuplicateOfId ? (
+        <DuplicateComparison
+          bankTransaction={transaction}
+          isResolving={isResolvingDuplicate}
+          onResolve={(action) => onResolveDuplicate(transaction, action)}
+        />
+      ) : null}
       <dl className="divide-y divide-border">
         <DetailRow label="Descrição">{transaction.description}</DetailRow>
         <DetailRow label="Data">{formatDate(transaction.date)}</DetailRow>
@@ -80,6 +125,9 @@ function DetailBody({
           {CATEGORY_SOURCE_LABELS[transaction.categorySource]}
         </DetailRow>
       </dl>
+      {transaction.source === 'manual' ? (
+        <ManualActions transaction={transaction} onEdit={onEdit} onDelete={onDelete} />
+      ) : null}
       <section aria-labelledby="change-category-title" className="space-y-3">
         <h3 id="change-category-title" className="font-display text-lg font-semibold">
           Trocar categoria
@@ -96,12 +144,7 @@ function DetailBody({
 }
 
 /** Detalhe em painel: de baixo no celular, lateral no tablet, diálogo no computador. */
-export function TransactionDetail({
-  transaction,
-  categories,
-  onClose,
-  onPickCategory,
-}: TransactionDetailProps) {
+export function TransactionDetail({ transaction, onClose, ...bodyProps }: TransactionDetailProps) {
   return (
     <FormPanel
       open={transaction !== undefined}
@@ -110,12 +153,7 @@ export function TransactionDetail({
       description="Veja os dados completos e troque a categoria."
     >
       {transaction ? (
-        <DetailBody
-          key={transaction.id}
-          transaction={transaction}
-          categories={categories}
-          onPickCategory={onPickCategory}
-        />
+        <DetailBody key={transaction.id} transaction={transaction} {...bodyProps} />
       ) : null}
     </FormPanel>
   );

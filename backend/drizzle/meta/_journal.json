@@ -15,6 +15,13 @@
       "when": 1793877461381,
       "tag": "0001_add_category_seed_key",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793882629930,
+      "tag": "0002_add_single_cash_account_index",
+      "breakpoints": true
     }
   ]
 }

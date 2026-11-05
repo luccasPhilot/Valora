@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, ilike, lte, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, ilike, isNotNull, lte, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
@@ -7,6 +7,7 @@ import { type TransactionType, transactionTypeCondition } from './transaction-ty
 
 const transactionStatusSchema = z.enum(['pending', 'posted']);
 const transactionSourceSchema = z.enum(['open_finance', 'manual']);
+export type TransactionSource = z.infer<typeof transactionSourceSchema>;
 const categorySourceSchema = z.enum(['user', 'rule', 'pluggy', 'none']);
 const categoryKindSchema = z.enum(['expense', 'income', 'transfer']);
 const accountTypeSchema = z.enum(['checking', 'savings', 'credit_card', 'cash']);
@@ -17,6 +18,9 @@ export interface TransactionFilters {
   readonly categoryId?: string;
   readonly type?: TransactionType;
   readonly accountId?: string;
+  readonly source?: TransactionSource;
+  /** `true` lista só as transações do banco com possível duplicata pendente. */
+  readonly possibleDuplicate?: boolean;
   /** Já normalizado (sem acento, maiúsculo), como `description_normalized`. */
   readonly normalizedSearch?: string;
 }
@@ -47,6 +51,8 @@ export interface TransactionRecord {
   };
   readonly installmentNumber: number | null;
   readonly installmentTotal: number | null;
+  /** Na transação do banco marcada como possível duplicata: o id da manual parecida. */
+  readonly possibleDuplicateOfId: string | null;
 }
 
 export interface TransactionPage {
@@ -66,6 +72,7 @@ function selectTransactions(db: DbExecutor) {
       categorySource: transactions.categorySource,
       installmentNumber: transactions.installmentNumber,
       installmentTotal: transactions.installmentTotal,
+      possibleDuplicateOfId: transactions.possibleDuplicateOfId,
       categoryId: categories.id,
       categoryName: categories.name,
       categoryIcon: categories.icon,
@@ -106,6 +113,7 @@ function toRecord(row: TransactionRow): TransactionRecord {
     },
     installmentNumber: row.installmentNumber,
     installmentTotal: row.installmentTotal,
+    possibleDuplicateOfId: row.possibleDuplicateOfId,
   };
 }
 
@@ -121,6 +129,8 @@ function buildConditions(filters: TransactionFilters): SQL[] {
   if (filters.categoryId) conditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.accountId) conditions.push(eq(transactions.accountId, filters.accountId));
   if (filters.type) conditions.push(transactionTypeCondition(filters.type));
+  if (filters.source) conditions.push(eq(transactions.source, filters.source));
+  if (filters.possibleDuplicate) conditions.push(isNotNull(transactions.possibleDuplicateOfId));
   if (filters.normalizedSearch) {
     const pattern = `%${escapeLikePattern(filters.normalizedSearch)}%`;
     conditions.push(ilike(transactions.descriptionNormalized, pattern));

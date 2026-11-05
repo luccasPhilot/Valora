@@ -140,19 +140,19 @@ Tudo sob `/api/v1`.
 | `POST /sync-runs` | Disparar uma sincronização agora |
 | `GET /sync-runs/latest` | Resultado da última sincronização |
 | `GET /accounts` | Contas e cartões com saldo. Na change `transactions-screen` devolve só `id`, `name`, `type` e `institutionName`, para o filtro de contas; a tela de Contas acrescenta os saldos |
-| `GET /transactions` | Lista paginada (`limit` padrão 50, máximo 100; sem `from` e `to`, o mês atual); filtros `from`, `to`, `categoryId`, `type`, `accountId`, `source`, `search`, `page`, `limit`. `type` é decidido pela categoria (`transfer`) e, fora dela, pelo sinal do valor. O filtro `source` entra com `manual-transactions` |
+| `GET /transactions` | Lista paginada (`limit` padrão 50, máximo 100; sem `from` e `to`, o mês atual); filtros `from`, `to`, `categoryId`, `type`, `accountId`, `source` (`open_finance` ou `manual`), `possibleDuplicate=true` (só as do banco com possível duplicata pendente), `search`, `page`, `limit`. `type` é decidido pela categoria (`transfer`) e, fora dela, pelo sinal do valor. Cada item traz `source` e `possibleDuplicateOfId` |
 | `GET /transactions/:id` | Detalhe de uma transação |
-| `POST /transactions` | Lançamento manual (receita ou despesa) |
-| `PATCH /transactions/:id` | Trocar a categoria (opcionalmente criando uma regra). Numa transação manual, também muda valor, data, descrição e conta |
-| `DELETE /transactions/:id` | Excluir uma transação manual. Transação do Open Finance não pode ser excluída |
-| `POST /transactions/:id/duplicate-resolution` | Resolver possível duplicata: `merge` (juntar) ou `keep_both` (são diferentes) |
+| `POST /transactions` | Lançamento manual (receita ou despesa): `type`, `amountCents` (inteiro positivo), `description` (1 a 120 caracteres), `date` (até hoje), `categoryId` (ativa e do mesmo tipo) e `accountId`. Responde 201 |
+| `PATCH /transactions/:id` | Trocar a categoria (opcionalmente criando uma regra com `applyAlways`). Numa transação manual, também muda `type`, `amountCents`, `description`, `date` e `accountId` (edição parcial, com as mesmas validações do lançamento). Na do Open Finance, qualquer campo além de `categoryId` e `applyAlways` responde 409 `OPEN_FINANCE_READ_ONLY` |
+| `DELETE /transactions/:id` | Excluir uma transação manual (204). Na do Open Finance, 409 `OPEN_FINANCE_READ_ONLY` |
+| `POST /transactions/:id/duplicate-resolution` | Chamado na transação do Open Finance, com `action`: `merge` (juntar: a do banco recebe a categoria da manual com `category_source = 'user'`, a manual é apagada, tudo numa transação do banco de dados) ou `keep_both` (são diferentes: só limpa a marcação). Sem duplicata pendente, 409 `NO_DUPLICATE_PENDING` |
 | `GET/POST/PUT /categories`, `POST /categories/:id/archive` | Categorias. Não existe exclusão: a categoria é arquivada e continua nas transações antigas |
 | `GET/POST/PUT/DELETE /category-rules` | Regras de categorização |
 | `GET /pluggy-category-mappings`, `PUT /pluggy-category-mappings/:pluggyCategory` | Mapeamento das categorias do Pluggy para as do Valora (`categoryId` nulo limpa) |
 | `GET /budgets?month=` / `PUT /budgets/:categoryId?month=` | Orçamento do mês |
 | `GET /dashboard?month=` | Números agregados da tela inicial |
 
-Os erros seguem o formato `{ "error": { "code", "message", "details" } }`.
+Os erros seguem o formato `{ "error": { "code", "message", "details" } }`. Os códigos novos do lançamento manual são `OPEN_FINANCE_READ_ONLY` (409) e `NO_DUPLICATE_PENDING` (409); erros de campo (`date`, `categoryId`, `amountCents`...) vêm como `VALIDATION_ERROR` com o nome do campo em `details`.
 
 ## Sincronização
 

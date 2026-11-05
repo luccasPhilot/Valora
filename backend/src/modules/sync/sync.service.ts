@@ -291,6 +291,8 @@ async function saveTransactions(
   for (const [pluggyAccountId, transactions] of data.transactionsByAccount) {
     const accountId = idOf(accountIds, pluggyAccountId);
     const counts = await repositories.transactions.upsertMany(accountId, transactions);
+    // Só as linhas novas: atualizar uma transação que já existia nunca gera aviso de duplicata.
+    await repositories.duplicateDetector.markPossibleDuplicates(counts.insertedIds);
     const returnedIds = transactions.map((transaction) => transaction.pluggyTransactionId);
     const removed = await repositories.transactions.deleteMissingPending(
       accountId,

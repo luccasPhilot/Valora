@@ -21,7 +21,7 @@ import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
 import type { SyncService } from './modules/sync/sync.service.js';
-import { createTransactionsService } from './modules/transactions/transactions.module.js';
+import { createTransactionsModule } from './modules/transactions/transactions.module.js';
 import { transactionsRoutes } from './modules/transactions/transactions.routes.js';
 import type { Config } from './shared/config.js';
 import { registerErrorHandlers } from './shared/error-handler.js';
@@ -45,6 +45,8 @@ export interface ValoraApp {
   readonly syncService: SyncService;
   /** Exposto para o server.ts criar as categorias padrão depois das migrations. */
   readonly categorySeedService: CategorySeedService;
+  /** Exposto para o server.ts criar a conta "Dinheiro" depois das migrations. */
+  readonly accountsService: AccountsService;
 }
 
 export function buildApp(deps: AppDependencies): ValoraApp {
@@ -60,14 +62,14 @@ export function buildApp(deps: AppDependencies): ValoraApp {
   app.addHook('onClose', async () => {
     await deps.database.pool.end();
   });
-  const { syncService, categorySeedService } = registerModules(app, deps);
-  return { app, syncService, categorySeedService };
+  const { syncService, categorySeedService, accountsService } = registerModules(app, deps);
+  return { app, syncService, categorySeedService, accountsService };
 }
 
 function registerModules(
   app: FastifyInstance,
   deps: AppDependencies,
-): Pick<ValoraApp, 'syncService' | 'categorySeedService'> {
+): Pick<ValoraApp, 'syncService' | 'categorySeedService' | 'accountsService'> {
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
   const connectionsService = new ConnectionsService(new ConnectionsRepository(database.db));
@@ -88,14 +90,13 @@ function registerModules(
   app.register(pluggyCategoryMappingsRoutes(categories.pluggyCategoryMappingsService), {
     prefix: API_PREFIX,
   });
-  app.register(accountsRoutes(new AccountsService(new AccountsRepository(database.db))), {
-    prefix: API_PREFIX,
-  });
-  const transactionsService = createTransactionsService({
+  const accountsService = new AccountsService(new AccountsRepository(database.db));
+  app.register(accountsRoutes(accountsService), { prefix: API_PREFIX });
+  const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,
     now,
   });
-  app.register(transactionsRoutes(transactionsService), { prefix: API_PREFIX });
-  return { syncService, categorySeedService: categories.categorySeedService };
+  app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
+  return { syncService, categorySeedService: categories.categorySeedService, accountsService };
 }

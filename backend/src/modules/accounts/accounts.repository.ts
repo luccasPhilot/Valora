@@ -19,6 +19,20 @@ export interface AccountOption {
 export class AccountsRepository {
   constructor(private readonly db: DbExecutor) {}
 
+  /** Cria a conta "Dinheiro" se ainda não existe. O índice único parcial garante uma só. */
+  async insertCashAccountIfMissing(name: string): Promise<boolean> {
+    const rows = await this.db
+      .insert(accounts)
+      .values({ type: 'cash', name })
+      .onConflictDoNothing()
+      .returning({ id: accounts.id });
+    return rows.length > 0;
+  }
+
+  async exists(accountId: string): Promise<boolean> {
+    return (await this.db.$count(accounts, eq(accounts.id, accountId))) > 0;
+  }
+
   async findAllOptions(): Promise<AccountOption[]> {
     const rows = await this.db
       .select({

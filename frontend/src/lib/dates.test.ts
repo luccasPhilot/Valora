@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { firstDayOfMonth, lastDayOfMonth, todayInSaoPaulo, toSaoPauloDate } from './dates';
+import {
+  firstDayOfMonth,
+  lastDayOfMonth,
+  subtractDays,
+  todayInSaoPaulo,
+  toSaoPauloDate,
+} from './dates';
 
 describe('toSaoPauloDate', () => {
   it('should_return_previous_day_when_utc_is_after_midnight_but_sao_paulo_is_not', () => {
@@ -76,5 +82,28 @@ describe('lastDayOfMonth', () => {
     const lastDay = lastDayOfMonth(scenario.isoDate, scenario.offset);
     // Assert
     expect(lastDay).toBe(scenario.expected);
+  });
+});
+
+describe('subtractDays', () => {
+  it.each([
+    { isoDate: '2026-11-04', days: 1, expected: '2026-11-03' },
+    { isoDate: '2026-11-01', days: 1, expected: '2026-10-31' },
+    { isoDate: '2026-03-01', days: 1, expected: '2026-02-28' },
+    { isoDate: '2026-11-04', days: 0, expected: '2026-11-04' },
+  ])('should_return_$expected_when_subtracting_$days_from_$isoDate', (scenario) => {
+    // Arrange
+    // Act
+    const date = subtractDays(scenario.isoDate, scenario.days);
+    // Assert
+    expect(date).toBe(scenario.expected);
+  });
+
+  it('should_throw_when_the_date_is_not_iso', () => {
+    // Arrange
+    // Act
+    const call = () => subtractDays('04/11/2026', 1);
+    // Assert
+    expect(call).toThrow(RangeError);
   });
 });

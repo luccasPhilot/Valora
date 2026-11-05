@@ -4,6 +4,7 @@ import { formatDate } from '@/lib/format';
 
 import { CategoryBadgeIcon } from '../categories/category-icons';
 import { isTransfer } from './day-groups';
+import { hasOriginBadges, OriginBadges } from './transaction-badges';
 
 const TRANSFER_ICON = 'arrow-left-right';
 const UNCATEGORIZED_ICON = 'tag';
@@ -71,6 +72,11 @@ function StackedRow({ transaction, onOpen }: Omit<TransactionItemProps, 'layout'
         <span className="block truncate text-sm text-muted-foreground">
           {categoryLabel(transaction)} · {transaction.account.name}
         </span>
+        {hasOriginBadges(transaction) ? (
+          <span className="mt-1 flex flex-wrap items-center gap-1">
+            <OriginBadges transaction={transaction} />
+          </span>
+        ) : null}
       </span>
       <AmountText transaction={transaction} />
     </button>
@@ -95,6 +101,7 @@ function ColumnsRow({ transaction, onOpen }: Omit<TransactionItemProps, 'layout'
         <CategoryBadgeIcon name={iconName(transaction)} />
         <span className="truncate text-sm font-medium">{transaction.description}</span>
         <InstallmentBadge transaction={transaction} />
+        <OriginBadges transaction={transaction} />
       </span>
       <span className="truncate text-sm">{categoryLabel(transaction)}</span>
       <span className="truncate text-sm text-muted-foreground">{transaction.account.name}</span>

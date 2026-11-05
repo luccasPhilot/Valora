@@ -9,14 +9,26 @@ import {
 import type { Category } from '@/lib/api/categories';
 import {
   changeTransactionCategory,
+  countPossibleDuplicates,
+  createTransaction,
+  deleteTransaction,
+  type DuplicateResolution,
+  getTransaction,
   listAccounts,
   listTransactions,
+  resolveDuplicate,
   type Transaction,
+  type TransactionInput,
   type TransactionPage,
   type TransactionQuery,
+  updateTransaction,
 } from '@/lib/api/transactions';
 
 export const TRANSACTIONS_QUERY_KEY = ['transactions'] as const;
+// Fora de `TRANSACTIONS_QUERY_KEY` de propósito: as atualizações otimistas da lista trocam os dados
+// de toda consulta que começa por essa chave, e estas duas não têm o formato da lista paginada.
+const TRANSACTION_DETAIL_KEY = ['transaction-detail'] as const;
+const DUPLICATE_COUNT_KEY = ['possible-duplicate-count'] as const;
 const ACCOUNTS_QUERY_KEY = ['accounts'] as const;
 const CATEGORY_RULES_QUERY_KEY = ['category-rules'] as const;
 const FIRST_PAGE = 1;
@@ -100,5 +112,70 @@ export function useChangeCategory() {
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: CATEGORY_RULES_QUERY_KEY });
     },
+  });
+}
+
+/** Uma transação pelo id, por exemplo a manual que o banco pode ter repetido. */
+export function useTransaction(transactionId: string | null) {
+  return useQuery({
+    queryKey: [...TRANSACTION_DETAIL_KEY, transactionId],
+    queryFn: () => getTransaction(transactionId ?? ''),
+    enabled: transactionId !== null,
+  });
+}
+
+/** Quantas possíveis duplicatas esperam conferência, em qualquer período. */
+export function useDuplicateCount(today: string) {
+  return useQuery({
+    queryKey: [...DUPLICATE_COUNT_KEY, today],
+    queryFn: () => countPossibleDuplicates(today),
+  });
+}
+
+// Lançar, editar, excluir e resolver duplicatas mudam a lista, os detalhes abertos e a contagem.
+function useRefreshTransactions() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all(
+      [TRANSACTIONS_QUERY_KEY, TRANSACTION_DETAIL_KEY, DUPLICATE_COUNT_KEY].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
+}
+
+export interface TransactionSave {
+  /** Nulo lança uma transação nova; com id, edita a manual. */
+  readonly transactionId: string | null;
+  readonly input: TransactionInput;
+}
+
+export function useSaveTransaction() {
+  const refresh = useRefreshTransactions();
+  return useMutation({
+    mutationFn: ({ transactionId, input }: TransactionSave) =>
+      transactionId === null ? createTransaction(input) : updateTransaction(transactionId, input),
+    onSuccess: refresh,
+  });
+}
+
+export function useDeleteTransaction() {
+  const refresh = useRefreshTransactions();
+  return useMutation({
+    mutationFn: (transaction: Transaction) => deleteTransaction(transaction.id),
+    onSuccess: refresh,
+  });
+}
+
+export interface DuplicateResolutionRequest {
+  readonly transaction: Transaction;
+  readonly action: DuplicateResolution;
+}
+
+export function useResolveDuplicate() {
+  const refresh = useRefreshTransactions();
+  return useMutation({
+    mutationFn: ({ transaction, action }: DuplicateResolutionRequest) =>
+      resolveDuplicate(transaction.id, action),
+    onSuccess: refresh,
   });
 }

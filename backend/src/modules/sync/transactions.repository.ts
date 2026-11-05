@@ -10,6 +10,8 @@ const UPSERT_BATCH_SIZE = 500;
 export interface UpsertCounts {
   readonly inserted: number;
   readonly updated: number;
+  /** Ids internos só das linhas novas: é o que a detecção de duplicatas examina. */
+  readonly insertedIds: readonly string[];
 }
 
 // Só conta como "atualizada" a linha em que algum destes campos mudou.
@@ -38,16 +40,16 @@ export class TransactionsRepository {
     const uniqueTransactions = [
       ...new Map(syncedTransactions.map((tx) => [tx.pluggyTransactionId, tx])).values(),
     ];
-    let inserted = 0;
+    const insertedIds: string[] = [];
     let updated = 0;
     for (let start = 0; start < uniqueTransactions.length; start += UPSERT_BATCH_SIZE) {
       const batch = uniqueTransactions.slice(start, start + UPSERT_BATCH_SIZE);
       const rows = await this.upsertBatch(accountId, batch);
-      const insertedInBatch = rows.filter((row) => row.isInserted).length;
-      inserted += insertedInBatch;
-      updated += rows.length - insertedInBatch;
+      const insertedInBatch = rows.filter((row) => row.isInserted);
+      insertedIds.push(...insertedInBatch.map((row) => row.id));
+      updated += rows.length - insertedInBatch.length;
     }
-    return { inserted, updated };
+    return { inserted: insertedIds.length, updated, insertedIds };
   }
 
   /**
@@ -98,7 +100,7 @@ export class TransactionsRepository {
           setWhere: HAS_CHANGED,
         })
         // `xmax = 0` só na linha recém-inserida; na atualizada, xmax guarda a transação que a mudou.
-        .returning({ isInserted: sql<boolean>`(xmax = 0)` })
+        .returning({ id: transactions.id, isInserted: sql<boolean>`(xmax = 0)` })
     );
   }
 }

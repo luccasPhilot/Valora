@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "accounts_single_cash_key" ON "accounts" USING btree ("type") WHERE "accounts"."type" = 'cash';

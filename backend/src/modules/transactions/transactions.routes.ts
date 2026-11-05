@@ -1,13 +1,15 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
+import { centsSchema } from '../../shared/money.js';
 import { TRANSACTION_TYPES } from './transaction-type-filter.js';
+import type { TransactionsModule } from './transactions.module.js';
 import type { TransactionRecord } from './transactions.repository.js';
-import type { TransactionsService } from './transactions.service.js';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_SEARCH_LENGTH = 100;
+const MAX_DESCRIPTION_LENGTH = 120;
 
 const listQuerySchema = z
   .object({
@@ -16,6 +18,8 @@ const listQuerySchema = z
     categoryId: z.uuid().optional(),
     type: z.enum(TRANSACTION_TYPES).optional(),
     accountId: z.uuid().optional(),
+    source: z.enum(['open_finance', 'manual']).optional(),
+    possibleDuplicate: z.stringbool().optional(),
     search: z.string().trim().max(MAX_SEARCH_LENGTH).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
@@ -27,10 +31,35 @@ const listQuerySchema = z
 
 const transactionParamsSchema = z.object({ id: z.uuid() });
 
-const changeCategoryBodySchema = z.object({
-  categoryId: z.uuid(),
-  applyAlways: z.boolean().default(false),
-});
+// Mensagens em português: vão direto para o texto de erro embaixo de cada campo.
+const manualFieldsShape = {
+  type: z.enum(['income', 'expense']),
+  amountCents: centsSchema.positive({ error: 'O valor deve ser maior que zero' }),
+  description: z
+    .string()
+    .trim()
+    .min(1, { error: 'Informe uma descrição' })
+    .max(MAX_DESCRIPTION_LENGTH, { error: 'A descrição aceita até 120 caracteres' }),
+  date: z.iso.date({ error: 'Informe uma data válida' }),
+  categoryId: z.uuid({ error: 'Escolha uma categoria' }),
+  accountId: z.uuid({ error: 'Escolha uma conta' }),
+};
+
+const createBodySchema = z.object(manualFieldsShape);
+
+// Uma só rota para as duas origens: a regra "o banco só muda a categoria" fica no service.
+const updateBodySchema = z
+  .object({ ...manualFieldsShape, applyAlways: z.boolean() })
+  .partial()
+  .refine((body) => Object.values(body).some((value) => value !== undefined), {
+    message: 'Envie ao menos um campo para alterar',
+  })
+  .refine(({ applyAlways, categoryId }) => !applyAlways || categoryId !== undefined, {
+    message: 'Escolha a categoria para aplicar sempre',
+    path: ['categoryId'],
+  });
+
+const duplicateResolutionBodySchema = z.object({ action: z.enum(['merge', 'keep_both']) });
 
 const transactionResponseSchema = z.object({
   id: z.uuid(),
@@ -55,6 +84,7 @@ const transactionResponseSchema = z.object({
   }),
   installmentNumber: z.int().nullable(),
   installmentTotal: z.int().nullable(),
+  possibleDuplicateOfId: z.uuid().nullable(),
 });
 
 const transactionListResponseSchema = z.object({
@@ -78,10 +108,15 @@ function toTransactionResponse(
     account: transaction.account,
     installmentNumber: transaction.installmentNumber,
     installmentTotal: transaction.installmentTotal,
+    possibleDuplicateOfId: transaction.possibleDuplicateOfId,
   };
 }
 
-export function transactionsRoutes(service: TransactionsService): FastifyPluginAsyncZod {
+export function transactionsRoutes({
+  transactionsService,
+  writesService,
+  duplicatesService,
+}: TransactionsModule): FastifyPluginAsyncZod {
   return async (app) => {
     app.get(
       '/transactions',
@@ -90,7 +125,7 @@ export function transactionsRoutes(service: TransactionsService): FastifyPluginA
       },
       async (request) => {
         const { page, limit, ...filters } = request.query;
-        const result = await service.list(filters, { page, limit });
+        const result = await transactionsService.list(filters, { page, limit });
         return {
           items: result.items.map(toTransactionResponse),
           pagination: { page, limit, total: result.total },
@@ -103,7 +138,16 @@ export function transactionsRoutes(service: TransactionsService): FastifyPluginA
       {
         schema: { params: transactionParamsSchema, response: { 200: transactionResponseSchema } },
       },
-      async (request) => toTransactionResponse(await service.get(request.params.id)),
+      async (request) => toTransactionResponse(await transactionsService.get(request.params.id)),
+    );
+
+    app.post(
+      '/transactions',
+      { schema: { body: createBodySchema, response: { 201: transactionResponseSchema } } },
+      async (request, reply) => {
+        const created = await writesService.create(request.body);
+        return reply.status(201).send(toTransactionResponse(created));
+      },
     );
 
     app.patch(
@@ -111,12 +155,36 @@ export function transactionsRoutes(service: TransactionsService): FastifyPluginA
       {
         schema: {
           params: transactionParamsSchema,
-          body: changeCategoryBodySchema,
+          body: updateBodySchema,
           response: { 200: transactionResponseSchema },
         },
       },
       async (request) =>
-        toTransactionResponse(await service.changeCategory(request.params.id, request.body)),
+        toTransactionResponse(await writesService.update(request.params.id, request.body)),
+    );
+
+    app.delete(
+      '/transactions/:id',
+      { schema: { params: transactionParamsSchema } },
+      async (request, reply) => {
+        await writesService.remove(request.params.id);
+        return reply.status(204).send();
+      },
+    );
+
+    app.post(
+      '/transactions/:id/duplicate-resolution',
+      {
+        schema: {
+          params: transactionParamsSchema,
+          body: duplicateResolutionBodySchema,
+          response: { 200: transactionResponseSchema },
+        },
+      },
+      async (request) =>
+        toTransactionResponse(
+          await duplicatesService.resolve(request.params.id, request.body.action),
+        ),
     );
   };
 }
