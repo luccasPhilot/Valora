@@ -16,6 +16,13 @@ type AccountForTotals = Pick<
 
 const BALANCE_ACCOUNT_TYPES: readonly AccountRecord['type'][] = ['checking', 'savings'];
 
+/** Conta que entra no saldo total: corrente ou poupança, não oculta. */
+export function isIncludedInTotalBalance(
+  account: Pick<AccountRecord, 'type' | 'isHidden'>,
+): boolean {
+  return !account.isHidden && BALANCE_ACCOUNT_TYPES.includes(account.type);
+}
+
 function sumCents(values: readonly (number | null)[]): number {
   return values.reduce<number>((sum, cents) => sum + (cents ?? 0), 0);
 }
@@ -24,9 +31,7 @@ function sumCents(values: readonly (number | null)[]): number {
 export function calculateAccountTotals(accounts: readonly AccountForTotals[]): AccountTotals {
   const visibleAccounts = accounts.filter((account) => !account.isHidden);
   const creditCards = visibleAccounts.filter((account) => account.type === 'credit_card');
-  const balanceAccounts = visibleAccounts.filter((account) =>
-    BALANCE_ACCOUNT_TYPES.includes(account.type),
-  );
+  const balanceAccounts = visibleAccounts.filter(isIncludedInTotalBalance);
   return {
     totalBalanceCents: sumCents(balanceAccounts.map((account) => account.balanceCents)),
     openCreditCardBillsCents: sumCents(creditCards.map((account) => account.balanceCents)),

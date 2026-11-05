@@ -1,0 +1,69 @@
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
+
+import { centsSchema } from '../../shared/money.js';
+import { monthSchema } from '../../shared/month-schema.js';
+import { budgetItemSchema, toBudgetItemResponse } from '../budgets/budgets.routes.js';
+import {
+  toTransactionResponse,
+  transactionResponseSchema,
+} from '../transactions/transactions.routes.js';
+import type { DashboardService } from './dashboard.service.js';
+
+const querySchema = z.object({ month: monthSchema.optional() });
+
+const spendingItemSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('category'),
+    categoryId: z.uuid(),
+    name: z.string(),
+    icon: z.string(),
+    amountCents: centsSchema,
+    percent: z.int(),
+  }),
+  z.object({
+    kind: z.enum(['uncategorized', 'other']),
+    name: z.string(),
+    amountCents: centsSchema,
+    percent: z.int(),
+  }),
+]);
+
+const dashboardResponseSchema = z.object({
+  month: z.string(),
+  totalBalanceCents: centsSchema,
+  balanceEvolution: z.array(z.object({ date: z.iso.date(), balanceCents: centsSchema })),
+  balanceChange: z.object({ cents: centsSchema, percent: z.number().nullable() }).nullable(),
+  monthIncomeCents: centsSchema,
+  monthExpenseCents: centsSchema,
+  incomeVsExpense: z.array(
+    z.object({ month: z.string(), incomeCents: centsSchema, expenseCents: centsSchema }),
+  ),
+  spendingByCategory: z.array(spendingItemSchema),
+  budgetsNearLimit: z.array(budgetItemSchema),
+  latestTransactions: z.array(transactionResponseSchema),
+});
+
+export function dashboardRoutes(service: DashboardService): FastifyPluginAsyncZod {
+  return async (app) => {
+    app.get(
+      '/dashboard',
+      { schema: { querystring: querySchema, response: { 200: dashboardResponseSchema } } },
+      async (request) => {
+        const overview = await service.overview(request.query.month);
+        return {
+          month: overview.month.slice(0, 7),
+          totalBalanceCents: overview.totalBalanceCents,
+          balanceEvolution: [...overview.balanceEvolution],
+          balanceChange: overview.balanceChange,
+          monthIncomeCents: overview.monthIncomeCents,
+          monthExpenseCents: overview.monthExpenseCents,
+          incomeVsExpense: [...overview.incomeVsExpense],
+          spendingByCategory: [...overview.spendingByCategory],
+          budgetsNearLimit: overview.budgetsNearLimit.map(toBudgetItemResponse),
+          latestTransactions: overview.latestTransactions.map(toTransactionResponse),
+        };
+      },
+    );
+  };
+}

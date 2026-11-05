@@ -9,7 +9,7 @@ export const appRoutes: RouteObject[] = [
     element: <AppShell />,
     hydrateFallbackElement: <ScreenSkeleton />,
     children: [
-      { index: true, lazy: () => import('@/features/home/home-page') },
+      { index: true, lazy: () => import('@/features/dashboard/dashboard-page') },
       { path: 'transacoes', lazy: () => import('@/features/transactions/transactions-page') },
       { path: 'orcamentos', lazy: () => import('@/features/budgets/budgets-page') },
       { path: 'contas', lazy: () => import('@/features/accounts/accounts-page') },

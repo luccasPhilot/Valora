@@ -9,6 +9,7 @@ import {
   formatDayMonth,
   formatMoment,
   formatMonth,
+  formatMonthName,
   formatPercent,
   formatSignedCurrency,
 } from './format';
@@ -137,6 +138,17 @@ describe('formatDate', () => {
     const call = () => formatDate(invalidDate);
     // Assert
     expect(call).toThrow(RangeError);
+  });
+});
+
+describe('formatMonthName', () => {
+  it('should_abbreviate_the_month_when_a_year_month_is_given', () => {
+    // Arrange
+    const month = '2026-06';
+    // Act
+    const text = formatMonthName(month);
+    // Assert
+    expect(text).toBe('jun.');
   });
 });
 

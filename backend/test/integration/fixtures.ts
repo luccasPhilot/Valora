@@ -52,6 +52,19 @@ export async function insertCategory(db: Db): Promise<string> {
   return category.id;
 }
 
+export async function insertCategoryOfKind(
+  db: Db,
+  kind: 'expense' | 'income' | 'transfer',
+  name: string,
+): Promise<string> {
+  const [category] = await db
+    .insert(categories)
+    .values({ name, kind, icon: 'wallet' })
+    .returning({ id: categories.id });
+  if (!category) throw new Error('Fixture: categoria não foi criada');
+  return category.id;
+}
+
 type TransactionOverrides = Partial<typeof transactions.$inferInsert>;
 
 export function transactionValues(

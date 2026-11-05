@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { budgets, categories, transactions } from '../../src/db/schema.js';
 import { buildTestApp, type TestApp } from '../helpers/test-app.js';
-import { insertAccountWith, insertCategory, transactionValues } from './fixtures.js';
+import {
+  insertAccountWith,
+  insertCategory,
+  insertCategoryOfKind,
+  transactionValues,
+} from './fixtures.js';
 import { connectTestDatabase, truncateAllTables } from './test-database.js';
 
 const NOVEMBER = '2026-11';
@@ -23,15 +28,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await testApp.app.close();
 });
-
-async function insertCategoryOfKind(kind: 'income' | 'transfer', name: string): Promise<string> {
-  const [category] = await database.db
-    .insert(categories)
-    .values({ name, kind, icon: 'wallet' })
-    .returning({ id: categories.id });
-  if (!category) throw new Error('Fixture: categoria não foi criada');
-  return category.id;
-}
 
 async function insertLimit(categoryId: string, month: string, limitCents: number): Promise<void> {
   await database.db.insert(budgets).values({ categoryId, month, limitCents });
@@ -217,7 +213,7 @@ describe('PUT /api/v1/budgets/:categoryId', () => {
 
   it('should_reject_with_validation_error_when_the_category_is_income', async () => {
     // Arrange
-    const incomeCategoryId = await insertCategoryOfKind('income', 'Salário');
+    const incomeCategoryId = await insertCategoryOfKind(database.db, 'income', 'Salário');
     // Act
     const response = await putLimit(incomeCategoryId, 100000);
     // Assert

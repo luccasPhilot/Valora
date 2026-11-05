@@ -100,14 +100,14 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [x] detalhe;
   - [x] troca de categoria.
 - [x] **Orçamentos:** limite por categoria e mês, consumo, status com ícone e texto, "copiar do mês anterior".
-- [ ] **Início:**
-  - [ ] card de saldo;
-  - [ ] atalhos (Adicionar receita, Registrar despesa, Transações, Orçamentos);
-  - [ ] receitas e despesas do mês;
-  - [ ] receitas x despesas (6 meses);
-  - [ ] gastos por categoria (lista de barras);
-  - [ ] orçamentos perto do limite;
-  - [ ] últimas transações.
+- [x] **Início:**
+  - [x] card de saldo;
+  - [x] atalhos (Adicionar receita, Registrar despesa, Transações, Orçamentos);
+  - [x] receitas e despesas do mês;
+  - [x] receitas x despesas (6 meses);
+  - [x] gastos por categoria (lista de barras);
+  - [x] orçamentos perto do limite;
+  - [x] últimas transações.
 - [x] Ocultar valores.
 - [x] Faixa de aviso quando um banco não sincroniza.
 

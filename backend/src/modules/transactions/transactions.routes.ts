@@ -61,7 +61,7 @@ const updateBodySchema = z
 
 const duplicateResolutionBodySchema = z.object({ action: z.enum(['merge', 'keep_both']) });
 
-const transactionResponseSchema = z.object({
+export const transactionResponseSchema = z.object({
   id: z.uuid(),
   date: z.iso.date(),
   description: z.string(),
@@ -93,7 +93,7 @@ const transactionListResponseSchema = z.object({
 });
 
 // Lista os campos um a um: o JSON bruto do Pluggy nunca sai da API.
-function toTransactionResponse(
+export function toTransactionResponse(
   transaction: TransactionRecord,
 ): z.infer<typeof transactionResponseSchema> {
   return {

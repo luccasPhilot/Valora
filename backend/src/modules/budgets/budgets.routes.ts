@@ -2,15 +2,8 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
 import { centsSchema } from '../../shared/money.js';
+import { monthSchema } from '../../shared/month-schema.js';
 import type { BudgetItem, BudgetsService } from './budgets.service.js';
-
-const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
-
-// A API fala `AAAA-MM`; o banco guarda o dia 1 do mês.
-const monthSchema = z
-  .string()
-  .regex(MONTH_PATTERN, { error: 'Informe o mês no formato AAAA-MM' })
-  .transform((month) => `${month}-01`);
 
 const monthQuerySchema = z.object({ month: monthSchema.optional() });
 const requiredMonthQuerySchema = z.object({ month: monthSchema });
@@ -19,7 +12,7 @@ const limitBodySchema = z.object({
   limitCents: centsSchema.positive({ error: 'O limite deve ser maior que zero' }),
 });
 
-const budgetItemSchema = z.object({
+export const budgetItemSchema = z.object({
   categoryId: z.uuid(),
   categoryName: z.string(),
   categoryIcon: z.string(),
@@ -37,7 +30,7 @@ const overviewResponseSchema = z.object({
 
 const copyResponseSchema = z.object({ copied: z.int() });
 
-function toBudgetItemResponse(item: BudgetItem): z.infer<typeof budgetItemSchema> {
+export function toBudgetItemResponse(item: BudgetItem): z.infer<typeof budgetItemSchema> {
   return {
     categoryId: item.categoryId,
     categoryName: item.categoryName,

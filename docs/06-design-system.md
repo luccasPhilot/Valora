@@ -338,7 +338,23 @@ Ordem no celular, logo abaixo do topo de tela (título "Início" e status da sin
 
 Sem saudação: o espaço vai direto para o saldo.
 
-No computador, os mesmos blocos ficam em grade: card de saldo e números do mês na primeira linha; gráfico e categorias na segunda; orçamentos e transações na terceira.
+No computador, os mesmos blocos ficam numa grade de 12 colunas, sem mudar a ordem do DOM:
+
+| Linha | Blocos (colunas) |
+|---|---|
+| 1 e 2 | Card de saldo (7) e atalhos (7) empilhados à esquerda; receitas e despesas do mês (5) à direita, uma sobre a outra, ocupando as duas linhas |
+| 3 | Gráfico de receitas x despesas (7) e gastos por categoria (5) |
+| 4 | Orçamentos (5) e últimas transações (7) |
+
+No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas transações ocupam a linha toda; categorias e orçamentos ficam lado a lado.
+
+**Detalhes de implementação:**
+- Os dois números do mês ficam lado a lado a partir de 400 px; abaixo disso empilham, para o valor nunca ser cortado (em 320 px, "+ R$ 12.345,67" não cabe em meia coluna).
+- Os meses do eixo do gráfico são sempre abreviados ("jun."): os nomes inteiros se sobrepõem na coluna de 7/12 do computador.
+- Com os valores ocultos, o eixo vertical do gráfico some junto, porque mostraria os mesmos números.
+- Cada gráfico tem um resumo para leitor de tela (a tabela dos 6 meses; o saldo no primeiro e no último dia do gráfico de área).
+- A barra de cada categoria é proporcional à maior categoria da lista; o percentual é sobre o gasto líquido total do mês. "Sem categoria" e "Outros" não abrem Transações.
+- O gráfico de área do saldo só aparece com 2 ou mais dias de foto de saldo.
 
 ## Componentes
 

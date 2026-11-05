@@ -7,6 +7,8 @@ import {
   setBudgetLimit,
 } from '@/lib/api/budgets';
 
+import { DASHBOARD_QUERY_KEY } from '../dashboard/dashboard-query-key';
+
 /** Prefixo de todas as consultas de orçamento; Transações o usa para recarregar o gasto. */
 export const BUDGETS_QUERY_KEY = ['budgets'] as const;
 
@@ -20,9 +22,14 @@ interface LimitChange {
 }
 
 // O gasto, o percentual e o status são calculados no servidor: recarrega em vez de recalcular aqui.
+// O Início mostra os orçamentos mais perto do limite, então também recarrega.
 function useRefreshBudgets() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY }),
+    ]);
 }
 
 export function useSetBudgetLimit(month: string) {

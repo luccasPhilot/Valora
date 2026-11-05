@@ -18,6 +18,9 @@ import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-catego
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
 import { connectionsRoutes } from './modules/connections/connections.routes.js';
 import { ConnectionsService } from './modules/connections/connections.service.js';
+import { DashboardRepository } from './modules/dashboard/dashboard.repository.js';
+import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
+import { DashboardService } from './modules/dashboard/dashboard.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
@@ -108,5 +111,13 @@ function registerModules(
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
+  const dashboardService = new DashboardService({
+    dashboard: new DashboardRepository(database.db),
+    accounts: accountsService,
+    budgets: budgetsService,
+    transactions: transactions.transactionsService,
+    now,
+  });
+  app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });
   return { syncService, categorySeedService: categories.categorySeedService, accountsService };
 }

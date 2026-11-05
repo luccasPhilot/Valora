@@ -33,6 +33,25 @@ function isPolling(run: SyncRun | null | undefined): boolean {
   return run?.status === 'running' && elapsedMs(run) < MAX_POLLING_MS;
 }
 
+/** Só a última execução, para telas que reagem a "nunca sincronizou" (o Início no primeiro uso). */
+export function useLatestSyncRun() {
+  return useQuery({ queryKey: LATEST_SYNC_RUN_KEY, queryFn: getLatestSyncRun });
+}
+
+/**
+ * Dispara a sincronização sem cuidar do acompanhamento: o status do topo (`useSync`) enxerga a
+ * execução nova pela mesma chave, avisa quando termina e recarrega as consultas.
+ */
+export function useStartSync() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: startSyncRun,
+    onSuccess: (run) => queryClient.setQueryData(LATEST_SYNC_RUN_KEY, run),
+    // Já havia uma execução em andamento (ou o disparo falhou): volta a ler o estado real.
+    onError: () => queryClient.invalidateQueries({ queryKey: LATEST_SYNC_RUN_KEY }),
+  });
+}
+
 export function useConnections() {
   return useQuery({ queryKey: CONNECTIONS_KEY, queryFn: listConnections });
 }

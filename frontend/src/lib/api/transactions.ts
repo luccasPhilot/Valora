@@ -13,7 +13,7 @@ export type TransactionType = z.infer<typeof transactionTypeSchema>;
 
 export const TRANSACTION_TYPES: readonly TransactionType[] = transactionTypeSchema.options;
 
-const transactionSchema = z.object({
+export const transactionSchema = z.object({
   id: z.uuid(),
   date: z.iso.date(),
   description: z.string(),

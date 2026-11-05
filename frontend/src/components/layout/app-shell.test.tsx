@@ -56,13 +56,13 @@ describe('AppShell on desktop', () => {
     expect(title).toHaveTextContent('Contas');
   });
 
-  it('should_show_not_ready_state_when_area_has_no_feature_yet', async () => {
+  it('should_show_home_title_in_the_header_when_route_is_the_root', async () => {
     // Arrange
     renderApp('/', DESKTOP_WIDTH);
     // Act
-    const message = await screen.findByText('A área Início ainda não está pronta');
+    const title = await screen.findByRole('heading', { level: 1 });
     // Assert
-    expect(message).toBeVisible();
+    expect(title).toHaveTextContent('Início');
   });
 });
 

@@ -7,7 +7,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from '../api-client';
 
 const budgetStatusSchema = z.enum(['ok', 'warning', 'exceeded']);
 
-const budgetSchema = z.object({
+export const budgetSchema = z.object({
   categoryId: z.uuid(),
   categoryName: z.string(),
   categoryIcon: z.string(),

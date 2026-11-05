@@ -49,6 +49,12 @@ export class TransactionsService {
     );
   }
 
+  /** As mais recentes de qualquer período, tipo e origem (o Início usa as 5 últimas). */
+  async latest(limit: number): Promise<TransactionRecord[]> {
+    const { items } = await this.deps.transactions.findPage({}, { page: 1, limit });
+    return items;
+  }
+
   async get(transactionId: string): Promise<TransactionRecord> {
     const transaction = await this.deps.transactions.findById(transactionId);
     if (!transaction) throw new NotFoundError(`Transação ${transactionId} não existe`);
