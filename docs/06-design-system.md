@@ -233,7 +233,8 @@ O logotipo do Valora tem o **símbolo** e o **nome**. O símbolo é um "V" de du
 - É um link para o Início, com nome acessível "Valora".
 - As cores vêm dos tokens `--logo-ribbon-deep`, `--logo-ribbon` e `--logo-ribbon-light`, que mudam com o tema para a fita clara não sumir sobre o fundo branco.
 - **Exceção ao "sem gradiente":** o símbolo tem um degradê suave dentro de cada fita, como no logotipo original. Nenhuma outra peça da interface usa degradê.
-- Favicon, ícone do app instalável e variações do logotipo (monocromático, para impressão) ainda não existem.
+- **Favicon:** o símbolo em SVG, sem o nome (`frontend/public/favicon.svg`, declarado em `index.html`). Ele repete o desenho de `valora-mark.tsx` com as cores escritas no arquivo (as do tema escuro), porque a aba do navegador não enxerga os tokens. Se o desenho do símbolo mudar, atualize os dois.
+- O ícone do app instalável (Fase 2) e as variações do logotipo (monocromático, para impressão) ainda não existem.
 
 ## Ícones
 
