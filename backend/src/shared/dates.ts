@@ -37,6 +37,16 @@ export function subtractDays(isoDate: string, days: number): string {
   return instant.toISOString().slice(0, 10);
 }
 
+/** Dia 1 do mês anterior ao de `isoDate`. */
+export function firstDayOfPreviousMonth(isoDate: string): string {
+  assertIsoDate(isoDate);
+  const year = Number(isoDate.slice(0, 4));
+  const month = Number(isoDate.slice(5, 7));
+  // Mês 0 do JavaScript é janeiro, então `month - 2` é o mês anterior; o Date acerta a virada de ano.
+  const previous = new Date(Date.UTC(year, month - 2, 1));
+  return previous.toISOString().slice(0, 10);
+}
+
 export function lastDayOfMonth(isoDate: string = todayInSaoPaulo()): string {
   assertIsoDate(isoDate);
   const year = Number(isoDate.slice(0, 4));

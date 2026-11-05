@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatCompactCurrency,
   formatCurrency,
+  formatCurrencyTrimmed,
   formatDate,
   formatDayHeader,
   formatDayMonth,
@@ -245,5 +246,30 @@ describe('formatMoment', () => {
     const text = formatMoment(instant, now);
     // Assert
     expect(text).toBe('hoje, 00:05');
+  });
+});
+
+describe('formatCurrencyTrimmed', () => {
+  it.each([
+    { cents: 41000, expected: 'R$ 410' },
+    { cents: 100000, expected: 'R$ 1.000' },
+    { cents: 0, expected: 'R$ 0' },
+    { cents: 41050, expected: 'R$ 410,50' },
+    { cents: 79999, expected: 'R$ 799,99' },
+  ])('should_return_$expected_when_cents_are_$cents', ({ cents, expected }) => {
+    // Arrange
+    // Act
+    const text = formatCurrencyTrimmed(cents);
+    // Assert
+    expect(text).toBe(expected);
+  });
+
+  it('should_throw_when_cents_are_not_an_integer', () => {
+    // Arrange
+    const cents = 10.5;
+    // Act
+    const call = () => formatCurrencyTrimmed(cents);
+    // Assert
+    expect(call).toThrow(RangeError);
   });
 });

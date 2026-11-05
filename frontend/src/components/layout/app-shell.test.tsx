@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -58,9 +58,9 @@ describe('AppShell on desktop', () => {
 
   it('should_show_not_ready_state_when_area_has_no_feature_yet', async () => {
     // Arrange
-    renderApp('/orcamentos', DESKTOP_WIDTH);
+    renderApp('/', DESKTOP_WIDTH);
     // Act
-    const message = await screen.findByText('A área Orçamentos ainda não está pronta');
+    const message = await screen.findByText('A área Início ainda não está pronta');
     // Assert
     expect(message).toBeVisible();
   });
@@ -94,7 +94,9 @@ describe('AppShell on mobile', () => {
     // Act
     await userEvent.click(within(menu).getByRole('link', { name: 'Orçamentos' }));
     // Assert
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Orçamentos');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Orçamentos'),
+    );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

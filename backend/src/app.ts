@@ -6,7 +6,11 @@ import type { Database } from './db/database.js';
 import { AccountsRepository } from './modules/accounts/accounts.repository.js';
 import { accountsRoutes } from './modules/accounts/accounts.routes.js';
 import { AccountsService } from './modules/accounts/accounts.service.js';
+import { BudgetsRepository } from './modules/budgets/budgets.repository.js';
+import { budgetsRoutes } from './modules/budgets/budgets.routes.js';
+import { BudgetsService } from './modules/budgets/budgets.service.js';
 import { createCategoriesModule } from './modules/categories/categories.module.js';
+import { CategoriesRepository } from './modules/categories/categories.repository.js';
 import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { categoryRulesRoutes } from './modules/categories/category-rules.routes.js';
 import type { CategorySeedService } from './modules/categories/category-seed.service.js';
@@ -92,6 +96,12 @@ function registerModules(
   });
   const accountsService = new AccountsService(new AccountsRepository(database.db));
   app.register(accountsRoutes(accountsService), { prefix: API_PREFIX });
+  const budgetsService = new BudgetsService({
+    budgets: new BudgetsRepository(database.db),
+    categories: new CategoriesRepository(database.db),
+    now,
+  });
+  app.register(budgetsRoutes(budgetsService), { prefix: API_PREFIX });
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,

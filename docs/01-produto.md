@@ -64,6 +64,19 @@ Regras:
   - O app nunca junta sozinho.
 - **Saque:** um saque no banco chega pelo Open Finance como saída, com a categoria "Saque". Se você também lançar à mão o que gastou com aquele dinheiro, troque a categoria do saque para uma transferência, para não contar a despesa duas vezes.
 
+## Orçamentos
+
+Um orçamento é o limite de gasto de uma **categoria de despesa** em um **mês**. Categorias de receita e de transferência não têm orçamento.
+
+- **Gasto líquido.** O gasto da categoria no mês é a soma dos valores das transações dela, com o sinal invertido e **mínimo de zero**. Entram transações do Open Finance e lançadas à mão (inclusive "Dinheiro"), pendentes ou não. **Estornos reduzem o gasto**: uma compra de R$ 200 com estorno de R$ 50 gasta R$ 150. Uma categoria só com estornos gasta zero.
+- **Status**, calculado em centavos inteiros, sem arredondar antes de comparar:
+  - **Dentro:** abaixo de 80% do limite;
+  - **Atenção:** de 80% até 100%, inclusive (R$ 800,00 e R$ 1.000,00 de um limite de R$ 1.000,00);
+  - **Estourou:** acima de 100% (R$ 1.000,01 já estoura).
+- **Transação sem categoria** não entra em nenhum orçamento.
+- **Copiar do mês anterior** traz os limites do mês anterior só para as categorias ativas que ainda não têm limite no mês. Nunca sobrescreve um limite já definido.
+- O orçamento não se repete sozinho: um mês novo começa vazio, e você copia o anterior ou cria os limites.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:

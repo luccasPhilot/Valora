@@ -150,7 +150,9 @@ Tudo sob `/api/v1`.
 | `GET/POST/PUT /categories`, `POST /categories/:id/archive` | Categorias. Não existe exclusão: a categoria é arquivada e continua nas transações antigas |
 | `GET/POST/PUT/DELETE /category-rules` | Regras de categorização |
 | `GET /pluggy-category-mappings`, `PUT /pluggy-category-mappings/:pluggyCategory` | Mapeamento das categorias do Pluggy para as do Valora (`categoryId` nulo limpa) |
-| `GET /budgets?month=` / `PUT /budgets/:categoryId?month=` | Orçamento do mês |
+| `GET /budgets?month=` | Orçamento do mês (`AAAA-MM`; sem `month`, o mês atual em São Paulo): por categoria, `limitCents`, `spentCents`, `percent` e `status` (`ok`, `warning`, `exceeded`), do maior percentual para o menor, mais os totais |
+| `PUT /budgets/:categoryId?month=` / `DELETE /budgets/:categoryId?month=` | Definir (`limitCents` inteiro maior que zero, só categoria de despesa ativa) ou remover (204) o limite do mês |
+| `POST /budgets/copy-previous?month=` | Copia os limites do mês anterior para as categorias ativas sem limite no mês; responde `{ "copied": n }` |
 | `GET /dashboard?month=` | Números agregados da tela inicial |
 
 Os erros seguem o formato `{ "error": { "code", "message", "details" } }`. Os códigos novos do lançamento manual são `OPEN_FINANCE_READ_ONLY` (409) e `NO_DUPLICATE_PENDING` (409); erros de campo (`date`, `categoryId`, `amountCents`...) vêm como `VALIDATION_ERROR` com o nome do campo em `details`.

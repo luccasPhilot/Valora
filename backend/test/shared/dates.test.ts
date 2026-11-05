@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   firstDayOfMonth,
+  firstDayOfPreviousMonth,
   lastDayOfMonth,
   subtractDays,
   todayInSaoPaulo,
@@ -143,6 +144,30 @@ describe('lastDayOfMonth', () => {
     const invalidDate = '30/11/2026';
     // Act
     const call = () => lastDayOfMonth(invalidDate);
+    // Assert
+    expect(call).toThrow(RangeError);
+  });
+});
+
+describe('firstDayOfPreviousMonth', () => {
+  it.each([
+    { isoDate: '2026-11-01', expected: '2026-10-01' },
+    { isoDate: '2026-11-17', expected: '2026-10-01' },
+    { isoDate: '2026-01-01', expected: '2025-12-01' },
+    { isoDate: '2026-03-31', expected: '2026-02-01' },
+  ])('should_return_$expected_when_date_is_$isoDate', ({ isoDate, expected }) => {
+    // Arrange
+    // Act
+    const previousMonth = firstDayOfPreviousMonth(isoDate);
+    // Assert
+    expect(previousMonth).toBe(expected);
+  });
+
+  it('should_throw_when_date_is_not_iso_formatted', () => {
+    // Arrange
+    const invalidDate = '2026-11';
+    // Act
+    const call = () => firstDayOfPreviousMonth(invalidDate);
     // Assert
     expect(call).toThrow(RangeError);
   });

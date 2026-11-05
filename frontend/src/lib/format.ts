@@ -8,6 +8,11 @@ const NON_BREAKING_SPACES = new RegExp('[\u00A0\u202F]', 'g');
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const currencyFormat = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'BRL' });
+const wholeCurrencyFormat = new Intl.NumberFormat(LOCALE, {
+  style: 'currency',
+  currency: 'BRL',
+  maximumFractionDigits: 0,
+});
 const compactCurrencyFormat = new Intl.NumberFormat(LOCALE, {
   style: 'currency',
   currency: 'BRL',
@@ -77,6 +82,13 @@ function previousDay(isoDate: string): string {
 export function formatCurrency(cents: number): string {
   assertCents(cents);
   return normalize(currencyFormat.format(cents / CENTS_PER_REAL));
+}
+
+/** "R$ 410" quando o valor é redondo (sem centavos); com os centavos quando não é. */
+export function formatCurrencyTrimmed(cents: number): string {
+  assertCents(cents);
+  if (cents % CENTS_PER_REAL !== 0) return formatCurrency(cents);
+  return normalize(wholeCurrencyFormat.format(cents / CENTS_PER_REAL));
 }
 
 export function formatSignedCurrency(cents: number): string {

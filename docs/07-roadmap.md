@@ -99,7 +99,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [x] pesquisa;
   - [x] detalhe;
   - [x] troca de categoria.
-- [ ] **Orçamentos:** limite por categoria e mês, consumo, status com ícone e texto, "copiar do mês anterior".
+- [x] **Orçamentos:** limite por categoria e mês, consumo, status com ícone e texto, "copiar do mês anterior".
 - [ ] **Início:**
   - [ ] card de saldo;
   - [ ] atalhos (Adicionar receita, Registrar despesa, Transações, Orçamentos);
