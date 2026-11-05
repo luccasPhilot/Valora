@@ -64,7 +64,7 @@ describe('conta "Dinheiro"', () => {
     const response = await testApp.app.inject({ method: 'GET', url: '/api/v1/accounts' });
     // Assert
     expect(response.json().items).toEqual([
-      { id: expect.any(String), name: 'Dinheiro', type: 'cash', institutionName: null },
+      expect.objectContaining({ name: 'Dinheiro', type: 'cash', connection: null }),
     ]);
   });
 });

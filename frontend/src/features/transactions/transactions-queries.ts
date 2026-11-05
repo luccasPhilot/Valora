@@ -6,15 +6,16 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import { getAccountsOverview } from '@/lib/api/accounts';
 import type { Category } from '@/lib/api/categories';
 import {
+  type AccountOption,
   changeTransactionCategory,
   countPossibleDuplicates,
   createTransaction,
   deleteTransaction,
   type DuplicateResolution,
   getTransaction,
-  listAccounts,
   listTransactions,
   resolveDuplicate,
   type Transaction,
@@ -24,12 +25,13 @@ import {
   updateTransaction,
 } from '@/lib/api/transactions';
 
+import { ACCOUNTS_QUERY_KEY } from '../accounts/accounts-queries';
+
 export const TRANSACTIONS_QUERY_KEY = ['transactions'] as const;
 // Fora de `TRANSACTIONS_QUERY_KEY` de propósito: as atualizações otimistas da lista trocam os dados
 // de toda consulta que começa por essa chave, e estas duas não têm o formato da lista paginada.
 const TRANSACTION_DETAIL_KEY = ['transaction-detail'] as const;
 const DUPLICATE_COUNT_KEY = ['possible-duplicate-count'] as const;
-const ACCOUNTS_QUERY_KEY = ['accounts'] as const;
 const CATEGORY_RULES_QUERY_KEY = ['category-rules'] as const;
 const FIRST_PAGE = 1;
 
@@ -46,8 +48,19 @@ export function useTransactionList(query: TransactionQuery) {
   });
 }
 
+/** As mesmas contas da tela de Contas, só com o que o filtro e o formulário precisam. */
 export function useAccountOptions() {
-  return useQuery({ queryKey: ACCOUNTS_QUERY_KEY, queryFn: listAccounts });
+  return useQuery({
+    queryKey: ACCOUNTS_QUERY_KEY,
+    queryFn: getAccountsOverview,
+    select: ({ items }): AccountOption[] =>
+      items.map(({ id, name, type, connection }) => ({
+        id,
+        name,
+        type,
+        institutionName: connection?.institutionName ?? null,
+      })),
+  });
 }
 
 export interface CategoryChangeRequest {

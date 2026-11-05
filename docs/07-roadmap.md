@@ -92,7 +92,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
 
 ### Telas
 
-- [ ] **Contas e cartões:** saldo de cada conta, total, limite do cartão, status de cada conexão e última sincronização.
+- [x] **Contas e cartões:** saldo de cada conta, total, limite do cartão, status de cada conexão e última sincronização.
 - [x] **Transações:**
   - [x] lista agrupada por dia, paginada;
   - [x] filtros por período, categoria, tipo e conta;
@@ -109,7 +109,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [ ] orçamentos perto do limite;
   - [ ] últimas transações.
 - [x] Ocultar valores.
-- [ ] Faixa de aviso quando um banco não sincroniza.
+- [x] Faixa de aviso quando um banco não sincroniza.
 
 ### Servidor de casa
 

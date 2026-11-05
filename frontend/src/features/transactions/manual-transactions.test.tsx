@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubViewport } from '../../../test/helpers/match-media';
 import {
   ACCOUNT,
+  accountsResponse,
   CASH_ACCOUNT,
   DUPLICATE_COUNT_ROUTE,
   fixture,
@@ -781,7 +782,7 @@ describe('filtro de origem', () => {
 describe('contas disponíveis', () => {
   it('should_use_the_only_bank_account_when_cash_does_not_exist_yet', async () => {
     // Arrange
-    stubApi({ 'GET /api/v1/accounts': () => Response.json({ items: [ACCOUNT] }) });
+    stubApi({ 'GET /api/v1/accounts': () => accountsResponse([ACCOUNT]) });
     renderApp();
     // Act
     const form = await openForm();

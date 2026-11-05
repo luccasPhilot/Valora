@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { apiDelete, apiGet, apiPatch, apiPost } from '../api-client';
 
-// Contrato de /transactions e /accounts. O backend é o dono; estes schemas são a cópia do front
+// Contrato de /transactions. O backend é o dono; estes schemas são a cópia do front
 // (docs/03-arquitetura.md, "Contrato da API").
 
 export const TRANSACTION_PAGE_SIZE = 50;
@@ -45,18 +45,17 @@ const transactionPageSchema = z.object({
   pagination: z.object({ page: z.int(), limit: z.int(), total: z.int() }),
 });
 
-const accountOptionSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  type: z.enum(['checking', 'savings', 'credit_card', 'cash']),
-  institutionName: z.string().nullable(),
-});
-const accountOptionListSchema = z.object({ items: z.array(accountOptionSchema) });
+/** Conta como opção de filtro e de formulário; vem de `/accounts` (lib/api/accounts.ts). */
+export interface AccountOption {
+  readonly id: string;
+  readonly name: string;
+  readonly type: 'checking' | 'savings' | 'credit_card' | 'cash';
+  readonly institutionName: string | null;
+}
 
 export type Transaction = z.infer<typeof transactionSchema>;
 export type TransactionSource = Transaction['source'];
 export type TransactionPage = z.infer<typeof transactionPageSchema>;
-export type AccountOption = z.infer<typeof accountOptionSchema>;
 
 export interface TransactionQuery {
   readonly from?: string;
@@ -149,9 +148,4 @@ export async function countPossibleDuplicates(today: string): Promise<number> {
   });
   const page = await apiGet(`/transactions?${params.toString()}`, transactionPageSchema);
   return page.pagination.total;
-}
-
-// Sem paginação: são poucas contas (no máximo 5 bancos).
-export async function listAccounts(): Promise<AccountOption[]> {
-  return (await apiGet('/accounts', accountOptionListSchema)).items;
 }

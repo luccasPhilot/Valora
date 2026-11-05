@@ -46,14 +46,38 @@ export const ACCOUNT = {
   id: '55555555-5555-4555-8555-555555555555',
   name: 'Conta corrente',
   type: 'checking',
-  institutionName: 'Nubank',
+  lastDigits: '1234',
+  balanceCents: 300000,
+  creditLimitCents: null,
+  availableLimitCents: null,
+  isHidden: false,
+  connection: {
+    id: '77777777-7777-4777-8777-777777777777',
+    institutionName: 'Nubank',
+    status: 'ok',
+    statusDetail: null,
+    lastSyncedAt: '2026-11-04T10:02:00.000Z',
+  },
 };
 export const CASH_ACCOUNT = {
   id: '66666666-6666-4666-8666-666666666666',
   name: 'Dinheiro',
   type: 'cash',
-  institutionName: null,
+  lastDigits: null,
+  balanceCents: null,
+  creditLimitCents: null,
+  availableLimitCents: null,
+  isHidden: false,
+  connection: null,
 };
+
+/** A resposta de `GET /accounts`: as contas e os totais calculados pela API. */
+export function accountsResponse(items: unknown[], totalBalanceCents = 0): Response {
+  return Response.json({
+    items,
+    totals: { totalBalanceCents, openCreditCardBillsCents: 0, availableCreditCents: 0 },
+  });
+}
 
 const PAGE_LIMIT = 50;
 
@@ -128,7 +152,7 @@ function isDuplicateCount(url: URL): boolean {
 export function stubApi(overrides: Record<string, Handler> = {}) {
   const routes: Record<string, Handler> = {
     'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
-    'GET /api/v1/accounts': () => Response.json({ items: [CASH_ACCOUNT, ACCOUNT] }),
+    'GET /api/v1/accounts': () => accountsResponse([CASH_ACCOUNT, ACCOUNT]),
     'GET /api/v1/transactions': () => pageResponse(DEFAULT_PAGE),
     [DUPLICATE_COUNT_ROUTE]: () => pageResponse([], 1, 0),
     ...overrides,

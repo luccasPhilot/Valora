@@ -18,6 +18,16 @@ Não é um produto comercial e não vai ter outros usuários. Isso simplifica mu
 
 A fase de cada item está detalhada no [roadmap](07-roadmap.md).
 
+### Saldo total
+
+O **saldo total** é a soma do saldo das contas **corrente e poupança** que você não ocultou dos totais. Ficam de fora:
+
+- os **cartões de crédito**: a fatura não é saldo, e aparece à parte como "faturas em aberto" (a soma das faturas atuais dos cartões não ocultos), junto com o limite disponível;
+- a conta **"Dinheiro"**, que não tem saldo;
+- as contas que você marcou com **"Ocultar dos totais"** (no painel de cada conta, na tela de Contas). A conta oculta continua na lista, com a marcação "Fora dos totais".
+
+Cheque especial entra como número negativo e reduz o total. O Início e a tela de Contas usam a mesma definição, calculada pela API.
+
 | Área | O que tem | Fase |
 |---|---|---|
 | **Início (Dashboard)** | Saldo total, receitas e despesas do mês, gráfico receitas x despesas, gastos por categoria, últimas transações, ocultar valores | v1 |

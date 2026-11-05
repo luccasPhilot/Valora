@@ -5,6 +5,8 @@ import {
   formatCurrency,
   formatDate,
   formatDayHeader,
+  formatDayMonth,
+  formatMoment,
   formatMonth,
   formatPercent,
   formatSignedCurrency,
@@ -192,5 +194,56 @@ describe('formatDayHeader', () => {
     const text = formatDayHeader('2026-11-30', now);
     // Assert
     expect(text).toBe('Ontem');
+  });
+});
+
+describe('formatDayMonth', () => {
+  it('should_show_day_and_month_in_sao_paulo_time_when_instant_is_given', () => {
+    // Arrange
+    const instant = new Date('2026-11-01T02:30:00Z'); // 31/10 23:30 em São Paulo
+    // Act
+    const text = formatDayMonth(instant);
+    // Assert
+    expect(text).toBe('31/10');
+  });
+});
+
+describe('formatMoment', () => {
+  const now = new Date('2026-11-05T15:00:00Z'); // 05/11 12:00 em São Paulo
+
+  it('should_say_today_with_the_time_when_the_instant_is_today', () => {
+    // Arrange
+    const instant = new Date('2026-11-05T10:02:00Z'); // 07:02 em São Paulo
+    // Act
+    const text = formatMoment(instant, now);
+    // Assert
+    expect(text).toBe('hoje, 07:02');
+  });
+
+  it('should_say_yesterday_with_the_time_when_the_instant_is_the_day_before', () => {
+    // Arrange
+    const instant = new Date('2026-11-04T10:01:00Z');
+    // Act
+    const text = formatMoment(instant, now);
+    // Assert
+    expect(text).toBe('ontem, 07:01');
+  });
+
+  it('should_show_day_month_and_time_when_the_instant_is_older', () => {
+    // Arrange
+    const instant = new Date('2026-11-01T10:01:00Z');
+    // Act
+    const text = formatMoment(instant, now);
+    // Assert
+    expect(text).toBe('01/11, 07:01');
+  });
+
+  it('should_use_midnight_as_zero_hours_when_it_happens_after_midnight', () => {
+    // Arrange
+    const instant = new Date('2026-11-05T03:05:00Z'); // 00:05 em São Paulo
+    // Act
+    const text = formatMoment(instant, now);
+    // Assert
+    expect(text).toBe('hoje, 00:05');
   });
 });

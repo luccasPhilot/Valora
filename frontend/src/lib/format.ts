@@ -1,4 +1,4 @@
-import { todayInSaoPaulo } from './dates';
+import { todayInSaoPaulo, toSaoPauloDate } from './dates';
 import { APP_TIMEZONE } from './timezone';
 
 const LOCALE = 'pt-BR';
@@ -32,6 +32,17 @@ const dayHeaderFormat = new Intl.DateTimeFormat(LOCALE, {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
+});
+const dayMonthFormat = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: APP_TIMEZONE,
+  day: '2-digit',
+  month: '2-digit',
+});
+const timeFormat = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: APP_TIMEZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
 });
 
 // O Intl usa espaços especiais (NBSP) e hífen; o app usa espaço comum e o sinal tipográfico.
@@ -98,4 +109,19 @@ export function formatDayHeader(isoDate: string, now: Date = new Date()): string
   if (isoDate === today) return 'Hoje';
   if (isoDate === previousDay(today)) return 'Ontem';
   return dayHeaderFormat.format(isoDateToInstant(isoDate));
+}
+
+/** Dia e mês de um instante, como "01/11". */
+export function formatDayMonth(instant: Date): string {
+  return dayMonthFormat.format(instant);
+}
+
+/** Quando algo aconteceu: "hoje, 07:02", "ontem, 07:01" ou "01/11, 07:01". */
+export function formatMoment(instant: Date, now: Date = new Date()): string {
+  const day = toSaoPauloDate(instant);
+  const today = todayInSaoPaulo(now);
+  const time = timeFormat.format(instant);
+  if (day === today) return `hoje, ${time}`;
+  if (day === previousDay(today)) return `ontem, ${time}`;
+  return `${formatDayMonth(instant)}, ${time}`;
 }
