@@ -39,7 +39,8 @@ Nenhuma.
 - **Arquivos novos:**
   - `backend/Dockerfile`, `backend/.dockerignore`;
   - `frontend/Dockerfile`, `frontend/.dockerignore`, `frontend/nginx.conf`;
-  - `infra/compose.yml`, `infra/.env.example`, `infra/scripts/backup.sh`, `infra/scripts/restore-check.sh`.
+  - `infra/compose.yml`, `infra/.env.example`, `infra/scripts/backup.sh`, `infra/scripts/restore-check.sh`;
+  - `infra/scripts/deploy.sh` e `.github/workflows/ci.yml` (feitos antes desta change, sem change própria).
 - **Servidor:** PC com Linux, Docker Engine com o plugin Compose, Tailscale e um segundo disco.
 - **Documentação:** `docs/05-deploy.md` com os comandos finais; `infra/README.md`; seção "Comandos" do `CLAUDE.md`.
 
@@ -48,4 +49,4 @@ Nenhuma.
 - PWA instalável e funcionamento sem rede (Fase 2, `installable-pwa`).
 - Acesso pela internet aberta (`tailscale funnel`) e tela de login: proibidos enquanto não houver login.
 - Monitoramento externo e alertas por e-mail.
-- CI/CD automático: a atualização é manual (`git pull` + `docker compose up -d --build`).
+- Deploy automático pelo GitHub (runner no servidor): descartado. A atualização é o `infra/scripts/deploy.sh`, rodado no servidor.

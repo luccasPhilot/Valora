@@ -19,7 +19,7 @@ As regras de segurança do CLAUDE.md exigem:
 - Backup diário que comprovadamente restaura.
 
 **Non-Goals:**
-- PWA, monitoramento externo, CI/CD, alta disponibilidade.
+- PWA, monitoramento externo, deploy automático pelo GitHub, alta disponibilidade.
 
 ## Decisions
 
@@ -54,7 +54,7 @@ As regras de segurança do CLAUDE.md exigem:
 - `db`: `pg_isready`.
 
 **6. Backup pelo cron do host, não por container.**
-- `infra/scripts/backup.sh` usa `docker compose -f /opt/valora/infra/compose.yml exec -T db pg_dump -Fc`.
+- `infra/scripts/backup.sh` usa `docker compose -f <pasta do repositório>/infra/compose.yml exec -T db pg_dump -Fc`.
 - Com `set -euo pipefail`, o script grava em arquivo temporário e só renomeia e aplica a retenção se o dump terminar bem.
 - O destino é `BACKUP_DIR` (padrão `/mnt/backup/valora`).
 - *Alternativa:* um container de backup com cron interno é mais uma peça; o cron do host é simples e visível.
@@ -68,7 +68,7 @@ As regras de segurança do CLAUDE.md exigem:
 
 **8. Migrations no início, backup antes de atualizar.**
 - As migrations já rodam no início do backend (`setup-api-foundation`).
-- O procedimento de atualização pede o backup manual antes.
+- O `infra/scripts/deploy.sh` faz o backup antes de atualizar e espera os healthchecks.
 - O rollback é restaurar o backup e voltar o código com `git checkout` da versão anterior.
 
 **9. Versões fixadas.**
@@ -86,7 +86,7 @@ As regras de segurança do CLAUDE.md exigem:
 ## Migration Plan
 
 1. Preparar o servidor (Docker, Tailscale, segundo disco).
-2. Clonar o repositório em `/opt/valora` e preencher o `infra/.env`.
+2. Clonar o repositório em `~/valora` e preencher o `infra/.env`.
 3. `docker compose -f infra/compose.yml up -d --build`.
 4. `tailscale serve --bg 3000`.
 5. Instalar o cron do backup.

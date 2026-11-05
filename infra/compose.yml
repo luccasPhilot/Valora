@@ -1,0 +1,70 @@
+# Produção: frontend (nginx), backend (API + sincronização) e db (PostgreSQL).
+# Rode a partir da raiz do repositório:
+#   docker compose -f infra/compose.yml up -d --build
+# As variáveis vêm do infra/.env (copie do .env.example). Só o frontend publica porta,
+# presa ao 127.0.0.1; o app é publicado para a sua rede por `tailscale serve --bg 3000`.
+name: valora
+
+services:
+  db:
+    # Mesma imagem do infra/compose.dev.yml e dos testes de integração: trocou a versão, troque nos três.
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: valora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no infra/.env}
+      POSTGRES_DB: valora
+      TZ: America/Sao_Paulo
+    # PostgreSQL 18+: o volume monta em /var/lib/postgresql (não em .../data).
+    volumes:
+      - valora_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U valora -d valora']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgres://valora:${POSTGRES_PASSWORD}@db:5432/valora
+      TZ: America/Sao_Paulo
+    depends_on:
+      db:
+        condition: service_healthy
+    # A imagem do Node não tem curl; o fetch do próprio Node faz o papel.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/v1/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build: ../frontend
+    restart: unless-stopped
+    environment:
+      TZ: America/Sao_Paulo
+    # A única porta publicada, e só no próprio servidor: nem a rede de casa enxerga o Valora.
+    ports:
+      - '127.0.0.1:3000:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  valora_data:

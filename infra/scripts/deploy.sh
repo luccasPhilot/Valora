@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # Atualiza o Valora no servidor: backup, troca de versão, build, subida e espera dos healthchecks.
 #
-# Uso, direto no servidor:   /opt/valora/infra/scripts/deploy.sh [ref]
+# Uso, direto no servidor:   ~/valora/infra/scripts/deploy.sh [ref]
 #   ref: branch, tag ou commit (padrão: main). Para voltar versão, passe o commit anterior.
-#
-# Variáveis:
-#   VALORA_DIR  pasta do clone de produção, com o infra/.env (padrão: /opt/valora)
 set -euo pipefail
 
-readonly VALORA_DIR="${VALORA_DIR:-/opt/valora}"
+# O clone de produção (com o infra/.env) é a pasta deste repositório, onde quer que esteja.
+readonly VALORA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 readonly COMPOSE_FILE="infra/compose.yml"
 readonly HEALTHCHECK_TIMEOUT_SECONDS=180
 readonly IMAGE_RETENTION_HOURS=168
@@ -80,7 +78,7 @@ main() {
   local ref="${1:-main}"
   local target_sha
 
-  cd "$VALORA_DIR" || fail "pasta $VALORA_DIR não existe"
+  cd "$VALORA_DIR"
   require_clean_checkout
   target_sha="$(resolve_target_sha "$ref")"
 

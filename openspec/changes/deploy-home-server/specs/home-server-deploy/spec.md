@@ -85,13 +85,19 @@ Deve existir um procedimento documentado de restauração. O `infra/scripts/rest
 - **THEN** ele informa que as quantidades de transações, contas e categorias batem com o banco em uso e apaga o banco temporário
 
 ### Requirement: Atualização do app
-A atualização MUST seguir o procedimento documentado:
-1. backup manual;
-2. `git pull`;
-3. `docker compose -f infra/compose.yml up -d --build`.
+A atualização MUST ser feita no servidor pelo `infra/scripts/deploy.sh`, que:
+1. recusa rodar se o clone tiver alterações locais;
+2. faz o backup, se o banco já estiver no ar, e aborta se o backup falhar;
+3. troca para a versão pedida (a `main` por padrão);
+4. sobe com `docker compose up -d --build --wait`;
+5. falha, sem voltar o código sozinho, se algum container não ficar saudável.
 
 As migrations MUST rodar sozinhas no início do backend.
 
 #### Scenario: Versão nova com migration
-- **WHEN** você roda o procedimento numa versão com migration nova
-- **THEN** o app volta com o banco migrado e os dados preservados
+- **WHEN** você roda o `deploy.sh` numa versão com migration nova
+- **THEN** o app volta com o banco migrado e os dados preservados, e existe um backup feito antes da atualização
+
+#### Scenario: Versão que não sobe
+- **WHEN** o `deploy.sh` publica uma versão cujo container não fica saudável
+- **THEN** o script termina com erro, mostra o log do backend e avisa que voltar o código não desfaz migrations

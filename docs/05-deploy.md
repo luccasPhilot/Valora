@@ -1,6 +1,6 @@
 # Deploy no servidor de casa
 
-O alvo é um **PC ou notebook com Linux** (Ubuntu Server, Debian ou parecido), ligado 24 horas. Os comandos abaixo são referência. O Compose de desenvolvimento já existe (`setup-api-foundation`); os arquivos de produção nascem na `deploy-home-server`; veja o [roadmap](07-roadmap.md).
+O alvo é um **PC ou notebook com Linux** (Ubuntu Server, Debian ou parecido), ligado 24 horas. Os arquivos de produção (`infra/compose.yml`, os `Dockerfile`, o `.env.example` e os scripts) já estão no repositório; subir e configurar o servidor é o passo a passo abaixo. Veja o [roadmap](07-roadmap.md).
 
 Tudo o que é de deploy fica na pasta [`infra/`](../infra/README.md), separado do código. Cada parte tem o próprio `Dockerfile`: `backend/Dockerfile` e `frontend/Dockerfile`.
 
@@ -10,6 +10,20 @@ Tudo o que é de deploy fica na pasta [`infra/`](../infra/README.md), separado d
 - Docker Engine com o plugin Compose ([instruções oficiais](https://docs.docker.com/engine/install/)).
 - Conta na [Tailscale](https://tailscale.com), com o app instalado no servidor, no celular e no notebook.
 - **Um segundo disco** (ou um destino externo) para o backup. Backup no mesmo disco não protege de disco queimado.
+
+## Primeira subida
+
+No servidor, com Docker, Tailscale e o segundo disco já instalados:
+
+```bash
+git clone https://github.com/luccasPhilot/Valora.git ~/valora
+cd ~/valora
+cp infra/.env.example infra/.env      # preencha: senha do banco, credenciais e ids do Pluggy
+docker compose -f infra/compose.yml up -d --build
+sudo tailscale serve --bg 3000
+```
+
+Depois da primeira vez, só o [`deploy.sh`](#atualizar-o-app). Confira: `docker compose -f infra/compose.yml ps` deve mostrar os três serviços `healthy`, e `curl http://127.0.0.1:3000/api/v1/health` deve responder `{"status":"ok","database":"ok"}`.
 
 ## Containers
 
@@ -51,6 +65,11 @@ sudo tailscale serve --bg 3000
 
 O app fica em `https://<nome-da-maquina>.<sua-tailnet>.ts.net`, com certificado válido. O HTTPS é obrigatório para instalar o PWA no celular.
 
+**Servidor que já hospeda outros apps (como o CellCare):**
+
+- A porta `127.0.0.1:3000` do Valora não conflita com as dos outros containers (CellCare em 3001 e 8080, Dozzle em 8888, Portainer em 9000). Antes de subir, confira com `docker ps` e `ss -tlnp`.
+- O `tailscale serve --bg 3000` ocupa a porta HTTPS 443 do nome `.ts.net` da máquina. Se outro app já usa o 443, rode `tailscale serve status` antes e publique o Valora em outra porta HTTPS: `sudo tailscale serve --bg --https=8443 3000`, e o endereço vira `https://<nome-da-maquina>.<sua-tailnet>.ts.net:8443`. Não sobrescreva a configuração existente sem olhar o status.
+
 **Nunca use `tailscale funnel`**: ele publica o app na internet aberta. A v1 não tem tela de login justamente porque só os seus aparelhos chegam até ela.
 
 ## Variáveis de ambiente
@@ -59,15 +78,14 @@ Em produção, ficam em `infra/.env` no servidor. O repositório só tem os exem
 
 | Variável | Exemplo | Para quê |
 |---|---|---|
-| `POSTGRES_PASSWORD` | (gerar uma senha longa) | Senha do banco |
-| `DATABASE_URL` | `postgres://valora:<senha>@db:5432/valora` | Conexão do backend com o banco |
+| `POSTGRES_PASSWORD` | `openssl rand -hex 24` | Senha do banco (só letras e números, para não quebrar o endereço do banco) |
 | `PLUGGY_CLIENT_ID` | (do dashboard do Pluggy) | Credencial da sua aplicação |
 | `PLUGGY_CLIENT_SECRET` | (do dashboard do Pluggy) | Credencial da sua aplicação |
 | `PLUGGY_ITEM_IDS` | (ids dos bancos no Meu Pluggy) | Bancos que a sincronização lê |
 | `SYNC_CRON` | `0 7 * * *` | Horário da sincronização diária |
-| `TZ` | `America/Sao_Paulo` | Fuso dos containers |
-| `PORT` | `3000` | Porta do backend dentro da rede do Compose |
 | `LOG_LEVEL` | `info` | Nível dos logs |
+
+O banco, a porta, o fuso (`America/Sao_Paulo`) e o endereço do banco (`DATABASE_URL`, montado com a `POSTGRES_PASSWORD`) são fixos no `infra/compose.yml`, não precisam estar no `.env`.
 
 O backend valida as variáveis com Zod ao iniciar e para na hora, com mensagem clara, se faltar alguma.
 
@@ -80,38 +98,34 @@ O Open Finance só devolve 12 meses. **O que for mais antigo só existe no seu b
 - **Retenção:** 30 dias.
 - **Cópia fora de casa (recomendado):** mandar o arquivo criptografado para um armazenamento na nuvem (por exemplo, com `rclone`), para o caso de roubo ou incêndio.
 
-Exemplo do script (`infra/scripts/backup.sh`):
+O script é o `infra/scripts/backup.sh`. Ele grava num arquivo temporário e só o renomeia para `valora-AAAA-MM-DD.dump` se o `pg_dump` terminar bem; se falhar, sai com erro e **não apaga nenhum backup antigo**. O destino é a variável `BACKUP_DIR` (padrão `/mnt/backup/valora`); o usuário que roda o script precisa poder escrever lá.
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-BACKUP_DIR=/mnt/backup/valora
-mkdir -p "$BACKUP_DIR"
-docker compose -f /opt/valora/infra/compose.yml exec -T db \
-  pg_dump -U valora -Fc valora > "$BACKUP_DIR/valora-$(date +%F).dump"
-find "$BACKUP_DIR" -name 'valora-*.dump' -mtime +30 -delete
-```
-
-E a linha no `crontab -e`:
+Instale no `crontab -e`. O cron não expande `~`: use o caminho completo da sua home.
 
 ```
-0 3 * * * /opt/valora/infra/scripts/backup.sh >> /var/log/valora-backup.log 2>&1
+0 3 * * * /home/luccas-philot/valora/infra/scripts/backup.sh >> /var/log/valora-backup.log 2>&1
 ```
+
+O log só tem nome e tamanho do arquivo, nunca conteúdo do banco.
 
 ### Restaurar
 
 ```bash
-docker compose -f /opt/valora/infra/compose.yml exec -T db pg_restore -U valora -d valora --clean --if-exists < /mnt/backup/valora/valora-AAAA-MM-DD.dump
+docker compose -f ~/valora/infra/compose.yml exec -T db pg_restore -U valora -d valora --clean --if-exists < /mnt/backup/valora/valora-AAAA-MM-DD.dump
 ```
 
-**Teste a restauração uma vez por mês.** Backup que nunca foi restaurado não é garantia. O `infra/scripts/restore-check.sh` faz essa conferência num banco temporário.
+**Teste a restauração uma vez por mês.** Backup que nunca foi restaurado não é garantia. O `infra/scripts/restore-check.sh` faz essa conferência: restaura o último backup num banco temporário (`valora_restore_check`), compara as linhas de `transactions`, `accounts` e `categories` com o banco em uso e apaga o temporário. Rode logo depois de um backup (dados novos gravados depois dele fazem as quantidades divergirem):
+
+```bash
+~/valora/infra/scripts/backup.sh && ~/valora/infra/scripts/restore-check.sh
+```
 
 ## Atualizar o app
 
 No servidor, um comando só:
 
 ```bash
-/opt/valora/infra/scripts/deploy.sh
+~/valora/infra/scripts/deploy.sh
 ```
 
 O script (`infra/scripts/deploy.sh`) faz, nesta ordem:
