@@ -92,7 +92,7 @@ Os dados não chegam em tempo real. Quem recebe consulta quando quer, e cada tip
 | Posição de investimentos | 30 | ~1 por dia |
 | Movimentações de investimentos | 8 | carga inicial |
 
-O histórico vai até **12 meses** para trás. Por isso **o banco de dados do Valora é a única cópia do que for mais antigo que isso**, e o backup diário não é opcional (veja o [deploy](05-deploy.md#backup)).
+O histórico vai até **12 meses** para trás. Por isso **o banco de dados do Valora é a única cópia do que for mais antigo que isso**, e o backup não é opcional (veja o [deploy](05-deploy.md#backup)).
 
 No Valora, quem consulta o Open Finance é o Meu Pluggy, uma vez por dia. O Valora consulta a API do Pluggy, que devolve o que o Meu Pluggy já trouxe.
 

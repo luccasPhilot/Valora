@@ -16,7 +16,7 @@ As regras de segurança do CLAUDE.md exigem:
 **Goals:**
 - Subir e atualizar o app com um comando.
 - Nada do Valora alcançável fora da Tailscale.
-- Backup diário que comprovadamente restaura.
+- Backup semanal que comprovadamente restaura.
 
 **Non-Goals:**
 - PWA, monitoramento externo, deploy automático pelo GitHub, alta disponibilidade.
@@ -56,7 +56,7 @@ As regras de segurança do CLAUDE.md exigem:
 **6. Backup pelo cron do host, não por container.**
 - `infra/scripts/backup.sh` usa `docker compose -f <pasta do repositório>/infra/compose.yml exec -T db pg_dump -Fc`.
 - Com `set -euo pipefail`, o script grava em arquivo temporário e só renomeia e aplica a retenção se o dump terminar bem.
-- O destino é `BACKUP_DIR` (padrão `/mnt/backup/valora`).
+- O destino é `BACKUP_DIR` (padrão `/mnt/hdd/valora`).
 - *Alternativa:* um container de backup com cron interno é mais uma peça; o cron do host é simples e visível.
 
 **7. Conferência de restauração com banco temporário.**
@@ -86,7 +86,7 @@ As regras de segurança do CLAUDE.md exigem:
 ## Migration Plan
 
 1. Preparar o servidor (Docker, Tailscale, segundo disco).
-2. Clonar o repositório em `~/valora` e preencher o `infra/.env`.
+2. Clonar o repositório em `~/Valora` e preencher o `infra/.env`.
 3. `docker compose -f infra/compose.yml up -d --build`.
 4. `tailscale serve --bg 3000`.
 5. Instalar o cron do backup.
@@ -96,4 +96,4 @@ Rollback: `docker compose -f infra/compose.yml down` (os dados ficam no volume).
 
 ## Open Questions
 
-- Caminho de montagem do segundo disco no servidor (padrão sugerido: `/mnt/backup`).
+- Caminho de montagem do segundo disco no servidor (no servidor: `/mnt/hdd`).

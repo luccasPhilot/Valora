@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Backup diário do banco do Valora (pg_dump em formato custom), com retenção de 30 dias.
+# Backup semanal do banco do Valora (pg_dump em formato custom), com retenção de 30 dias.
 #
-# Cron do servidor, todo dia às 03:00 (crontab -e):
-#   0 3 * * * /home/luccas-philot/valora/infra/scripts/backup.sh >> /var/log/valora-backup.log 2>&1
+# Cron do servidor, todo domingo às 03:00 (crontab -e):
+#   0 3 * * 0 /home/luccas-philot/Valora/infra/scripts/backup.sh >> /var/log/valora-backup.log 2>&1
 #
 # Variáveis:
-#   BACKUP_DIR  pasta no segundo disco (padrão: /mnt/backup/valora)
+#   BACKUP_DIR  pasta no segundo disco (padrão: /mnt/hdd/valora)
 set -euo pipefail
 
-readonly BACKUP_DIR="${BACKUP_DIR:-/mnt/backup/valora}"
+readonly BACKUP_DIR="${BACKUP_DIR:-/mnt/hdd/valora}"
 readonly RETENTION_DAYS=30
 readonly COMPOSE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/compose.yml"
 readonly BACKUP_FILE="$BACKUP_DIR/valora-$(date +%F).dump"

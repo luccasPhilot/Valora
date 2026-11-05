@@ -7,7 +7,7 @@ Tudo o que roda o Valora com Docker, separado do código do `backend/` e do `fro
 | `compose.dev.yml` | PostgreSQL 18 para desenvolvimento, preso ao `127.0.0.1` (pronto) | `setup-api-foundation` |
 | `compose.yml` | Produção: `frontend` (nginx), `backend` e `db` (pronto) | `deploy-home-server` |
 | `.env.example` | Variáveis da produção, sem valores reais (pronto) | `deploy-home-server` |
-| `scripts/backup.sh` | Backup diário do banco, com retenção de 30 dias (pronto) | `deploy-home-server` |
+| `scripts/backup.sh` | Backup semanal do banco, com retenção de 30 dias (pronto) | `deploy-home-server` |
 | `scripts/restore-check.sh` | Conferência da restauração do backup (pronto) | `deploy-home-server` |
 | `scripts/deploy.sh` | Atualiza a produção, rodado no servidor: backup, troca de versão, build e healthchecks (pronto, sem change própria) | CI/CD |
 
@@ -18,7 +18,7 @@ Os `Dockerfile` ficam dentro de cada parte (`backend/Dockerfile`, `frontend/Dock
 ```bash
 docker compose -f infra/compose.yml up -d --build   # primeira subida (a partir da raiz do repositório)
 infra/scripts/deploy.sh                             # atualizações: backup, build e healthchecks
-infra/scripts/backup.sh                             # backup na hora (o cron roda às 03:00)
+infra/scripts/backup.sh                             # backup na hora (o cron roda aos domingos às 03:00)
 infra/scripts/restore-check.sh                      # prova que o último backup restaura
 ```
 

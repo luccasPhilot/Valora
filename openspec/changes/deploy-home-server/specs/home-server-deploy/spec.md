@@ -62,11 +62,11 @@ O app MUST ser publicado apenas com `tailscale serve`, em HTTPS, no endereço `.
 - **WHEN** um aparelho fora da Tailscale tenta abrir o mesmo endereço
 - **THEN** o app não é alcançado
 
-### Requirement: Backup diário
-O `infra/scripts/backup.sh` MUST gerar, todo dia às 03:00, um `pg_dump` em formato custom do banco do Valora num segundo disco, com a data no nome do arquivo. Ele MUST apagar os backups com mais de 30 dias e registrar o resultado num log, sem conteúdo do banco. Se o `pg_dump` falhar, o script MUST terminar com erro e MUST NOT apagar backups antigos.
+### Requirement: Backup semanal
+O `infra/scripts/backup.sh` MUST gerar, todo domingo às 03:00, um `pg_dump` em formato custom do banco do Valora num segundo disco, com a data no nome do arquivo. Ele MUST apagar os backups com mais de 30 dias e registrar o resultado num log, sem conteúdo do banco. Se o `pg_dump` falhar, o script MUST terminar com erro e MUST NOT apagar backups antigos.
 
-#### Scenario: Backup do dia
-- **WHEN** são 03:00
+#### Scenario: Backup da semana
+- **WHEN** é domingo, 03:00
 - **THEN** existe um arquivo `valora-AAAA-MM-DD.dump` novo no segundo disco
 
 #### Scenario: Retenção
@@ -74,7 +74,7 @@ O `infra/scripts/backup.sh` MUST gerar, todo dia às 03:00, um `pg_dump` em form
 - **THEN** esse arquivo é apagado e os de 30 dias ou menos ficam
 
 #### Scenario: Falha no dump
-- **WHEN** o banco está fora do ar às 03:00
+- **WHEN** o banco está fora do ar no horário do backup
 - **THEN** o script termina com erro, registra a falha no log e nenhum backup antigo é apagado
 
 ### Requirement: Restauração testada

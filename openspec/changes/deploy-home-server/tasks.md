@@ -32,9 +32,9 @@
 
 - [x] 4.1 Instalar Docker Engine com o plugin Compose e montar o segundo disco
 - [x] 4.2 Instalar a Tailscale no servidor e no celular; ativar MagicDNS e HTTPS Certificates
-- [ ] 4.3 Clonar em `~/valora`, preencher o `infra/.env` e subir com `docker compose -f infra/compose.yml up -d --build`
-- [ ] 4.4 `sudo tailscale serve --bg 3000`
-- [ ] 4.5 Instalar o cron do backup às 03:00 (`~/valora/infra/scripts/backup.sh`, com o caminho completo)
+- [x] 4.3 Clonar em `~/Valora`, preencher o `infra/.env` e subir com `docker compose -f infra/compose.yml up -d --build`
+- [x] 4.4 `sudo tailscale serve --bg --https=8443 3000`
+- [ ] 4.5 Instalar o cron do backup aos domingos às 03:00 (`~/Valora/infra/scripts/backup.sh`, com o caminho completo)
 - [ ] 4.6 Rodar `infra/scripts/restore-check.sh` com o primeiro backup e registrar o resultado
 - [ ] 4.7 Testar o `infra/scripts/deploy.sh` no servidor: com o banco no ar ele faz o backup antes de subir, e com um commit ruim falha sem derrubar o que está rodando
 

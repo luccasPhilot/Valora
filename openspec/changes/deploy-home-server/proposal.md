@@ -15,20 +15,20 @@ A v1 só cumpre o objetivo quando roda sozinha no servidor de casa, sincronizand
 
   Os três têm healthcheck, reinício automático e fuso `America/Sao_Paulo`.
 - Cria o `infra/.env.example` com todas as variáveis da produção, sem valores reais.
-- Cria `infra/scripts/backup.sh` (`pg_dump` às 03:00, retenção de 30 dias, segundo disco) e `infra/scripts/restore-check.sh`.
+- Cria `infra/scripts/backup.sh` (`pg_dump` aos domingos às 03:00, retenção de 30 dias, segundo disco) e `infra/scripts/restore-check.sh`.
 - Documenta e executa a publicação pela Tailscale com HTTPS (`tailscale serve`) e o procedimento de atualização.
 - Executa e registra uma restauração de teste.
 
 Itens do roadmap cobertos (Fase 1 → Servidor de casa):
 - `Dockerfile` do backend e do frontend, e `infra/compose.yml` de produção.
 - Front preso ao `127.0.0.1`, publicado só pela Tailscale com HTTPS.
-- Backup diário com retenção de 30 dias e uma restauração testada.
+- Backup semanal com retenção de 30 dias e uma restauração testada.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `home-server-deploy`: imagens do backend e do frontend, compose de produção, acesso só pela Tailscale, backup diário, restauração testada e atualização.
+- `home-server-deploy`: imagens do backend e do frontend, compose de produção, acesso só pela Tailscale, backup semanal, restauração testada e atualização.
 
 ### Modified Capabilities
 

@@ -24,7 +24,7 @@ Seus bancos ──Open Finance──▶ Meu Pluggy (atualiza 1x/dia)
 │                     ▼                                         │
 │  db (PostgreSQL, dados num volume do disco)                   │
 │                                                               │
-│  backup diário (pg_dump) ─────────────────────────────────────────▶ outro disco
+│  backup semanal (pg_dump) ─────────────────────────────────────────▶ outro disco
 └───────────────────────────────────────────────────────────────┘
                      ▲
                      │ Tailscale (HTTPS, só os seus aparelhos)

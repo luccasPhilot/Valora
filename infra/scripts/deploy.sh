@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Atualiza o Valora no servidor: backup, troca de versão, build, subida e espera dos healthchecks.
 #
-# Uso, direto no servidor:   ~/valora/infra/scripts/deploy.sh [ref]
+# Uso, direto no servidor:   ~/Valora/infra/scripts/deploy.sh [ref]
 #   ref: branch, tag ou commit (padrão: main). Para voltar versão, passe o commit anterior.
 set -euo pipefail
 

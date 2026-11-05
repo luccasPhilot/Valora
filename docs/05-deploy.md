@@ -16,8 +16,8 @@ Tudo o que é de deploy fica na pasta [`infra/`](../infra/README.md), separado d
 No servidor, com Docker, Tailscale e o segundo disco já instalados:
 
 ```bash
-git clone https://github.com/luccasPhilot/Valora.git ~/valora
-cd ~/valora
+git clone https://github.com/luccasPhilot/Valora.git ~/Valora
+cd ~/Valora
 cp infra/.env.example infra/.env      # preencha: senha do banco, credenciais e ids do Pluggy
 docker compose -f infra/compose.yml up -d --build
 sudo tailscale serve --bg 3000
@@ -69,6 +69,7 @@ O app fica em `https://<nome-da-maquina>.<sua-tailnet>.ts.net`, com certificado 
 
 - A porta `127.0.0.1:3000` do Valora não conflita com as dos outros containers (CellCare em 3001 e 8080, Dozzle em 8888, Portainer em 9000). Antes de subir, confira com `docker ps` e `ss -tlnp`.
 - O `tailscale serve --bg 3000` ocupa a porta HTTPS 443 do nome `.ts.net` da máquina. Se outro app já usa o 443, rode `tailscale serve status` antes e publique o Valora em outra porta HTTPS: `sudo tailscale serve --bg --https=8443 3000`, e o endereço vira `https://<nome-da-maquina>.<sua-tailnet>.ts.net:8443`. Não sobrescreva a configuração existente sem olhar o status.
+- Acesse sempre pelo endereço `.ts.net` (HTTPS), não pelo IP `100.x.x.x`: o certificado vale só para o nome, e o PWA da v2 exige HTTPS. A porta do front está presa ao `127.0.0.1`, então pelo IP da Tailscale nada responde.
 
 **Nunca use `tailscale funnel`**: ele publica o app na internet aberta. A v1 não tem tela de login justamente porque só os seus aparelhos chegam até ela.
 
@@ -93,17 +94,17 @@ O backend valida as variáveis com Zod ao iniciar e para na hora, com mensagem c
 
 O Open Finance só devolve 12 meses. **O que for mais antigo só existe no seu banco de dados**, então o backup é parte do deploy, não um extra.
 
-- **Quando:** todo dia às 03:00, pelo cron do servidor.
+- **Quando:** todo domingo às 03:00, pelo cron do servidor, e antes de cada `deploy.sh`. Um dado perdido entre dois backups é recuperável pela sincronização (Open Finance, 12 meses); o que só existe no Valora (lançamentos manuais, categorias escolhidas, regras e orçamentos) fica exposto por até uma semana.
 - **Como:** `pg_dump` no formato custom, salvo no segundo disco.
 - **Retenção:** 30 dias.
 - **Cópia fora de casa (recomendado):** mandar o arquivo criptografado para um armazenamento na nuvem (por exemplo, com `rclone`), para o caso de roubo ou incêndio.
 
-O script é o `infra/scripts/backup.sh`. Ele grava num arquivo temporário e só o renomeia para `valora-AAAA-MM-DD.dump` se o `pg_dump` terminar bem; se falhar, sai com erro e **não apaga nenhum backup antigo**. O destino é a variável `BACKUP_DIR` (padrão `/mnt/backup/valora`); o usuário que roda o script precisa poder escrever lá.
+O script é o `infra/scripts/backup.sh`. Ele grava num arquivo temporário e só o renomeia para `valora-AAAA-MM-DD.dump` se o `pg_dump` terminar bem; se falhar, sai com erro e **não apaga nenhum backup antigo**. O destino é a variável `BACKUP_DIR` (padrão `/mnt/hdd/valora`); o usuário que roda o script precisa poder escrever lá.
 
 Instale no `crontab -e`. O cron não expande `~`: use o caminho completo da sua home.
 
 ```
-0 3 * * * /home/luccas-philot/valora/infra/scripts/backup.sh >> /var/log/valora-backup.log 2>&1
+0 3 * * 0 /home/luccas-philot/Valora/infra/scripts/backup.sh >> /var/log/valora-backup.log 2>&1
 ```
 
 O log só tem nome e tamanho do arquivo, nunca conteúdo do banco.
@@ -111,13 +112,13 @@ O log só tem nome e tamanho do arquivo, nunca conteúdo do banco.
 ### Restaurar
 
 ```bash
-docker compose -f ~/valora/infra/compose.yml exec -T db pg_restore -U valora -d valora --clean --if-exists < /mnt/backup/valora/valora-AAAA-MM-DD.dump
+docker compose -f ~/Valora/infra/compose.yml exec -T db pg_restore -U valora -d valora --clean --if-exists < /mnt/hdd/valora/valora-AAAA-MM-DD.dump
 ```
 
 **Teste a restauração uma vez por mês.** Backup que nunca foi restaurado não é garantia. O `infra/scripts/restore-check.sh` faz essa conferência: restaura o último backup num banco temporário (`valora_restore_check`), compara as linhas de `transactions`, `accounts` e `categories` com o banco em uso e apaga o temporário. Rode logo depois de um backup (dados novos gravados depois dele fazem as quantidades divergirem):
 
 ```bash
-~/valora/infra/scripts/backup.sh && ~/valora/infra/scripts/restore-check.sh
+~/Valora/infra/scripts/backup.sh && ~/Valora/infra/scripts/restore-check.sh
 ```
 
 ## Atualizar o app
@@ -125,7 +126,7 @@ docker compose -f ~/valora/infra/compose.yml exec -T db pg_restore -U valora -d 
 No servidor, um comando só:
 
 ```bash
-~/valora/infra/scripts/deploy.sh
+~/Valora/infra/scripts/deploy.sh
 ```
 
 O script (`infra/scripts/deploy.sh`) faz, nesta ordem:

@@ -4,10 +4,10 @@
 # Rode logo depois de um backup; dados novos gravados depois dele fazem as quantidades divergirem.
 #
 # Variáveis:
-#   BACKUP_DIR  pasta dos backups (padrão: /mnt/backup/valora)
+#   BACKUP_DIR  pasta dos backups (padrão: /mnt/hdd/valora)
 set -euo pipefail
 
-readonly BACKUP_DIR="${BACKUP_DIR:-/mnt/backup/valora}"
+readonly BACKUP_DIR="${BACKUP_DIR:-/mnt/hdd/valora}"
 readonly COMPOSE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/compose.yml"
 readonly CHECK_DATABASE="valora_restore_check"
 readonly CHECKED_TABLES=(transactions accounts categories)
