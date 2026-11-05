@@ -146,6 +146,8 @@ O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration`, `d
 
 Sincronizar na hora, em desenvolvimento (com o `npm run dev` rodando): `curl -X POST http://127.0.0.1:3000/api/v1/sync-runs`. O resultado sai em `curl http://127.0.0.1:3000/api/v1/sync-runs/latest`. O frontend ainda tem `dev` (Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000`), `build`, `preview` e `check:tokens` (falha se achar cor em hex em `src/components` ou `src/features`; roda junto com o `lint`).
 
+**GitHub:** `main` é produção e o trabalho fica na `develop`. O CI (`.github/workflows/ci.yml`) roda `typecheck`, `lint`, `format:check`, `test` e `build` nas duas partes, em runner da GitHub. **Não há deploy pelo GitHub**: a produção é atualizada rodando `/opt/valora/infra/scripts/deploy.sh` no servidor (backup, build e healthchecks). Nada de runner self-hosted. Detalhes em [docs/05-deploy.md](docs/05-deploy.md#atualizar-o-app).
+
 Antes de dar uma tarefa por pronta, rode `typecheck`, `lint`, `format:check` e `test` **em cada parte que mudou**. Os testes de integração do backend precisam do Docker rodando.
 
 Banco de desenvolvimento (a partir da raiz): `docker compose -f infra/compose.dev.yml up -d`. Os comandos de produção estão em [docs/05-deploy.md](docs/05-deploy.md).

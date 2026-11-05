@@ -108,13 +108,30 @@ docker compose -f /opt/valora/infra/compose.yml exec -T db pg_restore -U valora 
 
 ## Atualizar o app
 
+No servidor, um comando só:
+
 ```bash
-cd /opt/valora
-git pull
-docker compose -f infra/compose.yml up -d --build
+/opt/valora/infra/scripts/deploy.sh
 ```
 
-As migrations rodam no início do backend. Antes de uma atualização com mudança de banco, rode o backup na mão.
+O script (`infra/scripts/deploy.sh`) faz, nesta ordem:
+
+1. confere que o clone não tem alterações locais;
+2. faz o **backup** (se o banco já está no ar);
+3. traz a `main` do GitHub (`git fetch` e troca de versão);
+4. sobe com `docker compose up -d --build --wait`, um build por vez, esperando os healthchecks;
+5. limpa imagens antigas.
+
+As migrations rodam no início do backend. Se algum container não ficar saudável, o script falha e mostra o log do backend. Ele **não volta o código sozinho**, porque voltar o código não desfaz migrations já aplicadas.
+
+**Voltar uma versão:** `deploy.sh <commit ou tag>`. Se a versão ruim mexeu no banco, restaure também o backup mais recente ([restaurar](#restaurar)). Depois de voltar por commit ou tag o servidor fica em HEAD solto; um `deploy.sh` sem argumento volta para a `main`.
+
+## Branches e CI
+
+- `develop`: trabalho do dia a dia. `main`: produção, só recebe merge vindo da `develop`.
+- O CI (`.github/workflows/ci.yml`) roda em runner da GitHub em todo PR e em push na `develop` e na `main`: `typecheck`, `lint`, `format:check`, `test` e `build` no backend e no frontend.
+- O deploy é **manual e fica de fora do GitHub**: você roda o `deploy.sh` no servidor depois que o CI da `main` ficar verde. Assim o GitHub não tem nenhum caminho para executar código no servidor.
+- Recomendado: proteger a `main` (Settings → Branches) exigindo PR e o CI verde.
 
 ## Saúde
 

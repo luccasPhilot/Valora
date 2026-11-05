@@ -9,6 +9,7 @@ Tudo o que roda o Valora com Docker, separado do código do `backend/` e do `fro
 | `.env.example` | Variáveis da produção, sem valores reais | `deploy-home-server` |
 | `scripts/backup.sh` | Backup diário do banco | `deploy-home-server` |
 | `scripts/restore-check.sh` | Conferência da restauração do backup | `deploy-home-server` |
+| `scripts/deploy.sh` | Atualiza a produção, rodado no servidor: backup, troca de versão, build e healthchecks (pronto, sem change própria; só roda de verdade depois do `compose.yml`) | CI/CD |
 
 Os `Dockerfile` ficam dentro de cada parte (`backend/Dockerfile`, `frontend/Dockerfile`). O passo a passo do servidor está em [docs/05-deploy.md](../docs/05-deploy.md).
 

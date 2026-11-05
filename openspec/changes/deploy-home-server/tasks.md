@@ -36,6 +36,7 @@
 - [ ] 4.4 `sudo tailscale serve --bg 3000`
 - [ ] 4.5 Instalar o cron do backup às 03:00 (`/opt/valora/infra/scripts/backup.sh`)
 - [ ] 4.6 Rodar `infra/scripts/restore-check.sh` com o primeiro backup e registrar o resultado
+- [ ] 4.7 Testar o `infra/scripts/deploy.sh` no servidor: com o banco no ar ele faz o backup antes de subir, e com um commit ruim falha sem derrubar o que está rodando
 
 ## 5. Conferência
 
