@@ -142,7 +142,7 @@ Os comandos rodam dentro da pasta da parte (`cd backend` ou `cd frontend`). As d
 | `npm run format` / `npm run format:check` | Formata / confere com o Prettier (estilo único, definido na raiz) |
 | `npm test` | Roda os testes Vitest |
 
-O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration`, `db:generate` e `fixtures:record` (veja o README dele). O `fixtures:record` chama a API real do Pluggy uma vez, com as credenciais do `backend/.env`, e regrava as fixtures anonimizadas de `backend/test/fixtures/pluggy/`; os testes nunca chamam o Pluggy.
+O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration`, `db:generate`, `fixtures:record` e `fixtures:categories` (veja o README dele). O `fixtures:record` chama a API real do Pluggy uma vez, com as credenciais do `backend/.env`, e regrava as fixtures anonimizadas de `backend/test/fixtures/pluggy/`; os testes nunca chamam o Pluggy.
 
 Sincronizar na hora, em desenvolvimento (com o `npm run dev` rodando): `curl -X POST http://127.0.0.1:3000/api/v1/sync-runs`. O resultado sai em `curl http://127.0.0.1:3000/api/v1/sync-runs/latest`. O frontend ainda tem `dev` (Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000`), `build`, `preview` e `check:tokens` (falha se achar cor em hex em `src/components` ou `src/features`; roda junto com o `lint`).
 

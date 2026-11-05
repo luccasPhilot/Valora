@@ -3,6 +3,11 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import type { DestinationStream } from 'pino';
 
 import type { Database } from './db/database.js';
+import { createCategoriesModule } from './modules/categories/categories.module.js';
+import { categoriesRoutes } from './modules/categories/categories.routes.js';
+import { categoryRulesRoutes } from './modules/categories/category-rules.routes.js';
+import type { CategorySeedService } from './modules/categories/category-seed.service.js';
+import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-category-mappings.routes.js';
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
 import { connectionsRoutes } from './modules/connections/connections.routes.js';
 import { ConnectionsService } from './modules/connections/connections.service.js';
@@ -33,6 +38,8 @@ export interface ValoraApp {
   readonly app: FastifyInstance;
   /** Exposto para o server.ts ligar o agendamento e fechar execuções interrompidas. */
   readonly syncService: SyncService;
+  /** Exposto para o server.ts criar as categorias padrão depois das migrations. */
+  readonly categorySeedService: CategorySeedService;
 }
 
 export function buildApp(deps: AppDependencies): ValoraApp {
@@ -48,11 +55,14 @@ export function buildApp(deps: AppDependencies): ValoraApp {
   app.addHook('onClose', async () => {
     await deps.database.pool.end();
   });
-  const syncService = registerModules(app, deps);
-  return { app, syncService };
+  const { syncService, categorySeedService } = registerModules(app, deps);
+  return { app, syncService, categorySeedService };
 }
 
-function registerModules(app: FastifyInstance, deps: AppDependencies): SyncService {
+function registerModules(
+  app: FastifyInstance,
+  deps: AppDependencies,
+): Pick<ValoraApp, 'syncService' | 'categorySeedService'> {
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
   const connectionsService = new ConnectionsService(new ConnectionsRepository(database.db));
@@ -66,5 +76,11 @@ function registerModules(app: FastifyInstance, deps: AppDependencies): SyncServi
   app.register(healthRoutes(healthService), { prefix: API_PREFIX });
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
-  return syncService;
+  const categories = createCategoriesModule(database);
+  app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
+  app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });
+  app.register(pluggyCategoryMappingsRoutes(categories.pluggyCategoryMappingsService), {
+    prefix: API_PREFIX,
+  });
+  return { syncService, categorySeedService: categories.categorySeedService };
 }

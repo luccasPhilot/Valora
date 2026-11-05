@@ -21,7 +21,8 @@
     "test:integration": "vitest run --project api:integration",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "fixtures:record": "tsx --env-file=.env scripts/record-pluggy-fixtures.ts"
+    "fixtures:record": "tsx --env-file=.env scripts/record-pluggy-fixtures.ts",
+    "fixtures:categories": "tsx --env-file=.env scripts/record-pluggy-categories.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

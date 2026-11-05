@@ -96,6 +96,8 @@ export const categories = pgTable(
   'categories',
   {
     id: primaryId(),
+    // Chave estável das categorias padrão: o seed procura por ela, não pelo nome (que você pode mudar).
+    seedKey: text('seed_key').unique(),
     name: text('name').notNull().unique(),
     kind: text('kind').notNull(),
     icon: text('icon').notNull(),

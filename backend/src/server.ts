@@ -10,7 +10,13 @@ async function main(): Promise<void> {
   const database = createDatabase(config.databaseUrl);
   await runMigrations(database.db);
 
-  const { app, syncService } = buildApp({ config, database, pluggySdk: createPluggySdk(config) });
+  const { app, syncService, categorySeedService } = buildApp({
+    config,
+    database,
+    pluggySdk: createPluggySdk(config),
+  });
+  const seedResult = await categorySeedService.run();
+  if (seedResult.categoriesCreated > 0) app.log.info(seedResult, 'default categories created');
   const interruptedRuns = await syncService.failInterruptedRuns();
   if (interruptedRuns > 0) app.log.warn({ interruptedRuns }, 'interrupted sync runs closed');
   await app.listen({ host: config.host, port: config.port });

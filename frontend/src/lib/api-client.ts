@@ -38,25 +38,60 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message, details);
 }
 
-async function fetchOrThrow(path: string): Promise<Response> {
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+async function fetchOrThrow(
+  path: string,
+  method: RequestMethod,
+  body?: unknown,
+): Promise<Response> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
   try {
-    return await fetch(`${API_BASE_PATH}${path}`, { headers: { Accept: 'application/json' } });
+    return await fetch(`${API_BASE_PATH}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
   } catch (error) {
-    throw new ApiError(0, NETWORK_ERROR_CODE, `Sem conexão com a API ao buscar ${path}`, [error]);
+    throw new ApiError(0, NETWORK_ERROR_CODE, `Sem conexão com a API em ${path}`, [error]);
   }
 }
 
-export async function apiGet<T>(path: string, responseSchema: z.ZodType<T>): Promise<T> {
-  const response = await fetchOrThrow(path);
+async function apiRequest<T>(
+  method: RequestMethod,
+  path: string,
+  responseSchema: z.ZodType<T>,
+  body?: unknown,
+): Promise<T> {
+  const response = await fetchOrThrow(path, method, body);
   if (!response.ok) throw await toApiError(response);
-  const body = responseSchema.safeParse(await response.json().catch(() => null));
-  if (!body.success) {
+  const parsed = responseSchema.safeParse(await response.json().catch(() => null));
+  if (!parsed.success) {
     throw new ApiError(
       response.status,
       UNEXPECTED_ERROR_CODE,
       `Resposta fora do contrato em ${path}`,
-      body.error.issues,
+      parsed.error.issues,
     );
   }
-  return body.data;
+  return parsed.data;
+}
+
+export function apiGet<T>(path: string, responseSchema: z.ZodType<T>): Promise<T> {
+  return apiRequest('GET', path, responseSchema);
+}
+
+export function apiPost<T>(path: string, body: unknown, responseSchema: z.ZodType<T>): Promise<T> {
+  return apiRequest('POST', path, responseSchema, body);
+}
+
+export function apiPut<T>(path: string, body: unknown, responseSchema: z.ZodType<T>): Promise<T> {
+  return apiRequest('PUT', path, responseSchema, body);
+}
+
+/** Para as rotas que respondem 204, sem corpo. */
+export async function apiDelete(path: string): Promise<void> {
+  const response = await fetchOrThrow(path, 'DELETE');
+  if (!response.ok) throw await toApiError(response);
 }

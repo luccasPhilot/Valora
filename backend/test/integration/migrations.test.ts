@@ -1,8 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { runMigrations } from '../../src/db/migrate.js';
 import { connectTestDatabase } from './test-database.js';
+
+const JOURNAL_FILE = new URL('../../drizzle/meta/_journal.json', import.meta.url);
+const MIGRATION_COUNT = z
+  .object({ entries: z.array(z.unknown()) })
+  .parse(JSON.parse(readFileSync(JOURNAL_FILE, 'utf-8'))).entries.length;
 
 const V1_TABLES = [
   'accounts',
@@ -58,6 +65,6 @@ describe('migrations', () => {
       sql`select count(*) as total from drizzle.__drizzle_migrations`,
     );
     // Assert
-    expect(result.rows[0]?.total).toBe('1');
+    expect(result.rows[0]?.total).toBe(String(MIGRATION_COUNT));
   });
 });

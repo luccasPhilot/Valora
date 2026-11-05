@@ -146,8 +146,9 @@ Tudo sob `/api/v1`.
 | `PATCH /transactions/:id` | Trocar a categoria (opcionalmente criando uma regra). Numa transação manual, também muda valor, data, descrição e conta |
 | `DELETE /transactions/:id` | Excluir uma transação manual. Transação do Open Finance não pode ser excluída |
 | `POST /transactions/:id/duplicate-resolution` | Resolver possível duplicata: `merge` (juntar) ou `keep_both` (são diferentes) |
-| `GET/POST/PUT/DELETE /categories` | Categorias |
+| `GET/POST/PUT /categories`, `POST /categories/:id/archive` | Categorias. Não existe exclusão: a categoria é arquivada e continua nas transações antigas |
 | `GET/POST/PUT/DELETE /category-rules` | Regras de categorização |
+| `GET /pluggy-category-mappings`, `PUT /pluggy-category-mappings/:pluggyCategory` | Mapeamento das categorias do Pluggy para as do Valora (`categoryId` nulo limpa) |
 | `GET /budgets?month=` / `PUT /budgets/:categoryId?month=` | Orçamento do mês |
 | `GET /dashboard?month=` | Números agregados da tela inicial |
 
@@ -197,6 +198,9 @@ Cada banco é gravado numa transação própria do banco de dados, e os dados de
 | Uma sincronização por vez com `pg_try_advisory_lock` | O lock fica na sessão do PostgreSQL: some sozinho se o processo cair e valeria até com mais de um processo. Uma flag em memória não teria nenhuma das duas coisas. O disparo manual responde 409 (`SYNC_IN_PROGRESS`) e o agendamento só registra que pulou |
 | Ids dos bancos no `.env` (`PLUGGY_ITEM_IDS`) | Listar os itens pela API do Pluggy só existe nos planos pagos. Para até 5 bancos que quase nunca mudam, editar o `.env` e reiniciar basta |
 | `GET /connections` sem paginação | O Meu Pluggy permite no máximo 5 conexões. É uma exceção consciente à regra de paginar listagens, como a lista de contas |
+| Categorias, regras e mapeamentos sem paginação | São dezenas de categorias, no máximo algumas centenas de regras e pouco mais de cem categorias do Pluggy. Mais uma exceção consciente à regra de paginar listagens |
+| Categorização por função pura em lote | `decideCategory` não acessa o banco; o `Categorizer` carrega regras e mapeamentos uma vez e aplica em lotes de 1.000. Roda dentro da transação de cada banco na sincronização e de novo sempre que uma regra ou um mapeamento muda |
+| Categorias padrão achadas por `seed_key` | O seed procura pela chave estável, não pelo nome: uma categoria renomeada ou arquivada por você não é recriada, e o mapeamento inicial do Pluggy só é criado junto com a categoria, então um mapeamento que você limpou não volta |
 | Agendamento com `croner` | Suporte nativo a fuso (`America/Sao_Paulo`), escrito em TypeScript e sem dependências |
 | JSON bruto guardado | Permite reprocessar quando as regras mudarem, sem buscar tudo de novo |
 | Dinheiro em centavos (inteiro) | Evita erro de arredondamento do ponto flutuante |

@@ -106,12 +106,23 @@ Transação manual tem sempre `status = 'posted'`.
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
+| `seed_key` | text | única, pode ser nula. Chave estável das categorias padrão (ex.: `credit_card_payment`); categorias criadas por você ficam com nulo |
 | `name` | text | único |
 | `kind` | text | `expense`, `income`, `transfer` |
 | `icon` | text | nome do ícone Lucide |
 | `is_archived` | boolean | |
 
 Categorias não têm cor própria. O motivo está no [Design System](06-design-system.md#gastos-por-categoria).
+
+Categorias padrão, criadas na primeira execução (`seed_key` entre parênteses):
+
+| Tipo | Categorias |
+|---|---|
+| `expense` | Moradia (`housing`), Mercado (`groceries`), Alimentação (`food`), Transporte (`transport`), Saúde (`health`), Educação (`education`), Lazer (`leisure`), Compras (`shopping`), Assinaturas (`subscriptions`), Serviços (`services`), Impostos e taxas (`taxes_and_fees`), Saque (`cash_withdrawal`), Outras despesas (`other_expenses`) |
+| `income` | Salário (`salary`), Rendimentos (`investment_income`), Reembolsos (`refunds`), Outras receitas (`other_income`) |
+| `transfer` | Pagamento de fatura (`credit_card_payment`), Transferência entre contas (`account_transfer`), Aplicação e resgate (`investment_flow`) |
+
+O mapeamento inicial de `pluggy_category_mappings` fica em `backend/src/modules/categories/seed/pluggy-category-map.ts`. Categorias do Pluggy que misturam entrada e saída (Pix, TED, boleto, empréstimos) ficam sem mapeamento de propósito.
 
 **`category_rules`**: "descrição contém X → categoria Y".
 

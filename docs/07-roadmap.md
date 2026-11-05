@@ -72,12 +72,12 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 ### Categorias
 
-- [ ] Categorias padrão criadas na primeira execução. Incluem "Pagamento de fatura" e "Transferência entre contas", do tipo `transfer`, e "Saque", do tipo `expense`.
-- [ ] Mapeamento das categorias do Pluggy para as suas (`pluggy_category_mappings`).
-- [ ] Regras: contém, começa com, igual; com prioridade.
-- [ ] Ordem de decisão: você → regra → Pluggy → "Sem categoria". A sincronização nunca muda uma categoria escolhida por você.
+- [x] Categorias padrão criadas na primeira execução. Incluem "Pagamento de fatura", "Transferência entre contas" e "Aplicação e resgate", do tipo `transfer`, e "Saque", do tipo `expense`.
+- [x] Mapeamento das categorias do Pluggy para as suas (`pluggy_category_mappings`).
+- [x] Regras: contém, começa com, igual; com prioridade.
+- [x] Ordem de decisão: você → regra → Pluggy → "Sem categoria". A sincronização nunca muda uma categoria escolhida por você.
 - [ ] Ao corrigir uma categoria, opção "Aplicar sempre para '<descrição>'", que cria a regra.
-- [ ] Tela de categorias e regras.
+- [x] Tela de categorias e regras.
 
 ### Lançamento manual
 

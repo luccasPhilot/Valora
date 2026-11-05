@@ -1,4 +1,6 @@
 import type { Db, DbExecutor } from '../../db/database.js';
+import { createCategorizerRepositories } from '../categories/categories.module.js';
+import { Categorizer } from '../categories/categorizer.js';
 import { ConnectionsRepository } from '../connections/connections.repository.js';
 import { AccountsRepository } from './accounts.repository.js';
 import { InvestmentsRepository } from './investments.repository.js';
@@ -9,6 +11,7 @@ export interface ItemRepositories {
   readonly transactions: TransactionsRepository;
   readonly investments: InvestmentsRepository;
   readonly connections: ConnectionsRepository;
+  readonly categorizer: Categorizer;
 }
 
 function createItemRepositories(executor: DbExecutor): ItemRepositories {
@@ -17,6 +20,7 @@ function createItemRepositories(executor: DbExecutor): ItemRepositories {
     transactions: new TransactionsRepository(executor),
     investments: new InvestmentsRepository(executor),
     connections: new ConnectionsRepository(executor),
+    categorizer: new Categorizer(createCategorizerRepositories(executor)),
   };
 }
 

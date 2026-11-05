@@ -222,7 +222,7 @@ export class SyncService {
     return { accountList, transactionsByAccount, investments };
   }
 
-  // Ordem: contas e fotos → transações → investimentos e fotos → conexão sincronizada.
+  // Ordem: contas e fotos → transações → categorias → investimentos e fotos → conexão sincronizada.
   private saveItemData({ connection, overview, data, window }: ItemSave): Promise<SyncStats> {
     const today = todayInSaoPaulo(this.deps.now());
     return this.deps.unitOfWork.run(async (repositories) => {
@@ -233,6 +233,7 @@ export class SyncService {
         today,
       });
       const transactionStats = await saveTransactions(repositories, { accountIds, data, window });
+      await repositories.categorizer.categorizeConnection(connection.id);
       const investmentCount = await repositories.investments.upsertWithSnapshots(
         connection.id,
         data.investments,

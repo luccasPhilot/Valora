@@ -32,6 +32,7 @@ Conferência: `curl http://127.0.0.1:3000/api/v1/health` responde `{"status":"ok
 | `npm run test:unit` | Só os unitários (não precisa do Docker) |
 | `npm run test:integration` | Só os de integração (sobem um PostgreSQL com Testcontainers; precisam do Docker) |
 | `npm run db:generate` | Gera uma migration a partir das mudanças em `src/db/schema.ts` |
+| `npm run fixtures:categories` | Chama a API real do Pluggy e grava a lista pública de categorias em `test/fixtures/pluggy/categories.json`. Depois de regravar, atualize `src/modules/categories/seed/pluggy-categories.ts` e o mapeamento inicial (um teste confere a lista) |
 | `npm run fixtures:record` | Chama a API real do Pluggy uma vez e regrava as fixtures anonimizadas de `test/fixtures/pluggy/`. Mostra só um resumo com contagens (sinal por tipo de conta, horário das datas, status de cada banco) |
 
 ## Sincronização
@@ -44,7 +45,7 @@ curl http://127.0.0.1:3000/api/v1/sync-runs/latest      # status e quantidades d
 curl http://127.0.0.1:3000/api/v1/connections           # cada banco, com status e última sincronização
 ```
 
-O código fica em `src/modules/sync/` (`PluggyClient`, `SyncService`, repositories e rotas) e `src/modules/connections/`. Regras em [docs/03-arquitetura.md](../docs/03-arquitetura.md#sincronização).
+As categorias padrão e o mapeamento inicial do Pluggy são criados na subida da API (`src/modules/categories/`), sem repetir nada se já existirem. O código da sincronização fica em `src/modules/sync/` (`PluggyClient`, `SyncService`, repositories e rotas) e `src/modules/connections/`. Regras em [docs/03-arquitetura.md](../docs/03-arquitetura.md#sincronização).
 
 ## Variáveis de ambiente
 
