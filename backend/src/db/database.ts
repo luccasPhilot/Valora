@@ -1,4 +1,5 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle, type NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
+import type { PgDatabase } from 'drizzle-orm/pg-core';
 import pg from 'pg';
 
 import * as schema from './schema.js';
@@ -16,3 +17,5 @@ export function createDatabase(databaseUrl: string) {
 
 export type Database = ReturnType<typeof createDatabase>;
 export type Db = Database['db'];
+/** Serve tanto para o `db` quanto para o `tx` de uma transação: o mesmo repository roda nos dois. */
+export type DbExecutor = PgDatabase<NodePgQueryResultHKT, typeof schema>;

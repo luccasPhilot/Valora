@@ -175,7 +175,9 @@ Para cada item (banco) do Meu Pluggy:
 7. **Faturas do cartão** (v2) e **alertas** (v2).
 8. Registrar o resultado em `sync_runs`: horário, quantidades e erro, se houver.
 
-O Pluggy pode usar convenções de sinal diferentes para conta e cartão. O `PluggyClient` normaliza para a regra do Valora (**negativo = saída**). Confirmar com dados reais na Fase 1. Os detalhes estão no [modelo de dados](04-modelo-de-dados.md).
+O Pluggy usa convenções de sinal diferentes para conta e cartão: no cartão, a compra vem positiva. O `PluggyClient` normaliza para a regra do Valora (**negativo = saída**) pelo `type` da transação. Isso foi confirmado com dados reais e está detalhado nas [convenções do Pluggy](04-modelo-de-dados.md#convenções-do-pluggy).
+
+Cada banco é gravado numa transação própria do banco de dados, e os dados dele são buscados inteiros no Pluggy antes de abrir essa transação. Se a resposta vier inválida ou a gravação falhar, nada daquele banco fica gravado: a conexão fica com `status = 'error'` e a execução termina como `partial`.
 
 ## Testes
 
@@ -192,6 +194,10 @@ O Pluggy pode usar convenções de sinal diferentes para conta e cartão. O `Plu
 | Sem tela de login na v1 | Só os seus aparelhos na Tailscale alcançam o app. Se um dia expor fora da Tailscale, login vira obrigatório |
 | Sincronização agendada, sem webhook | O Meu Pluggy só atualiza 1x/dia; webhook exigiria um endereço público |
 | Sincronização dentro do app | Um container a menos; o mesmo service atende o agendamento e o botão |
+| Uma sincronização por vez com `pg_try_advisory_lock` | O lock fica na sessão do PostgreSQL: some sozinho se o processo cair e valeria até com mais de um processo. Uma flag em memória não teria nenhuma das duas coisas. O disparo manual responde 409 (`SYNC_IN_PROGRESS`) e o agendamento só registra que pulou |
+| Ids dos bancos no `.env` (`PLUGGY_ITEM_IDS`) | Listar os itens pela API do Pluggy só existe nos planos pagos. Para até 5 bancos que quase nunca mudam, editar o `.env` e reiniciar basta |
+| `GET /connections` sem paginação | O Meu Pluggy permite no máximo 5 conexões. É uma exceção consciente à regra de paginar listagens, como a lista de contas |
+| Agendamento com `croner` | Suporte nativo a fuso (`America/Sao_Paulo`), escrito em TypeScript e sem dependências |
 | JSON bruto guardado | Permite reprocessar quando as regras mudarem, sem buscar tudo de novo |
 | Dinheiro em centavos (inteiro) | Evita erro de arredondamento do ponto flutuante |
 | Fotos diárias de saldo e investimentos desde a Fase 1 | O Open Finance devolve a posição atual; a evolução só existe se for guardada |

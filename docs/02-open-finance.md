@@ -45,6 +45,23 @@ Segundo a [página oficial](https://www.pluggy.ai/meu-pluggy):
 
 Cada banco autorizado vira um **item** no Pluggy. É pelo id do item que o Valora busca contas, transações e investimentos.
 
+### Ids dos itens no Valora
+
+O Valora não consegue descobrir sozinho quais itens existem: listar os itens da aplicação pela API (`fetchAllItems`) só existe nos planos pagos do Pluggy. Por isso os ids ficam no `.env`.
+
+1. Depois do passo 6, cada banco conectado pelo MeuPluggy aparece como um item na sua aplicação do [dashboard](https://dashboard.pluggy.ai). O id é um texto longo, no formato de um UUID.
+2. Coloque os ids numa variável só, separados por vírgula, no `backend/.env` (desenvolvimento) e no `infra/.env` (produção):
+
+   ```
+   PLUGGY_ITEM_IDS=id-do-banco-1,id-do-banco-2,id-do-banco-3
+   ```
+
+3. Reinicie o backend. Ele recusa subir se a lista estiver vazia ou tiver um id repetido, citando só o nome da variável.
+
+Na próxima sincronização, cada id novo vira uma conexão. Tirar um id da lista faz a sincronização parar de ler aquele banco, mas o histórico dele continua guardado.
+
+No MeuPluggy, o conector se chama sempre "MeuPluggy", qualquer que seja o banco. O nome que aparece no Valora vem da conta corrente do item (veja as [convenções do Pluggy](04-modelo-de-dados.md#convenções-do-pluggy)).
+
 ## Dados disponíveis
 
 | Categoria | Exemplos |

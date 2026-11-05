@@ -57,18 +57,18 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 
 ### Sincronização
 
-- [ ] `PluggyClient` com o `pluggy-sdk`, validando as respostas com Zod e convertendo valores para centavos.
-- [ ] **Confirmar com dados reais** a convenção de sinal do Pluggy para conta e cartão, e registrar no [modelo de dados](04-modelo-de-dados.md).
-- [ ] Sincronização de conexões, contas e transações ([regras](03-arquitetura.md#sincronização)):
-  - [ ] carga inicial de 12 meses, depois janela de 30 dias;
-  - [ ] gravação pelo id do Pluggy, sem duplicar;
-  - [ ] remoção de transações pendentes que sumiram;
-  - [ ] um banco com erro não trava os outros.
-- [ ] Fotos diárias de saldo (`balance_snapshots`).
-- [ ] Investimentos e fotos diárias (`investments`, `investment_snapshots`) já gravados, mesmo sem tela. Histórico não volta depois.
-- [ ] Agendamento diário (`SYNC_CRON`) + `POST /api/v1/sync-runs` + lock contra execução dupla.
-- [ ] Registro em `sync_runs`.
-- [ ] Testes de integração da sincronização com respostas do Pluggy gravadas e anonimizadas.
+- [x] `PluggyClient` com o `pluggy-sdk`, validando as respostas com Zod e convertendo valores para centavos.
+- [x] **Confirmar com dados reais** a convenção de sinal do Pluggy para conta e cartão, e registrar no [modelo de dados](04-modelo-de-dados.md).
+- [x] Sincronização de conexões, contas e transações ([regras](03-arquitetura.md#sincronização)):
+  - [x] carga inicial de 12 meses, depois janela de 30 dias;
+  - [x] gravação pelo id do Pluggy, sem duplicar;
+  - [x] remoção de transações pendentes que sumiram;
+  - [x] um banco com erro não trava os outros.
+- [x] Fotos diárias de saldo (`balance_snapshots`).
+- [x] Investimentos e fotos diárias (`investments`, `investment_snapshots`) já gravados, mesmo sem tela. Histórico não volta depois.
+- [x] Agendamento diário (`SYNC_CRON`) + `POST /api/v1/sync-runs` + lock contra execução dupla.
+- [x] Registro em `sync_runs`.
+- [x] Testes de integração da sincronização com respostas do Pluggy gravadas e anonimizadas.
 
 ### Categorias
 

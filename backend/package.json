@@ -20,7 +20,8 @@
     "test:unit": "vitest run --project api",
     "test:integration": "vitest run --project api:integration",
     "test:watch": "vitest",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "fixtures:record": "tsx --env-file=.env scripts/record-pluggy-fixtures.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -38,10 +39,12 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
+    "croner": "^11.0.0",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.8",
     "fastify-type-provider-zod": "^7.0.0",
     "pg": "^8.23.1",
+    "pluggy-sdk": "^0.94.0",
     "zod": "^4.6.7"
   }
 }

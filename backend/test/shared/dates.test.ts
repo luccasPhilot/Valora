@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { firstDayOfMonth, todayInSaoPaulo, toSaoPauloDate } from '../../src/shared/dates.js';
+import {
+  firstDayOfMonth,
+  subtractDays,
+  todayInSaoPaulo,
+  toSaoPauloDate,
+} from '../../src/shared/dates.js';
 
 describe('toSaoPauloDate', () => {
   it('should_return_previous_day_when_utc_is_after_midnight_but_sao_paulo_is_not', () => {
@@ -66,6 +71,53 @@ describe('firstDayOfMonth', () => {
     const invalidDate = '15/11/2026';
     // Act
     const call = () => firstDayOfMonth(invalidDate);
+    // Assert
+    expect(call).toThrow(RangeError);
+  });
+});
+
+describe('subtractDays', () => {
+  it('should_go_back_to_previous_month_when_days_cross_the_month_start', () => {
+    // Arrange
+    const isoDate = '2026-11-04';
+    // Act
+    const date = subtractDays(isoDate, 30);
+    // Assert
+    expect(date).toBe('2026-10-05');
+  });
+
+  it('should_go_back_one_year_when_subtracting_365_days_in_a_regular_year', () => {
+    // Arrange
+    const isoDate = '2026-11-04';
+    // Act
+    const date = subtractDays(isoDate, 365);
+    // Assert
+    expect(date).toBe('2025-11-04');
+  });
+
+  it('should_count_february_29_when_the_range_includes_a_leap_day', () => {
+    // Arrange
+    const isoDate = '2028-03-01';
+    // Act
+    const date = subtractDays(isoDate, 1);
+    // Assert
+    expect(date).toBe('2028-02-29');
+  });
+
+  it('should_return_same_date_when_days_is_zero', () => {
+    // Arrange
+    const isoDate = '2026-11-04';
+    // Act
+    const date = subtractDays(isoDate, 0);
+    // Assert
+    expect(date).toBe('2026-11-04');
+  });
+
+  it('should_throw_when_date_is_not_iso_formatted', () => {
+    // Arrange
+    const invalidDate = '04/11/2026';
+    // Act
+    const call = () => subtractDays(invalidDate, 1);
     // Assert
     expect(call).toThrow(RangeError);
   });

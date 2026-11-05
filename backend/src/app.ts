@@ -3,9 +3,16 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import type { DestinationStream } from 'pino';
 
 import type { Database } from './db/database.js';
+import { ConnectionsRepository } from './modules/connections/connections.repository.js';
+import { connectionsRoutes } from './modules/connections/connections.routes.js';
+import { ConnectionsService } from './modules/connections/connections.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
+import { createSyncService } from './modules/sync/sync.module.js';
+import { syncRoutes } from './modules/sync/sync.routes.js';
+import type { SyncService } from './modules/sync/sync.service.js';
 import type { Config } from './shared/config.js';
 import { registerErrorHandlers } from './shared/error-handler.js';
 import { buildLoggerOptions } from './shared/logger.js';
@@ -16,12 +23,21 @@ export const API_PREFIX = '/api/v1';
 export interface AppDependencies {
   readonly config: Config;
   readonly database: Database;
+  readonly pluggySdk: PluggySdk;
   readonly logStream?: DestinationStream;
+  /** Relógio da sincronização; os testes fixam a data das fixtures. */
+  readonly now?: () => Date;
 }
 
-export function buildApp({ config, database, logStream }: AppDependencies): FastifyInstance {
+export interface ValoraApp {
+  readonly app: FastifyInstance;
+  /** Exposto para o server.ts ligar o agendamento e fechar execuções interrompidas. */
+  readonly syncService: SyncService;
+}
+
+export function buildApp(deps: AppDependencies): ValoraApp {
   const app = Fastify({
-    logger: buildLoggerOptions(config, logStream),
+    logger: buildLoggerOptions(deps.config, deps.logStream),
     // A linha por requisição vem do registerRequestLog, sem os campos extras do padrão.
     logController: new LogController({ disableRequestLogging: true }),
   });
@@ -30,10 +46,25 @@ export function buildApp({ config, database, logStream }: AppDependencies): Fast
   registerRequestLog(app);
   registerErrorHandlers(app);
   app.addHook('onClose', async () => {
-    await database.pool.end();
+    await deps.database.pool.end();
   });
+  const syncService = registerModules(app, deps);
+  return { app, syncService };
+}
 
+function registerModules(app: FastifyInstance, deps: AppDependencies): SyncService {
+  const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
+  const connectionsService = new ConnectionsService(new ConnectionsRepository(database.db));
+  const syncService = createSyncService({
+    config: deps.config,
+    database,
+    pluggySdk: deps.pluggySdk,
+    logger: app.log,
+    now: deps.now ?? (() => new Date()),
+  });
   app.register(healthRoutes(healthService), { prefix: API_PREFIX });
-  return app;
+  app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
+  app.register(syncRoutes(syncService), { prefix: API_PREFIX });
+  return syncService;
 }

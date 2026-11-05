@@ -12,7 +12,7 @@ docker compose -f infra/compose.dev.yml up -d
 
 # 2. Dentro de backend/
 cd backend
-cp .env.example .env     # já aponta para o banco do passo 1
+cp .env.example .env     # já aponta para o banco do passo 1; preencha as variáveis do Pluggy
 npm ci
 npm run dev              # aplica as migrations e sobe em http://127.0.0.1:3000
 ```
@@ -32,6 +32,19 @@ Conferência: `curl http://127.0.0.1:3000/api/v1/health` responde `{"status":"ok
 | `npm run test:unit` | Só os unitários (não precisa do Docker) |
 | `npm run test:integration` | Só os de integração (sobem um PostgreSQL com Testcontainers; precisam do Docker) |
 | `npm run db:generate` | Gera uma migration a partir das mudanças em `src/db/schema.ts` |
+| `npm run fixtures:record` | Chama a API real do Pluggy uma vez e regrava as fixtures anonimizadas de `test/fixtures/pluggy/`. Mostra só um resumo com contagens (sinal por tipo de conta, horário das datas, status de cada banco) |
+
+## Sincronização
+
+Roda todo dia no horário do `SYNC_CRON` (fuso de São Paulo) e quando alguém chama a rota:
+
+```bash
+curl -X POST http://127.0.0.1:3000/api/v1/sync-runs     # 202; 409 SYNC_IN_PROGRESS se já estiver rodando
+curl http://127.0.0.1:3000/api/v1/sync-runs/latest      # status e quantidades da última execução
+curl http://127.0.0.1:3000/api/v1/connections           # cada banco, com status e última sincronização
+```
+
+O código fica em `src/modules/sync/` (`PluggyClient`, `SyncService`, repositories e rotas) e `src/modules/connections/`. Regras em [docs/03-arquitetura.md](../docs/03-arquitetura.md#sincronização).
 
 ## Variáveis de ambiente
 
@@ -43,6 +56,10 @@ Validadas com Zod ao iniciar (`src/shared/config.ts`). O app para citando o nome
 | `HOST` | `127.0.0.1` | Endereço em que a API escuta (no Docker, `0.0.0.0`) |
 | `PORT` | `3000` | Porta da API |
 | `LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` ou `silent` |
+| `PLUGGY_CLIENT_ID` | obrigatória | Credencial da sua aplicação no dashboard do Pluggy |
+| `PLUGGY_CLIENT_SECRET` | obrigatória | Credencial da sua aplicação no dashboard do Pluggy |
+| `PLUGGY_ITEM_IDS` | obrigatória | Ids dos bancos (itens do MeuPluggy), separados por vírgula ([como achar](../docs/02-open-finance.md#ids-dos-itens-no-valora)) |
+| `SYNC_CRON` | `0 7 * * *` | Horário da sincronização diária, no fuso `America/Sao_Paulo` |
 
 ## Estrutura
 

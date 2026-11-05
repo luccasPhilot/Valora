@@ -5,7 +5,7 @@ Proposta inicial para o PostgreSQL. Os nomes de tabelas e colunas ficam em ingl�
 ## Regras
 
 - **Dinheiro em centavos, como inteiro.** Colunas `*_cents` do tipo `bigint`. O Pluggy devolve reais com casas decimais; a conversão (`Math.round(valor * 100)`) acontece uma vez, no `PluggyClient`. A formatação em R$ só acontece no front.
-- **Sinal:** negativo é saída de dinheiro, positivo é entrada. O `PluggyClient` normaliza, seja qual for a convenção do Pluggy para conta ou cartão.
+- **Sinal:** negativo é saída de dinheiro, positivo é entrada. O `PluggyClient` normaliza, seja qual for a convenção do Pluggy para conta ou cartão (veja [Convenções do Pluggy](#convenções-do-pluggy)).
 - **Datas:** a data da transação é `date` (dia, sem hora), no fuso `America/Sao_Paulo`. Horários de sistema são `timestamptz`.
 - **Ids:** `uuid` interno como chave primária. O id do Pluggy fica numa coluna `pluggy_*_id` com índice único, e é por ela que a sincronização grava ou atualiza.
 - **JSON bruto:** toda linha que vem do Pluggy guarda a resposta original em `raw jsonb`.
@@ -13,6 +13,24 @@ Proposta inicial para o PostgreSQL. Os nomes de tabelas e colunas ficam em ingl�
 - **Transações manuais** (`source = 'manual'`) não têm id do Pluggy nem `raw`, têm sempre `category_source = 'user'` e a sincronização nunca as altera nem apaga. Regras de uso em [produto](01-produto.md#lançamento-manual).
 - **Conta "Dinheiro"** (`type = 'cash'`): criada na primeira execução, sem conexão e sem saldo. Recebe só transações manuais e fica fora do saldo total. As transações dela entram normalmente em receitas, despesas, orçamentos e relatórios.
 - **Transferências internas não são receita nem despesa.** Pagamento da fatura do cartão e transferência entre contas suas aparecem duas vezes (sai de uma conta, entra em outra ou quita a fatura). Elas usam uma categoria do tipo `transfer` e ficam fora de todos os totais.
+
+## Convenções do Pluggy
+
+Confirmadas com os dados reais em 4 de novembro de 2026: 3 bancos pelo conector MeuPluggy, 885 transações em BRL, de conta corrente e de cartão.
+
+| Assunto | O que o Pluggy manda | O que o Valora grava |
+|---|---|---|
+| Sinal na conta corrente | `DEBIT` negativo, `CREDIT` positivo | igual |
+| Sinal no cartão | invertido: compra (`DEBIT`) positiva, estorno e pagamento (`CREDIT`) negativos | compra negativa, estorno positivo |
+| Regra usada | `type`: `DEBIT` = sai da conta, `CREDIT` = entra (a documentação do SDK diz o mesmo) | `amount_cents` = `Math.round(\|valor\| × 100)`, negativo quando `type = DEBIT`. O sinal do `amount` não entra na conta |
+| Valor convertido | `amountInAccountCurrency` veio nulo em todas | usa `amountInAccountCurrency` quando vier; senão, `amount` |
+| Data | `date` é um instante em UTC: parte vem às 03:00Z (meia-noite em São Paulo), parte com o horário real | o dia em São Paulo (`toSaoPauloDate`) |
+| Pendentes | só apareceram no cartão | `status = 'pending'` |
+| Saldo do cartão | positivo = valor da fatura em aberto | igual, em centavos (não é uma saída) |
+| Nome do banco | `connector.name` é sempre "MeuPluggy" e o logo é o do conector, não o do banco | `institution_name` = nome da primeira conta do tipo `BANK` do item (sem espaços nas pontas); `institution_logo_url` fica nulo |
+| Nome do cartão | nome do produto, às vezes com espaços sobrando no fim | sem espaços nas pontas |
+
+Se um banco novo mandar algo diferente, rode `npm run fixtures:record` em `backend/` e confira o resumo antes de mudar a regra.
 
 ## Tabelas
 

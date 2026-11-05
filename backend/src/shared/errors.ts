@@ -34,3 +34,8 @@ export class ConflictError extends AppError {
   readonly code = 'CONFLICT';
   readonly statusCode = 409;
 }
+
+export class SyncInProgressError extends AppError {
+  readonly code = 'SYNC_IN_PROGRESS';
+  readonly statusCode = 409;
+}
