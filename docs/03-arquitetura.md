@@ -139,8 +139,8 @@ Tudo sob `/api/v1`.
 | `GET /connections` | Bancos conectados, status e última sincronização |
 | `POST /sync-runs` | Disparar uma sincronização agora |
 | `GET /sync-runs/latest` | Resultado da última sincronização |
-| `GET /accounts` | Contas e cartões com saldo |
-| `GET /transactions` | Lista paginada; filtros `from`, `to`, `categoryId`, `type`, `accountId`, `source`, `search`, `page`, `limit` |
+| `GET /accounts` | Contas e cartões com saldo. Na change `transactions-screen` devolve só `id`, `name`, `type` e `institutionName`, para o filtro de contas; a tela de Contas acrescenta os saldos |
+| `GET /transactions` | Lista paginada (`limit` padrão 50, máximo 100; sem `from` e `to`, o mês atual); filtros `from`, `to`, `categoryId`, `type`, `accountId`, `source`, `search`, `page`, `limit`. `type` é decidido pela categoria (`transfer`) e, fora dela, pelo sinal do valor. O filtro `source` entra com `manual-transactions` |
 | `GET /transactions/:id` | Detalhe de uma transação |
 | `POST /transactions` | Lançamento manual (receita ou despesa) |
 | `PATCH /transactions/:id` | Trocar a categoria (opcionalmente criando uma regra). Numa transação manual, também muda valor, data, descrição e conta |

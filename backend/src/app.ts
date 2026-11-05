@@ -3,6 +3,9 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import type { DestinationStream } from 'pino';
 
 import type { Database } from './db/database.js';
+import { AccountsRepository } from './modules/accounts/accounts.repository.js';
+import { accountsRoutes } from './modules/accounts/accounts.routes.js';
+import { AccountsService } from './modules/accounts/accounts.service.js';
 import { createCategoriesModule } from './modules/categories/categories.module.js';
 import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { categoryRulesRoutes } from './modules/categories/category-rules.routes.js';
@@ -18,6 +21,8 @@ import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
 import type { SyncService } from './modules/sync/sync.service.js';
+import { createTransactionsService } from './modules/transactions/transactions.module.js';
+import { transactionsRoutes } from './modules/transactions/transactions.routes.js';
 import type { Config } from './shared/config.js';
 import { registerErrorHandlers } from './shared/error-handler.js';
 import { buildLoggerOptions } from './shared/logger.js';
@@ -66,12 +71,13 @@ function registerModules(
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
   const connectionsService = new ConnectionsService(new ConnectionsRepository(database.db));
+  const now = deps.now ?? (() => new Date());
   const syncService = createSyncService({
     config: deps.config,
     database,
     pluggySdk: deps.pluggySdk,
     logger: app.log,
-    now: deps.now ?? (() => new Date()),
+    now,
   });
   app.register(healthRoutes(healthService), { prefix: API_PREFIX });
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
@@ -82,5 +88,14 @@ function registerModules(
   app.register(pluggyCategoryMappingsRoutes(categories.pluggyCategoryMappingsService), {
     prefix: API_PREFIX,
   });
+  app.register(accountsRoutes(new AccountsService(new AccountsRepository(database.db))), {
+    prefix: API_PREFIX,
+  });
+  const transactionsService = createTransactionsService({
+    database,
+    categoryRulesService: categories.categoryRulesService,
+    now,
+  });
+  app.register(transactionsRoutes(transactionsService), { prefix: API_PREFIX });
   return { syncService, categorySeedService: categories.categorySeedService };
 }

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { apiDelete, ApiError, apiGet, apiPost, apiPut } from './api-client';
+import { apiDelete, ApiError, apiGet, apiPatch, apiPost, apiPut } from './api-client';
 
 const healthSchema = z.object({ status: z.string() });
 
@@ -106,6 +106,19 @@ describe('apiPost e apiPut', () => {
     await apiPut('/categories/1', { name: 'Pets' }, healthSchema);
     // Assert
     expect(lastFetchCall()[1].method).toBe('PUT');
+  });
+
+  it('should_send_the_patch_method_with_the_body_when_patching', async () => {
+    // Arrange
+    stubFetch(Response.json({ status: 'ok' }));
+    // Act
+    await apiPatch('/transactions/1', { categoryId: 'abc' }, healthSchema);
+    // Assert
+    const [, init] = lastFetchCall();
+    expect({ method: init.method, body: init.body }).toEqual({
+      method: 'PATCH',
+      body: '{"categoryId":"abc"}',
+    });
   });
 
   it('should_throw_api_error_with_code_when_the_api_answers_409', async () => {

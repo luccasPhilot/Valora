@@ -23,11 +23,11 @@ describe('request logging', () => {
       async (instance) => {
         const typed = instance.withTypeProvider<ZodTypeProvider>();
         typed.post(
-          '/transactions',
+          '/payments',
           { schema: { body: z.object({ description: z.string() }) } },
           async () => ({}),
         );
-        instance.get('/transactions', async () => ({}));
+        instance.get('/payments', async () => ({}));
         instance.get('/boom', async () => {
           throw new Error(`falha ao gravar ${SECRET_DESCRIPTION}`);
         });
@@ -41,11 +41,11 @@ describe('request logging', () => {
     // Arrange
     const { server, logLines } = startApp();
     // Act
-    await server.inject({ method: 'GET', url: `${API_PREFIX}/transactions` });
+    await server.inject({ method: 'GET', url: `${API_PREFIX}/payments` });
     // Assert
     expect(logLines.find((line) => line.msg === 'request completed')).toMatchObject({
       method: 'GET',
-      path: `${API_PREFIX}/transactions`,
+      path: `${API_PREFIX}/payments`,
       statusCode: 200,
       durationMs: expect.any(Number),
     });
@@ -55,7 +55,7 @@ describe('request logging', () => {
     // Arrange
     const { server, logLines } = startApp();
     // Act
-    await server.inject({ method: 'GET', url: `${API_PREFIX}/transactions` });
+    await server.inject({ method: 'GET', url: `${API_PREFIX}/payments` });
     // Assert
     expect(logLines.filter((line) => line.msg === 'request completed')).toHaveLength(1);
   });
@@ -66,7 +66,7 @@ describe('request logging', () => {
     // Act
     await server.inject({
       method: 'POST',
-      url: `${API_PREFIX}/transactions`,
+      url: `${API_PREFIX}/payments`,
       payload: { description: SECRET_DESCRIPTION },
     });
     // Assert
@@ -77,7 +77,7 @@ describe('request logging', () => {
     // Arrange
     const { server, logLines } = startApp();
     // Act
-    await server.inject({ method: 'GET', url: `${API_PREFIX}/transactions?search=farmacia` });
+    await server.inject({ method: 'GET', url: `${API_PREFIX}/payments?search=farmacia` });
     // Assert
     expect(JSON.stringify(logLines)).not.toContain('farmacia');
   });
@@ -88,7 +88,7 @@ describe('request logging', () => {
     // Act
     await server.inject({
       method: 'GET',
-      url: `${API_PREFIX}/transactions`,
+      url: `${API_PREFIX}/payments`,
       headers: { authorization: `Bearer ${SECRET_TOKEN}`, cookie: `session=${SECRET_TOKEN}` },
     });
     // Assert

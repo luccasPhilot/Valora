@@ -16,6 +16,8 @@ import {
   updateCategoryRule,
 } from '@/lib/api/categories';
 
+import { TRANSACTIONS_QUERY_KEY } from '../transactions/transactions-queries';
+
 const CATEGORIES_KEY = ['categories'] as const;
 const RULES_KEY = ['category-rules'] as const;
 const PLUGGY_MAPPINGS_KEY = ['pluggy-category-mappings'] as const;
@@ -36,11 +38,15 @@ export function usePluggyMappings() {
   return useQuery({ queryKey: PLUGGY_MAPPINGS_KEY, queryFn: listPluggyMappings });
 }
 
-// Mudar regra ou mapeamento recategoriza transações no servidor; quando a tela de transações existir,
-// a lista dela entra nas chaves invalidadas aqui.
+// Mudar categoria, regra ou mapeamento muda o que a lista de transações mostra (nome, ícone ou a
+// categoria recalculada no servidor), então ela também é recarregada.
 function useInvalidate() {
   const queryClient = useQueryClient();
-  return (queryKey: readonly string[]) => queryClient.invalidateQueries({ queryKey });
+  return (queryKey: readonly string[]) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey }),
+      queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY }),
+    ]);
 }
 
 export interface CategorySave {

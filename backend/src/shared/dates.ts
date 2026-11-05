@@ -36,3 +36,12 @@ export function subtractDays(isoDate: string, days: number): string {
   instant.setUTCDate(instant.getUTCDate() - days);
   return instant.toISOString().slice(0, 10);
 }
+
+export function lastDayOfMonth(isoDate: string = todayInSaoPaulo()): string {
+  assertIsoDate(isoDate);
+  const year = Number(isoDate.slice(0, 4));
+  const month = Number(isoDate.slice(5, 7));
+  // Dia 0 do mês seguinte é o último dia deste mês.
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${isoDate.slice(0, 7)}-${String(lastDay).padStart(2, '0')}`;
+}

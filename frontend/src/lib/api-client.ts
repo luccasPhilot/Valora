@@ -38,7 +38,7 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message, details);
 }
 
-type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 async function fetchOrThrow(
   path: string,
@@ -88,6 +88,10 @@ export function apiPost<T>(path: string, body: unknown, responseSchema: z.ZodTyp
 
 export function apiPut<T>(path: string, body: unknown, responseSchema: z.ZodType<T>): Promise<T> {
   return apiRequest('PUT', path, responseSchema, body);
+}
+
+export function apiPatch<T>(path: string, body: unknown, responseSchema: z.ZodType<T>): Promise<T> {
+  return apiRequest('PATCH', path, responseSchema, body);
 }
 
 /** Para as rotas que respondem 204, sem corpo. */

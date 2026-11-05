@@ -76,7 +76,7 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 - [x] Mapeamento das categorias do Pluggy para as suas (`pluggy_category_mappings`).
 - [x] Regras: contém, começa com, igual; com prioridade.
 - [x] Ordem de decisão: você → regra → Pluggy → "Sem categoria". A sincronização nunca muda uma categoria escolhida por você.
-- [ ] Ao corrigir uma categoria, opção "Aplicar sempre para '<descrição>'", que cria a regra.
+- [x] Ao corrigir uma categoria, opção "Aplicar sempre para '<descrição>'", que cria a regra.
 - [x] Tela de categorias e regras.
 
 ### Lançamento manual
@@ -93,12 +93,12 @@ Regras em [produto](01-produto.md#lançamento-manual).
 ### Telas
 
 - [ ] **Contas e cartões:** saldo de cada conta, total, limite do cartão, status de cada conexão e última sincronização.
-- [ ] **Transações:**
-  - [ ] lista agrupada por dia, paginada;
-  - [ ] filtros por período, categoria, tipo e conta;
-  - [ ] pesquisa;
-  - [ ] detalhe;
-  - [ ] troca de categoria.
+- [x] **Transações:**
+  - [x] lista agrupada por dia, paginada;
+  - [x] filtros por período, categoria, tipo e conta;
+  - [x] pesquisa;
+  - [x] detalhe;
+  - [x] troca de categoria.
 - [ ] **Orçamentos:** limite por categoria e mês, consumo, status com ícone e texto, "copiar do mês anterior".
 - [ ] **Início:**
   - [ ] card de saldo;
