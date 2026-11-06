@@ -40,6 +40,7 @@
 
 **6. API.**
 - `GET /planned-entries?month=AAAA-MM` devolve as ocorrências do mês (e os totais previstos por situação) em uma lista só, sem paginação: o volume é de dezenas de previsões no máximo, uma exceção consciente à regra de paginar, a registrar na tabela de Decisões.
+- A mesma resposta traz `pausedEntries`: previsão pausada não gera ocorrência em mês nenhum, então sem essa lista a tela não teria como reativá-la ou excluí-la. A tela mostra o bloco "Pausadas".
 - `PUT /planned-entries/:id/occurrences/:month` com `action`: `realize` (`transactionId` opcional) ou `skip`. `DELETE` no mesmo caminho desfaz.
 - Códigos de erro novos: `TRANSACTION_ALREADY_LINKED` (409) e `TRANSACTION_NOT_COMPATIBLE` (422, sinal diferente ou outro mês).
 

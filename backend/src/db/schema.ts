@@ -203,6 +203,76 @@ export const budgets = pgTable(
   ],
 );
 
+export const plannedEntries = pgTable(
+  'planned_entries',
+  {
+    id: primaryId(),
+    description: text('description').notNull(),
+    // Negativo = despesa prevista, como nas transações.
+    amountCents: cents('amount_cents').notNull(),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id),
+    dayOfMonth: integer('day_of_month').notNull(),
+    recurrence: text('recurrence').notNull(),
+    startMonth: day('start_month').notNull(),
+    endMonth: day('end_month'),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (table) => [
+    check('planned_entries_amount_not_zero_check', sql`${table.amountCents} <> 0`),
+    check('planned_entries_day_of_month_check', sql`${table.dayOfMonth} between 1 and 31`),
+    check(
+      'planned_entries_recurrence_check',
+      sql`${table.recurrence} in ('none', 'monthly', 'yearly')`,
+    ),
+    check(
+      'planned_entries_start_month_first_day_check',
+      sql`extract(day from ${table.startMonth}) = 1`,
+    ),
+    check(
+      'planned_entries_end_month_check',
+      sql`${table.endMonth} is null or (extract(day from ${table.endMonth}) = 1 and ${table.endMonth} >= ${table.startMonth})`,
+    ),
+  ],
+);
+
+// Só o que o usuário decidiu. Sem linha, a ocorrência do mês está pendente.
+export const plannedEntryOccurrences = pgTable(
+  'planned_entry_occurrences',
+  {
+    plannedEntryId: uuid('planned_entry_id')
+      .notNull()
+      .references(() => plannedEntries.id, { onDelete: 'cascade' }),
+    month: day('month').notNull(),
+    status: text('status').notNull(),
+    // Excluir a transação vinculada deixa a ocorrência realizada, sem vínculo.
+    transactionId: uuid('transaction_id').references(() => transactions.id, {
+      onDelete: 'set null',
+    }),
+    decidedAt: timestamptz('decided_at').notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.plannedEntryId, table.month] }),
+    // Uma transação só realiza uma ocorrência.
+    uniqueIndex('planned_entry_occurrences_transaction_id_key')
+      .on(table.transactionId)
+      .where(sql`${table.transactionId} is not null`),
+    check(
+      'planned_entry_occurrences_status_check',
+      sql`${table.status} in ('realized', 'skipped')`,
+    ),
+    check(
+      'planned_entry_occurrences_month_first_day_check',
+      sql`extract(day from ${table.month}) = 1`,
+    ),
+    check(
+      'planned_entry_occurrences_skipped_without_transaction_check',
+      sql`${table.status} <> 'skipped' or ${table.transactionId} is null`,
+    ),
+  ],
+);
+
 export const investments = pgTable('investments', {
   id: primaryId(),
   connectionId: uuid('connection_id')

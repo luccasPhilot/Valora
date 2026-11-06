@@ -9,12 +9,14 @@ interface MonthSelectorProps {
   /** `AAAA-MM`. */
   month: string;
   onChange: (month: string) => void;
+  /** Nome acessível do grupo; cada tela diz o que o mês escolhe. */
+  label?: string;
 }
 
 /** Mês anterior e próximo, com o nome do mês no meio ("novembro de 2026"). */
-export function MonthSelector({ month, onChange }: MonthSelectorProps) {
+export function MonthSelector({ month, onChange, label = 'Mês do orçamento' }: MonthSelectorProps) {
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Mês do orçamento">
+    <div className="flex items-center gap-1" role="group" aria-label={label}>
       <Button
         type="button"
         variant="outline"

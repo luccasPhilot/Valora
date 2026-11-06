@@ -16,7 +16,7 @@ O sistema MUST permitir criar, editar e excluir previsões de receita e despesa 
 - **THEN** a API responde 400 `VALIDATION_ERROR`
 
 ### Requirement: Ocorrências do mês
-`GET /api/v1/planned-entries?month=AAAA-MM` MUST devolver as ocorrências do mês, cada uma com a previsão, a data prevista, a situação (`pending`, `realized`, `skipped`) e o vínculo, e os totais previstos de receitas e despesas. Sem `month`, MUST usar o mês atual em São Paulo. Uma previsão `none` MUST aparecer só no mês de início. Uma `monthly` MUST aparecer em todo mês do início ao fim, inclusive. Uma `yearly` MUST aparecer só no mês de início de cada ano. Previsões pausadas (`is_active = false`) MUST NOT gerar ocorrências.
+`GET /api/v1/planned-entries?month=AAAA-MM` MUST devolver as ocorrências do mês, cada uma com a previsão, a data prevista, a situação (`pending`, `realized`, `skipped`) e o vínculo, e os totais previstos de receitas e despesas. Sem `month`, MUST usar o mês atual em São Paulo. Uma previsão `none` MUST aparecer só no mês de início. Uma `monthly` MUST aparecer em todo mês do início ao fim, inclusive. Uma `yearly` MUST aparecer só no mês de início de cada ano. Previsões pausadas (`is_active = false`) MUST NOT gerar ocorrências, e MUST vir à parte, em `pausedEntries`, para poderem ser reativadas ou excluídas.
 
 #### Scenario: Mensal dentro do período
 - **WHEN** a previsão mensal vai de 2026-12 a 2027-02 e o mês pedido é 2027-01

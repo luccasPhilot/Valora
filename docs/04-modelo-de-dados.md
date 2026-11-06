@@ -220,7 +220,24 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `end_month` | date | pode ser nulo |
 | `is_active` | boolean | |
 
-Como marcar uma previsão como realizada (ligar a uma transação real) fica para definir na v2.
+A previsão não grava uma linha por mês: as **ocorrências são calculadas** a partir de `recurrence`, `start_month`, `end_month` e `day_of_month` (dia 31 em fevereiro cai no 28 ou 29). `none` vale só em `start_month`; `monthly`, em todo mês do início ao fim; `yearly`, no mês de `start_month` a cada ano. Previsão pausada (`is_active = false`) não gera ocorrências. Os dois meses são sempre o dia 1.
+
+**`planned_entry_occurrences`**: o que você decidiu sobre uma ocorrência. Sem linha, a ocorrência do mês está pendente.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `planned_entry_id` | uuid | → `planned_entries`; `ON DELETE CASCADE` |
+| `month` | date | dia 1 do mês da ocorrência; chave primária junto com `planned_entry_id` |
+| `status` | text | `realized` ou `skipped` |
+| `transaction_id` | uuid | → `transactions`; pode ser nulo; `ON DELETE SET NULL`; índice único onde não é nulo |
+| `decided_at` | timestamptz | |
+
+**Como realizar uma ocorrência:** é sempre uma ação sua, nunca automática.
+- **Vincular** a uma transação do mesmo mês e do mesmo sinal que ainda não realiza outra ocorrência. O app sugere até 5 candidatas (a até 7 dias da data prevista, com a mesma categoria ou valor dentro de 20%).
+- **Marcar como realizada sem vincular** (`status = 'realized'`, `transaction_id` nulo), quando a transação não veio.
+- **Pular o mês** (`status = 'skipped'`, sem transação).
+- **Desfazer** apaga a linha e a ocorrência volta a pendente.
+- Excluir a transação vinculada deixa a ocorrência `realized`, sem vínculo. Editar a previsão vale para todos os meses, inclusive os já realizados.
 
 **`goals`**: metas.
 

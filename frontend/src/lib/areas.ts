@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  CalendarClock,
   Home,
   Landmark,
   type LucideIcon,
@@ -24,6 +25,7 @@ export const APP_AREAS: readonly AppArea[] = [
   { path: '/', title: 'Início', icon: Home, group: 'daily', phase: 1 },
   { path: '/transacoes', title: 'Transações', icon: ArrowLeftRight, group: 'daily', phase: 1 },
   { path: '/orcamentos', title: 'Orçamentos', icon: Target, group: 'daily', phase: 1 },
+  { path: '/planejamento', title: 'Planejamento', icon: CalendarClock, group: 'daily', phase: 2 },
   { path: '/contas', title: 'Contas', icon: Landmark, group: 'daily', phase: 1 },
   { path: '/categorias', title: 'Categorias e regras', icon: Tags, group: 'footer', phase: 1 },
   { path: '/ajustes', title: 'Ajustes', icon: Settings, group: 'footer', phase: 1 },

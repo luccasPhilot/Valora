@@ -72,6 +72,20 @@ export function addMonthsKeepingDay(isoDate: string, months: number): string {
   return dateInMonth(year, monthIndex + months, dayOfMonth);
 }
 
+/** O dia `dayOfMonth` do mês de `isoDate`; em mês mais curto, cai no último dia (dia 31 em fevereiro → 28 ou 29). */
+export function dayInMonth(isoDate: string, dayOfMonth: number): string {
+  assertIsoDate(isoDate);
+  return dateInMonth(Number(isoDate.slice(0, 4)), Number(isoDate.slice(5, 7)) - 1, dayOfMonth);
+}
+
+/** Dias de calendário de `from` até `to` (negativo se `to` for antes), sem efeito de fuso. */
+export function daysBetween(from: string, to: string): number {
+  assertIsoDate(from);
+  assertIsoDate(to);
+  const MS_PER_DAY = 86_400_000;
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / MS_PER_DAY);
+}
+
 /** Primeira data de hoje em diante (inclusive) que cai no mesmo dia do mês de `referenceDate`. */
 export function nextOccurrenceOfDay(referenceDate: string, from: string): string {
   assertIsoDate(referenceDate);

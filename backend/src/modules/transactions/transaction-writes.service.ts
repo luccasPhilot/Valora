@@ -3,7 +3,10 @@ import { OpenFinanceReadOnlyError, ValidationError } from '../../shared/errors.j
 import { normalizeDescription } from '../../shared/text.js';
 import type { AccountsRepository } from '../accounts/accounts.repository.js';
 import type { CategoriesRepository } from '../categories/categories.repository.js';
-import { assertCategoryIsSelectable } from '../categories/category-availability.js';
+import {
+  assertCategoryIsSelectable,
+  assertCategoryMatchesType,
+} from '../categories/category-availability.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
 import {
   buildManualChanges,
@@ -16,11 +19,6 @@ import {
 import type { TransactionRecord } from './transactions.repository.js';
 import type { TransactionsService } from './transactions.service.js';
 import type { TransactionsWriteRepository } from './transactions-write.repository.js';
-
-const CATEGORY_KIND_MESSAGES: Readonly<Record<ManualTransactionType, string>> = {
-  expense: 'Escolha uma categoria de despesa',
-  income: 'Escolha uma categoria de receita',
-};
 
 function readOnlyError(transaction: TransactionRecord, action: string): OpenFinanceReadOnlyError {
   return new OpenFinanceReadOnlyError(
@@ -112,7 +110,7 @@ export class TransactionWritesService {
     if (fields.accountId !== undefined) await this.assertAccountExists(fields.accountId);
     if (fields.categoryId === undefined) return;
     await assertCategoryIsSelectable(this.deps.categories, fields.categoryId);
-    await this.assertCategoryMatchesType(fields.categoryId, type);
+    await assertCategoryMatchesType(this.deps.categories, fields.categoryId, type);
   }
 
   private assertDateIsNotInTheFuture(date: string): void {
@@ -126,17 +124,6 @@ export class TransactionWritesService {
     if (await this.deps.accounts.exists(accountId)) return;
     throw new ValidationError(`Conta ${accountId} não existe`, {
       details: [{ field: 'accountId', message: 'A conta não existe' }],
-    });
-  }
-
-  private async assertCategoryMatchesType(
-    categoryId: string,
-    type: ManualTransactionType,
-  ): Promise<void> {
-    const category = await this.deps.categories.findById(categoryId);
-    if (category?.kind === type) return;
-    throw new ValidationError(`A categoria ${categoryId} não é de ${type}`, {
-      details: [{ field: 'categoryId', message: CATEGORY_KIND_MESSAGES[type] }],
     });
   }
 }

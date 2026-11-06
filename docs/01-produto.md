@@ -39,7 +39,8 @@ Cheque especial entra como número negativo e reduz o total. O Início e a tela 
 | | Faturas do cartão: fatura atual com vencimento e situação (aberta, vencida, paga), próximas faturas e parcelas futuras por mês | v2 |
 | **Categorias e regras** | Categorias próprias, regras automáticas, regras que nascem quando você corrige uma categoria | v1 |
 | **Orçamentos** | Limite por categoria no mês, quanto já foi gasto, aviso perto do limite e quando estoura | v1 |
-| **Planejamento** | Receitas e despesas previstas (inclusive as que se repetem), projeção do saldo no fim do mês | v2 |
+| **Planejamento** | Receitas e despesas previstas (avulsas ou que se repetem todo mês ou todo ano), por mês: o que falta acontecer, o que já foi realizado e o que foi pulado, com os totais previstos. Você vincula uma previsão à transação real (o app sugere candidatas, mas nunca vincula sozinho), marca como realizada sem vincular, pula o mês ou desfaz; também pode pausar e excluir | v2 |
+| | Projeção do saldo no fim do mês | v2 |
 | **Metas** | Objetivo, valor desejado, valor acumulado (informado à mão), progresso, prazo estimado | v2 |
 | | Meta vinculada a um investimento ou conta, que se atualiza sozinha | v3 |
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |

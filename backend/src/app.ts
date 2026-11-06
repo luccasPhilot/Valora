@@ -27,6 +27,9 @@ import { DashboardService } from './modules/dashboard/dashboard.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { PlannedEntriesRepository } from './modules/planned-entries/planned-entries.repository.js';
+import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.routes.js';
+import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
 import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
@@ -113,6 +116,12 @@ function registerModules(
     now,
   });
   app.register(budgetsRoutes(budgetsService), { prefix: API_PREFIX });
+  const plannedEntriesService = new PlannedEntriesService({
+    entries: new PlannedEntriesRepository(database.db),
+    categories: new CategoriesRepository(database.db),
+    now,
+  });
+  app.register(plannedEntriesRoutes(plannedEntriesService), { prefix: API_PREFIX });
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,
