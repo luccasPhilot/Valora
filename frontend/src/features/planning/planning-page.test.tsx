@@ -65,6 +65,20 @@ const SALARY = occurrence({
   }),
 });
 
+const PROJECTION = {
+  date: '2026-11-05',
+  startBalanceCents: 100000,
+  plannedIncomeCents: 0,
+  plannedExpenseCents: 0,
+  billsDueCents: 0,
+  projectedBalanceCents: 100000,
+  lowestBalanceCents: 100000,
+  lowestBalanceDate: '2026-11-05',
+  daily: [{ date: '2026-11-05', balanceCents: 100000 }],
+  events: [],
+  warnings: [],
+};
+
 const EMPTY_TOTALS = { incomeCents: 0, expenseCents: 0 };
 
 function overview(
@@ -89,6 +103,7 @@ function baseRoutes(items: unknown[], extras: Parameters<typeof overview>[1] = {
   return {
     'GET /api/v1/planned-entries': overview(items, extras),
     'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
+    'GET /api/v1/projection': () => Response.json(PROJECTION),
   };
 }
 
@@ -439,5 +454,31 @@ describe('PlanningPage entry form', () => {
     // Assert
     expect(await screen.findByText('Excluir previsão?')).toBeVisible();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  });
+});
+
+describe('PlanningPage projection block', () => {
+  it('should_keep_the_planned_list_working_when_the_projection_fails', async () => {
+    // Arrange
+    stubRoutes({
+      ...baseRoutes([occurrence()]),
+      'GET /api/v1/projection': () => errorResponse(500, 'INTERNAL_ERROR'),
+    });
+    // Act
+    renderPage();
+    // Assert
+    expect(await findRow('Aluguel')).toBeInTheDocument();
+  });
+
+  it('should_show_the_projection_error_without_hiding_the_page_when_the_projection_fails', async () => {
+    // Arrange
+    stubRoutes({
+      ...baseRoutes([occurrence()]),
+      'GET /api/v1/projection': () => errorResponse(500, 'INTERNAL_ERROR'),
+    });
+    // Act
+    renderPage();
+    // Assert
+    expect(await screen.findByText('Não foi possível carregar a projeção.')).toBeInTheDocument();
   });
 });

@@ -132,7 +132,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
 
 - [x] **Faturas do cartão:** fatura atual, próximas faturas, vencimento, parcelas futuras (`credit_card_bills`).
 - [x] **Receitas e despesas previstas** (`planned_entries`), avulsas ou recorrentes. Marcar como realizada: vincular a uma transação (sempre por escolha sua), realizar sem vincular ou pular o mês (`planned_entry_occurrences`).
-- [ ] **Projeção do fim do mês:** saldo de hoje + receitas previstas − despesas previstas − parcelas que vencem.
+- [x] **Projeção do fim do mês:** saldo de hoje + receitas previstas − despesas previstas − faturas que vencem (a fatura já contém as parcelas do mês).
 - [ ] **Metas** (`goals`): nome, ícone, valor desejado, valor acumulado informado à mão, progresso, prazo estimado pelo ritmo de aporte.
 - [ ] **Alertas** (`alerts`):
   - [ ] cobrança duplicada: mesmo valor e mesmo estabelecimento em poucos dias;

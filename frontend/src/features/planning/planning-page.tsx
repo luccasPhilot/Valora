@@ -39,6 +39,7 @@ import {
   useUndoOccurrence,
 } from './planning-queries';
 import { PlanningSummary } from './planning-summary';
+import { ProjectionBlock } from './projection/projection-block';
 
 const MONTH_PARAM = 'month';
 const SAVE_FAILED_MESSAGE = 'Não foi possível salvar a previsão. Tente de novo.';
@@ -197,6 +198,7 @@ export function Component() {
 
   return (
     <div className="space-y-4">
+      <ProjectionBlock />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <MonthSelector month={month} onChange={changeMonth} label="Mês do planejamento" />
         {items.length > 0 ? addButton : null}

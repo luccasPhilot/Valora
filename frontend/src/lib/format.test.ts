@@ -7,6 +7,7 @@ import {
   formatDate,
   formatDayHeader,
   formatDayMonth,
+  formatIsoDayMonth,
   formatMoment,
   formatMonth,
   formatMonthName,
@@ -218,6 +219,26 @@ describe('formatDayMonth', () => {
     const text = formatDayMonth(instant);
     // Assert
     expect(text).toBe('31/10');
+  });
+});
+
+describe('formatIsoDayMonth', () => {
+  it('should_show_day_and_month_when_a_calendar_date_is_given', () => {
+    // Arrange
+    const isoDate = '2026-11-10';
+    // Act
+    const text = formatIsoDayMonth(isoDate);
+    // Assert
+    expect(text).toBe('10/11');
+  });
+
+  it('should_throw_when_the_date_is_not_in_iso_format', () => {
+    // Arrange
+    const invalid = '10/11/2026';
+    // Act
+    const format = () => formatIsoDayMonth(invalid);
+    // Assert
+    expect(format).toThrow(RangeError);
   });
 });
 

@@ -30,6 +30,8 @@ import { HealthService } from './modules/health/health.service.js';
 import { PlannedEntriesRepository } from './modules/planned-entries/planned-entries.repository.js';
 import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.routes.js';
 import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
+import { projectionRoutes } from './modules/projection/projection.routes.js';
+import { ProjectionService } from './modules/projection/projection.service.js';
 import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
@@ -122,6 +124,13 @@ function registerModules(
     now,
   });
   app.register(plannedEntriesRoutes(plannedEntriesService), { prefix: API_PREFIX });
+  const projectionService = new ProjectionService({
+    accounts: accountsService,
+    plannedEntries: plannedEntriesService,
+    creditCardBills: creditCardBillsService,
+    now,
+  });
+  app.register(projectionRoutes(projectionService), { prefix: API_PREFIX });
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,

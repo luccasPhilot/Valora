@@ -37,6 +37,11 @@ export function subtractDays(isoDate: string, days: number): string {
   return instant.toISOString().slice(0, 10);
 }
 
+/** Soma `days` dias de calendário à data pura, pelo mesmo caminho de `subtractDays`. */
+export function addDays(isoDate: string, days: number): string {
+  return subtractDays(isoDate, -days);
+}
+
 /** Dia 1 do mês anterior ao de `isoDate`. */
 export function firstDayOfPreviousMonth(isoDate: string): string {
   assertIsoDate(isoDate);

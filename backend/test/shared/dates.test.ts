@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  addDays,
   addMonthsKeepingDay,
   firstDayOfMonth,
   firstDayOfPreviousMonth,
@@ -232,5 +233,25 @@ describe('nextOccurrenceOfDay', () => {
     const result = nextOccurrenceOfDay('2026-10-31', '2027-02-05');
     // Assert
     expect(result).toBe('2027-02-28');
+  });
+});
+
+describe('addDays', () => {
+  it('should_cross_the_month_boundary_when_adding_days_to_the_last_day', () => {
+    // Arrange
+    const isoDate = '2026-11-30';
+    // Act
+    const date = addDays(isoDate, 1);
+    // Assert
+    expect(date).toBe('2026-12-01');
+  });
+
+  it('should_return_the_same_date_when_adding_zero_days', () => {
+    // Arrange
+    const isoDate = '2027-02-28';
+    // Act
+    const date = addDays(isoDate, 0);
+    // Assert
+    expect(date).toBe('2027-02-28');
   });
 });

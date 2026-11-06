@@ -11,6 +11,8 @@ import {
   updatePlannedEntry,
 } from '@/lib/api/planned-entries';
 
+import { PROJECTION_QUERY_KEY } from './projection/projection-queries';
+
 /** Prefixo de todas as consultas de previsões: qualquer mudança recarrega todos os meses. */
 export const PLANNED_ENTRIES_QUERY_KEY = ['planned-entries'] as const;
 
@@ -21,10 +23,14 @@ export function usePlannedEntries(month: string) {
   });
 }
 
-// As ocorrências, as sugestões e os totais são calculados no servidor: recarrega em vez de recalcular aqui.
+// As ocorrências, as sugestões, os totais e a projeção são calculados no servidor: recarrega em vez de recalcular aqui.
 function useRefreshPlanning() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: PLANNED_ENTRIES_QUERY_KEY });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: PLANNED_ENTRIES_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PROJECTION_QUERY_KEY }),
+    ]);
 }
 
 interface EntrySave {

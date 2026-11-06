@@ -40,7 +40,7 @@ Cheque especial entra como número negativo e reduz o total. O Início e a tela 
 | **Categorias e regras** | Categorias próprias, regras automáticas, regras que nascem quando você corrige uma categoria | v1 |
 | **Orçamentos** | Limite por categoria no mês, quanto já foi gasto, aviso perto do limite e quando estoura | v1 |
 | **Planejamento** | Receitas e despesas previstas (avulsas ou que se repetem todo mês ou todo ano), por mês: o que falta acontecer, o que já foi realizado e o que foi pulado, com os totais previstos. Você vincula uma previsão à transação real (o app sugere candidatas, mas nunca vincula sozinho), marca como realizada sem vincular, pula o mês ou desfaz; também pode pausar e excluir | v2 |
-| | Projeção do saldo no fim do mês | v2 |
+| | Projeção do saldo no fim do mês: o saldo de hoje mais o que está previsto e menos as faturas que vencem, dia a dia, com o ponto mais baixo e o aviso de saldo negativo. Fica no topo da tela de Planejamento ([regras](#projeção-do-fim-do-mês)) | v2 |
 | **Metas** | Objetivo, valor desejado, valor acumulado (informado à mão), progresso, prazo estimado | v2 |
 | | Meta vinculada a um investimento ou conta, que se atualiza sozinha | v3 |
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |
@@ -64,6 +64,20 @@ Regras:
   - **São diferentes:** as duas ficam, e o aviso não volta.
   - O app nunca junta sozinho.
 - **Saque:** um saque no banco chega pelo Open Finance como saída, com a categoria "Saque". Se você também lançar à mão o que gastou com aquele dinheiro, troque a categoria do saque para uma transferência, para não contar a despesa duas vezes.
+
+## Projeção do fim do mês
+
+Responde "como vou chegar ao fim do mês?" com uma conta que dá para conferir à mão:
+
+`saldo projetado = saldo de hoje + receitas previstas − despesas previstas − faturas que vencem até o último dia do mês`
+
+- **Saldo de hoje** é o saldo total de Contas (a mesma definição do Início).
+- **Só entra o que ainda vai acontecer.** Previsões realizadas já estão no saldo e as puladas não vão acontecer; as duas ficam de fora.
+- **Faturas, não parcelas.** Entra a parte não paga de cada fatura de cartão que vence no mês. A fatura já contém as parcelas do mês, então descontar as duas contaria a mesma saída duas vezes. Cartão oculto não entra, como no saldo.
+- **Atrasado entra hoje.** Previsão pendente com data passada e fatura vencida e não paga são descontadas hoje, e a tela marca "Atrasada" para você resolver. Esconder um gasto provável seria pior do que mostrá-lo.
+- **Saídas primeiro.** No mesmo dia, as saídas vêm antes das entradas, para o ponto mais baixo não ser otimista.
+- **Cartão sem vencimento** (o banco não informou e não há como estimar) não entra na conta, e a tela avisa qual cartão ficou de fora. Vencimento **estimado** entra e vem marcado.
+- **Não prevê gastos do dia a dia** (mercado, lazer) nem meses futuros, e os gastos no cartão ainda fora de fatura fechada entram só na fatura que vencer depois. A tela diz isso.
 
 ## Orçamentos
 
