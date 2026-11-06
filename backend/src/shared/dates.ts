@@ -55,3 +55,30 @@ export function lastDayOfMonth(isoDate: string = todayInSaoPaulo()): string {
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   return `${isoDate.slice(0, 7)}-${String(lastDay).padStart(2, '0')}`;
 }
+
+// Monta AAAA-MM-DD no mês pedido; em mês mais curto, o dia cai no último dia (dia 31 em fevereiro → 28).
+function dateInMonth(year: number, monthIndex: number, dayOfMonth: number): string {
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  const day = Math.min(dayOfMonth, lastDay);
+  return new Date(Date.UTC(year, monthIndex, day)).toISOString().slice(0, 10);
+}
+
+/** Soma `months` meses mantendo o dia do mês; em mês mais curto, cai no último dia (31/01 + 1 → 28/02). */
+export function addMonthsKeepingDay(isoDate: string, months: number): string {
+  assertIsoDate(isoDate);
+  const year = Number(isoDate.slice(0, 4));
+  const monthIndex = Number(isoDate.slice(5, 7)) - 1;
+  const dayOfMonth = Number(isoDate.slice(8, 10));
+  return dateInMonth(year, monthIndex + months, dayOfMonth);
+}
+
+/** Primeira data de hoje em diante (inclusive) que cai no mesmo dia do mês de `referenceDate`. */
+export function nextOccurrenceOfDay(referenceDate: string, from: string): string {
+  assertIsoDate(referenceDate);
+  assertIsoDate(from);
+  const dayOfMonth = Number(referenceDate.slice(8, 10));
+  const year = Number(from.slice(0, 4));
+  const monthIndex = Number(from.slice(5, 7)) - 1;
+  const thisMonth = dateInMonth(year, monthIndex, dayOfMonth);
+  return thisMonth >= from ? thisMonth : dateInMonth(year, monthIndex + 1, dayOfMonth);
+}

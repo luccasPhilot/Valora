@@ -56,6 +56,15 @@ export const pluggyInvestmentSchema = z.object({
   balance: z.number(),
 });
 
+export const pluggyCreditCardBillSchema = z.object({
+  id: z.string().min(1),
+  dueDate: z.coerce.date(),
+  billClosingDate: z.coerce.date().nullish(),
+  totalAmount: z.number(),
+  minimumPaymentAmount: z.number().nullish(),
+  payments: z.array(z.object({ amount: z.number() })).nullish(),
+});
+
 export const pluggyPageSchema = z.object({
   results: z.array(z.unknown()),
   page: z.number().int().optional(),
@@ -68,3 +77,4 @@ export type PluggyItem = z.infer<typeof pluggyItemSchema>;
 export type PluggyAccount = z.infer<typeof pluggyAccountSchema>;
 export type PluggyTransaction = z.infer<typeof pluggyTransactionSchema>;
 export type PluggyInvestment = z.infer<typeof pluggyInvestmentSchema>;
+export type PluggyCreditCardBill = z.infer<typeof pluggyCreditCardBillSchema>;

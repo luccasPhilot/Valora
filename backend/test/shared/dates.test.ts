@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  addMonthsKeepingDay,
   firstDayOfMonth,
   firstDayOfPreviousMonth,
   lastDayOfMonth,
+  nextOccurrenceOfDay,
   subtractDays,
   todayInSaoPaulo,
   toSaoPauloDate,
@@ -170,5 +172,65 @@ describe('firstDayOfPreviousMonth', () => {
     const call = () => firstDayOfPreviousMonth(invalidDate);
     // Assert
     expect(call).toThrow(RangeError);
+  });
+});
+
+describe('addMonthsKeepingDay', () => {
+  it('should_keep_the_day_when_the_next_month_is_long_enough', () => {
+    // Arrange & Act
+    const result = addMonthsKeepingDay('2026-11-15', 1);
+    // Assert
+    expect(result).toBe('2026-12-15');
+  });
+
+  it('should_fall_on_the_last_day_when_the_next_month_is_shorter', () => {
+    // Arrange & Act
+    const result = addMonthsKeepingDay('2027-01-31', 1);
+    // Assert
+    expect(result).toBe('2027-02-28');
+  });
+
+  it('should_roll_the_year_when_adding_months_past_december', () => {
+    // Arrange & Act
+    const result = addMonthsKeepingDay('2026-12-10', 2);
+    // Assert
+    expect(result).toBe('2027-02-10');
+  });
+
+  it('should_return_the_same_date_when_adding_zero_months', () => {
+    // Arrange & Act
+    const result = addMonthsKeepingDay('2026-11-15', 0);
+    // Assert
+    expect(result).toBe('2026-11-15');
+  });
+});
+
+describe('nextOccurrenceOfDay', () => {
+  it('should_use_the_next_month_when_the_day_already_passed_this_month', () => {
+    // Arrange & Act
+    const result = nextOccurrenceOfDay('2026-10-10', '2026-11-12');
+    // Assert
+    expect(result).toBe('2026-12-10');
+  });
+
+  it('should_use_this_month_when_the_day_is_still_ahead', () => {
+    // Arrange & Act
+    const result = nextOccurrenceOfDay('2026-10-10', '2026-11-06');
+    // Assert
+    expect(result).toBe('2026-11-10');
+  });
+
+  it('should_use_today_when_the_day_is_today', () => {
+    // Arrange & Act
+    const result = nextOccurrenceOfDay('2026-10-10', '2026-11-10');
+    // Assert
+    expect(result).toBe('2026-11-10');
+  });
+
+  it('should_fall_on_the_last_day_when_the_day_does_not_exist_in_the_month', () => {
+    // Arrange & Act
+    const result = nextOccurrenceOfDay('2026-10-31', '2027-02-05');
+    // Assert
+    expect(result).toBe('2027-02-28');
   });
 });

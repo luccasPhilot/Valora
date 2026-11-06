@@ -11,13 +11,14 @@ const MIGRATION_COUNT = z
   .object({ entries: z.array(z.unknown()) })
   .parse(JSON.parse(readFileSync(JOURNAL_FILE, 'utf-8'))).entries.length;
 
-const V1_TABLES = [
+const TABLES = [
   'accounts',
   'balance_snapshots',
   'budgets',
   'categories',
   'category_rules',
   'connections',
+  'credit_card_bills',
   'investment_snapshots',
   'investments',
   'pluggy_category_mappings',
@@ -39,12 +40,12 @@ describe('migrations', () => {
     return result.rows.map((row) => row.table_name);
   }
 
-  it('should_create_the_eleven_v1_tables_when_migrations_run_on_an_empty_database', async () => {
+  it('should_create_the_twelve_tables_when_migrations_run_on_an_empty_database', async () => {
     // Arrange (o global-setup já aplicou as migrations num banco vazio)
     // Act
     const tables = await listPublicTables();
     // Assert
-    expect(tables).toEqual(V1_TABLES);
+    expect(tables).toEqual(TABLES);
   });
 
   it('should_change_nothing_when_migrations_run_again', async () => {

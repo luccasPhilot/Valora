@@ -6,6 +6,8 @@ import { type ItemConnectionState, mapItemStatus } from './item-status.js';
 import {
   type PluggyAccount,
   pluggyAccountSchema,
+  type PluggyCreditCardBill,
+  pluggyCreditCardBillSchema,
   type PluggyInvestment,
   pluggyInvestmentSchema,
   pluggyItemSchema,
@@ -18,6 +20,7 @@ import { normalizeAmount, toAccountType, toCents, toLastDigits } from './pluggy-
 import type { PluggySdk } from './pluggy-sdk.js';
 import type {
   SyncedAccount,
+  SyncedCreditCardBill,
   SyncedInvestment,
   SyncedTransaction,
   TransactionWindow,
@@ -26,6 +29,7 @@ import type {
 // O conector MeuPluggy é igual para todos os bancos: nome e logo dele não identificam a instituição.
 const MEU_PLUGGY_CONNECTOR_ID = 200;
 const MAX_INVESTMENT_PAGES = 100;
+const MAX_BILL_PAGES = 20;
 
 export class PluggyResponseError extends Error {
   // Só os caminhos dos campos: a resposta tem valores e descrições.
@@ -95,6 +99,28 @@ function toSyncedInvestment(investment: PluggyInvestment, raw: unknown): SyncedI
   };
 }
 
+// Vencimento e fechamento são datas de calendário: o MeuPluggy as manda à meia-noite UTC
+// (`2026-10-10T00:00:00.000Z`), e em São Paulo isso seria o dia anterior. Vale o dia em UTC.
+function toCalendarDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function toSyncedCreditCardBill(bill: PluggyCreditCardBill, raw: unknown): SyncedCreditCardBill {
+  const paidInReais = (bill.payments ?? []).reduce((sum, payment) => sum + payment.amount, 0);
+  return {
+    pluggyBillId: bill.id,
+    dueDate: toCalendarDate(bill.dueDate),
+    closingDate: bill.billClosingDate ? toCalendarDate(bill.billClosingDate) : null,
+    totalCents: toCents(bill.totalAmount),
+    minimumPaymentCents:
+      bill.minimumPaymentAmount === null || bill.minimumPaymentAmount === undefined
+        ? null
+        : toCents(bill.minimumPaymentAmount),
+    paidCents: toCents(paidInReais),
+    raw,
+  };
+}
+
 /** Único ponto de contato com o Pluggy. Valida as respostas e devolve tipos do Valora. */
 export class PluggyClient {
   constructor(
@@ -142,6 +168,21 @@ export class PluggyClient {
     return rawTransactions.map((raw) =>
       toSyncedTransaction(parseOrThrow(pluggyTransactionSchema, raw, 'transações'), raw),
     );
+  }
+
+  async listCreditCardBills(pluggyAccountId: string): Promise<SyncedCreditCardBill[]> {
+    const bills: SyncedCreditCardBill[] = [];
+    for (let pageNumber = 1; pageNumber <= MAX_BILL_PAGES; pageNumber += 1) {
+      const response = await this.sdk.fetchCreditCardBillsPage(pluggyAccountId, pageNumber);
+      const page = parseOrThrow(pluggyPageSchema, response, 'faturas');
+      for (const raw of page.results) {
+        bills.push(
+          toSyncedCreditCardBill(parseOrThrow(pluggyCreditCardBillSchema, raw, 'faturas'), raw),
+        );
+      }
+      if (pageNumber >= (page.totalPages ?? pageNumber)) break;
+    }
+    return bills;
   }
 
   async listInvestments(itemId: string): Promise<SyncedInvestment[]> {

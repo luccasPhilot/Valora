@@ -200,7 +200,9 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `account_id` | uuid | → `accounts` (cartão) |
 | `pluggy_bill_id` | text | único |
 | `due_date` | date | vencimento |
+| `closing_date` | date | fechamento informado pelo Pluggy; pode ser nulo |
 | `total_cents` | bigint | |
+| `paid_cents` | bigint | soma dos pagamentos da fatura (`payments[].amount`); padrão 0 |
 | `minimum_payment_cents` | bigint | |
 | `raw` | jsonb | |
 

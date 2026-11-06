@@ -36,7 +36,7 @@ Cheque especial entra como número negativo e reduz o total. O Início e a tela 
 | **Transações** | Lista agrupada por dia; filtros por período, categoria, tipo e conta; pesquisa; detalhe; trocar a categoria | v1 |
 | | Lançamento manual de receitas e despesas, aviso de possível duplicata | v1 |
 | **Contas e cartões** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |
-| | Faturas e parcelas futuras do cartão | v2 |
+| | Faturas do cartão: fatura atual com vencimento e situação (aberta, vencida, paga), próximas faturas e parcelas futuras por mês | v2 |
 | **Categorias e regras** | Categorias próprias, regras automáticas, regras que nascem quando você corrige uma categoria | v1 |
 | **Orçamentos** | Limite por categoria no mês, quanto já foi gasto, aviso perto do limite e quando estoura | v1 |
 | **Planejamento** | Receitas e despesas previstas (inclusive as que se repetem), projeção do saldo no fim do mês | v2 |

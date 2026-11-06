@@ -26,10 +26,40 @@ const fixtureSchema = z.object({
     }),
   ),
   investments: z.array(z.looseObject({ id: z.string(), itemId: z.string(), balance: z.number() })),
+  // Faturas dos cartões. Fixtures gravadas antes das faturas não têm este campo.
+  bills: z.array(z.looseObject({ id: z.string(), accountId: z.string() })).default([]),
 });
 
 export type PluggyItemFixture = z.infer<typeof fixtureSchema>;
+export type PluggyBillFixture = PluggyItemFixture['bills'][number];
 export type PluggyTransactionFixture = PluggyItemFixture['transactions'][number];
+
+interface BillFixtureOptions {
+  readonly id: string;
+  readonly accountId: string;
+  /** AAAA-MM-DD */
+  readonly dueDate: string;
+  /** Hora UTC que o Pluggy manda junto da data. O MeuPluggy manda meia-noite. */
+  readonly dueTime?: string;
+  readonly totalAmount: number;
+  readonly paidAmounts?: readonly number[];
+}
+
+/** Fatura sintética no formato do Pluggy (valores em reais, datas ISO), para os testes. */
+export function buildBillFixture(options: BillFixtureOptions): PluggyBillFixture {
+  return {
+    id: options.id,
+    accountId: options.accountId,
+    dueDate: `${options.dueDate}T${options.dueTime ?? '00:00:00'}.000Z`,
+    billClosingDate: null,
+    totalAmount: options.totalAmount,
+    minimumPaymentAmount: null,
+    payments: (options.paidAmounts ?? []).map((amount, index) => ({
+      id: `${options.id}-pay-${String(index + 1)}`,
+      amount,
+    })),
+  };
+}
 
 /** Cópias novas a cada chamada: cada teste pode alterar as suas à vontade. */
 export function loadPluggyFixtures(): PluggyItemFixture[] {
@@ -97,6 +127,14 @@ export class FakePluggySdk implements PluggySdk {
   async fetchInvestmentsPage(itemId: string, page: number): Promise<unknown> {
     const investments = page === 1 ? this.fixtureOf(itemId).investments : [];
     return { results: investments, page, total: investments.length, totalPages: 1 };
+  }
+
+  async fetchCreditCardBillsPage(accountId: string, page: number): Promise<unknown> {
+    const bills = this.fixtures
+      .flatMap((fixture) => fixture.bills)
+      .filter((bill) => bill.accountId === accountId);
+    const results = page === 1 ? bills : [];
+    return { results, page, total: bills.length, totalPages: 1 };
   }
 
   private fixtureOf(itemId: string): PluggyItemFixture {

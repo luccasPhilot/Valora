@@ -1,5 +1,7 @@
 ## Context
 
+**Conferido com os bancos reais (tarefa 1.1, 06/11/2026):** o MeuPluggy devolve as faturas só **depois de fechadas**. Num cartão há 12 faturas, todas passadas e quase todas pagas, e a fatura aberta (o `balance_cents` da conta, com limite usado) não está na lista. Todos os campos vêm preenchidos (`billClosingDate`, `minimumPaymentAmount`, `payments`, `totalAmount`), mas o vencimento vem como `2026-10-10T00:00:00.000Z`: é uma data de calendário e vale o dia em UTC (convertida para São Paulo, viraria o dia anterior). O `balanceDueDate` da conta é o vencimento da última fatura fechada. Dos 3 cartões, um tem faturas, um não tem nenhuma e tem vencimento nulo, e um está zerado.
+
 Conferido no banco de desenvolvimento (3 cartões, 308 transações de cartão, 19 delas parceladas): o `balanceDueDate` dos dados da conta está **desatualizado** (10/10 e 18/10, com hoje em novembro) ou **nulo** (um cartão com fatura de R$ 859,73 sem nenhum vencimento), e `balanceCloseDate` vem nulo nos três. Os valores das parcelas de uma mesma compra **variam em centavos** (R$ 60,00, R$ 59,98, R$ 59,98). Isso muda duas decisões abaixo.
 
 A conta de cartão já guarda o valor da fatura atual em `balance_cents`, e as transações do cartão já trazem `installment_number` e `installment_total`. Faltam o vencimento, as faturas seguintes e a visão de parcelas futuras. O `pluggy-sdk` tem `fetchCreditCardBills(accountId)`. Quanto o conector MeuPluggy devolve de faturas varia por banco, e isso só se sabe com dados reais.
@@ -27,13 +29,18 @@ A conta de cartão já guarda o valor da fatura atual em `balance_cents`, e as t
 - Função pura `billStatus(bill, today)`, com `today` em São Paulo.
 - Fatura com `total_cents` zero ou negativo (crédito) vira `paid`: não há o que pagar.
 
-**3. "Fatura atual" é a primeira não paga com vencimento de hoje em diante; se não houver, a vencida mais recente que não foi paga.**
-- "Próximas" são as seguintes, em ordem de vencimento, até 3.
+**3. "Fatura atual", nesta ordem:**
+1. a primeira fatura fechada **não paga** com vencimento de hoje em diante;
+2. a **última** fatura, se já venceu sem pagamento (só a última: um pagamento parcial antigo não conta, porque o valor que sobra costuma ir para a fatura seguinte);
+3. a fatura aberta, montada a partir do saldo da conta (decisão 4).
+- "Próximas" são as faturas fechadas seguintes à atual, em ordem de vencimento, até 3. O caso 3 não tem próximas.
 - *Alternativa:* usar `closing_date`. Descartada porque nem todo conector manda esse campo.
+- *Alternativa:* a vencida não paga mais recente, qualquer uma. Descartada com os dados reais: um pagamento parcial de meses atrás faria uma fatura antiga virar a "atual".
 
-**4. Fallback quando o cartão não tem faturas gravadas.**
-- A fatura atual vem de `accounts.balance_cents`. O vencimento vem de `raw.creditData.balanceDueDate`, mas esse campo guarda o vencimento da última fatura e fica velho.
-- `balanceDueDate` de hoje em diante: usado como está. **No passado**: o dia do mês é repetido no próximo mês (10/10 vira 10/11), e o vencimento sai marcado `isEstimatedDueDate: true`; a tela mostra "Vencimento estimado". Isso supõe que o banco não mudou o dia.
+**4. A fatura aberta vem do saldo da conta.** Vale quando não há fatura fechada pendente (decisão 3) e quando o cartão não tem faturas gravadas.
+- A fatura atual vem de `accounts.balance_cents`.
+- **Cartão com faturas gravadas:** o vencimento é **um mês depois** do vencimento da última fatura (10/10 vira 10/11). Se esse dia já passou, o dia do mês se repete a partir de hoje. Sai marcado `isEstimatedDueDate: true`; a tela mostra "Vencimento estimado". Isso supõe que o banco não mudou o dia.
+- **Cartão sem faturas gravadas:** o vencimento vem de `raw.creditData.balanceDueDate`, que guarda o da última fatura e fica velho. De hoje em diante, é usado como está. No passado, o dia do mês se repete a partir de hoje, também como estimado.
 - Sem `balanceDueDate`: `dueDate` nulo, e a tela mostra "Vencimento não informado pelo banco".
 - Fatura zerada (`balance_cents` zero) não precisa de vencimento.
 - Nunca se criam próximas faturas a partir do nada.
@@ -66,4 +73,4 @@ A conta de cartão já guarda o valor da fatura atual em `balance_cents`, e as t
 
 ## Open Questions
 
-- Quais campos de fatura o MeuPluggy realmente devolve para os 3 bancos do usuário? O banco de desenvolvimento ainda não tem faturas (a sincronização atual não as busca), então só dá para saber chamando o Pluggy. Resolver na tarefa 1.1, antes de fixar os schemas. Como o `balanceDueDate` dos dados da conta é fraco, se as faturas vierem vazias a tela de faturas e a projeção ficam bem limitadas para o cartão sem vencimento.
+- ~~Quais campos de fatura o MeuPluggy devolve?~~ Respondido na tarefa 1.1 (ver Context): só faturas fechadas, com todos os campos, vencimento à meia-noite UTC. Um dos 3 cartões não tem faturas e não tem vencimento nenhum; a projeção do fim do mês (`month-projection`) fica sem a data da fatura aberta dele.

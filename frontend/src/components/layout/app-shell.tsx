@@ -7,7 +7,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { NewTransactionButton } from '@/features/transactions/new-transaction/new-transaction-button';
 import { NewTransactionProvider } from '@/features/transactions/new-transaction/new-transaction-provider';
 import { useSidebarPreference } from '@/hooks/use-sidebar-preference';
-import { findAreaByPath } from '@/lib/areas';
+import { findScreenTitle } from '@/lib/areas';
 
 import { AppSidebar } from './app-sidebar';
 import { ScreenHeader } from './screen-header';
@@ -17,7 +17,7 @@ const TRANSACTIONS_PATH = '/transacoes';
 
 export function AppShell() {
   const { pathname } = useLocation();
-  const title = findAreaByPath(pathname)?.title ?? FALLBACK_TITLE;
+  const title = findScreenTitle(pathname) ?? FALLBACK_TITLE;
   const { isSidebarOpen, setSidebarOpen } = useSidebarPreference();
 
   return (

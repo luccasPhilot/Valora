@@ -15,7 +15,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { type AppArea, listAreasByGroup } from '@/lib/areas';
+import { type AppArea, isAreaActive, listAreasByGroup } from '@/lib/areas';
 
 // Item de 44 px; recolhido vira um quadrado de 44 px só com o ícone. O ativo é o único com fundo.
 const MENU_ITEM_CLASSES =
@@ -37,7 +37,7 @@ function AreaMenu({ areas }: AreaMenuProps) {
           <SidebarMenuButton
             asChild
             tooltip={area.title}
-            isActive={pathname === area.path}
+            isActive={isAreaActive(area, pathname)}
             className={MENU_ITEM_CLASSES}
           >
             <Link

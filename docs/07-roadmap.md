@@ -130,7 +130,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
 
 ## Fase 2 (v2) — Planejamento
 
-- [ ] **Faturas do cartão:** fatura atual, próximas faturas, vencimento, parcelas futuras (`credit_card_bills`).
+- [x] **Faturas do cartão:** fatura atual, próximas faturas, vencimento, parcelas futuras (`credit_card_bills`).
 - [ ] **Receitas e despesas previstas** (`planned_entries`), avulsas ou recorrentes. Definir como marcar uma previsão como realizada.
 - [ ] **Projeção do fim do mês:** saldo de hoje + receitas previstas − despesas previstas − parcelas que vencem.
 - [ ] **Metas** (`goals`): nome, ícone, valor desejado, valor acumulado informado à mão, progresso, prazo estimado pelo ritmo de aporte.

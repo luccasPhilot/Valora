@@ -18,6 +18,9 @@ import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-catego
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
 import { connectionsRoutes } from './modules/connections/connections.routes.js';
 import { ConnectionsService } from './modules/connections/connections.service.js';
+import { CreditCardBillsRepository } from './modules/credit-card-bills/credit-card-bills.repository.js';
+import { creditCardBillsRoutes } from './modules/credit-card-bills/credit-card-bills.routes.js';
+import { CreditCardBillsService } from './modules/credit-card-bills/credit-card-bills.service.js';
 import { DashboardRepository } from './modules/dashboard/dashboard.repository.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
@@ -99,6 +102,11 @@ function registerModules(
   });
   const accountsService = new AccountsService(new AccountsRepository(database.db));
   app.register(accountsRoutes(accountsService), { prefix: API_PREFIX });
+  const creditCardBillsService = new CreditCardBillsService({
+    repository: new CreditCardBillsRepository(database.db),
+    now,
+  });
+  app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
   const budgetsService = new BudgetsService({
     budgets: new BudgetsRepository(database.db),
     categories: new CategoriesRepository(database.db),

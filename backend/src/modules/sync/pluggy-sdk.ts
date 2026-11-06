@@ -3,6 +3,7 @@ import { PluggyClient as PluggyApiClient } from 'pluggy-sdk';
 import type { TransactionWindow } from './sync.types.js';
 
 const INVESTMENTS_PAGE_SIZE = 500;
+const BILLS_PAGE_SIZE = 100;
 
 export interface PluggyCredentials {
   readonly pluggyClientId: string;
@@ -18,6 +19,7 @@ export interface PluggySdk {
   fetchAccounts(itemId: string): Promise<unknown>;
   fetchAllTransactions(accountId: string, window: TransactionWindow): Promise<unknown>;
   fetchInvestmentsPage(itemId: string, page: number): Promise<unknown>;
+  fetchCreditCardBillsPage(accountId: string, page: number): Promise<unknown>;
 }
 
 export function createPluggySdk(credentials: PluggyCredentials): PluggySdk {
@@ -32,5 +34,7 @@ export function createPluggySdk(credentials: PluggyCredentials): PluggySdk {
       apiClient.fetchAllTransactions(accountId, { dateFrom: window.from, dateTo: window.to }),
     fetchInvestmentsPage: (itemId, page) =>
       apiClient.fetchInvestments(itemId, undefined, { page, pageSize: INVESTMENTS_PAGE_SIZE }),
+    fetchCreditCardBillsPage: (accountId, page) =>
+      apiClient.fetchCreditCardBills(accountId, { page, pageSize: BILLS_PAGE_SIZE }),
   };
 }

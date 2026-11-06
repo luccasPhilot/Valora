@@ -8,6 +8,7 @@ import { randomInt } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import {
   type Account,
+  type CreditCardBills,
   type Investment,
   type Item,
   PluggyClient,
@@ -21,6 +22,7 @@ import { subtractDays, todayInSaoPaulo } from '../src/shared/dates.js';
 const FIXTURES_DIRECTORY = new URL('../test/fixtures/pluggy/', import.meta.url);
 const HISTORY_DAYS = 365;
 const INVESTMENTS_PAGE_SIZE = 500;
+const BILLS_PAGE_SIZE = 100;
 const MAX_TRANSACTIONS_PER_ACCOUNT = 20;
 const PENDING_SAMPLE_QUOTA = 6;
 const INSTALLMENT_SAMPLE_QUOTA = 3;
@@ -45,6 +47,9 @@ interface RecordedItem {
   readonly accounts: readonly Account[];
   readonly transactionsByAccount: ReadonlyMap<string, readonly Transaction[]>;
   readonly investments: readonly Investment[];
+  /** Faturas por cartão. Cartão cuja busca falhou fica fora, e o resumo conta a falha. */
+  readonly billsByAccount: ReadonlyMap<string, readonly CreditCardBills[]>;
+  readonly billsFailedCount: number;
 }
 
 class FakeIds {
@@ -102,6 +107,32 @@ async function fetchInvestments(client: PluggyClient, itemId: string): Promise<I
   }
 }
 
+async function fetchBills(client: PluggyClient, accountId: string): Promise<CreditCardBills[]> {
+  const bills: CreditCardBills[] = [];
+  for (let page = 1; ; page += 1) {
+    const response = await client.fetchCreditCardBills(accountId, {
+      page,
+      pageSize: BILLS_PAGE_SIZE,
+    });
+    bills.push(...response.results);
+    if (page >= response.totalPages) return bills;
+  }
+}
+
+async function recordBills(client: PluggyClient, accounts: readonly Account[]) {
+  const billsByAccount = new Map<string, CreditCardBills[]>();
+  let billsFailedCount = 0;
+  for (const account of accounts.filter((candidate) => candidate.type === 'CREDIT')) {
+    try {
+      billsByAccount.set(account.id, await fetchBills(client, account.id));
+    } catch (error) {
+      billsFailedCount += 1;
+      print(`  faturas do cartão não lidas: ${describeFailure(error)}`);
+    }
+  }
+  return { billsByAccount, billsFailedCount };
+}
+
 async function recordItem(client: PluggyClient, itemId: string): Promise<RecordedItem> {
   const today = todayInSaoPaulo();
   const window = { dateFrom: subtractDays(today, HISTORY_DAYS), dateTo: today };
@@ -112,7 +143,8 @@ async function recordItem(client: PluggyClient, itemId: string): Promise<Recorde
     transactionsByAccount.set(account.id, await client.fetchAllTransactions(account.id, window));
   }
   const investments = await fetchInvestments(client, itemId);
-  return { item, accounts, transactionsByAccount, investments };
+  const { billsByAccount, billsFailedCount } = await recordBills(client, accounts);
+  return { item, accounts, transactionsByAccount, investments, billsByAccount, billsFailedCount };
 }
 
 // Pendentes, parceladas e entradas primeiro, para as fixtures cobrirem esses casos.
@@ -259,6 +291,36 @@ function anonymizeInvestment(investment: Investment, fakeIds: FakeIds): object {
   };
 }
 
+// Mantém a proporção paga/total de cada fatura, para as fixtures cobrirem paga, parcial e em aberto.
+function anonymizeBill(bill: CreditCardBills, fakeIds: FakeIds, accountId: string): object {
+  const fakeTotal = fakeAmountLike(bill.totalAmount);
+  const paidRatio = bill.totalAmount === 0 ? 0 : 1 / bill.totalAmount;
+  return {
+    id: fakeIds.for('bill', bill.id),
+    accountId: fakeIds.for('acc', accountId),
+    dueDate: bill.dueDate,
+    billClosingDate: bill.billClosingDate,
+    totalAmount: fakeTotal,
+    totalAmountCurrencyCode: bill.totalAmountCurrencyCode,
+    minimumPaymentAmount:
+      bill.minimumPaymentAmount === null
+        ? null
+        : Math.round(fakeTotal * 0.15 * CENTS_PER_REAL) / CENTS_PER_REAL,
+    allowsInstallments: bill.allowsInstallments,
+    financeCharges: [],
+    payments: bill.payments.map((payment) => ({
+      id: fakeIds.for('pay', payment.id),
+      valueType: payment.valueType,
+      paymentDate: payment.paymentDate,
+      paymentMode: payment.paymentMode,
+      amount: Math.round(payment.amount * paidRatio * fakeTotal * CENTS_PER_REAL) / CENTS_PER_REAL,
+      currencyCode: payment.currencyCode,
+    })),
+    createdAt: bill.createdAt,
+    updatedAt: bill.updatedAt,
+  };
+}
+
 function buildFixture(recorded: RecordedItem, fakeIds: FakeIds, letter: string): object {
   const transactions = recorded.accounts.flatMap((account) =>
     sampleTransactions(recorded.transactionsByAccount.get(account.id) ?? []),
@@ -271,6 +333,9 @@ function buildFixture(recorded: RecordedItem, fakeIds: FakeIds, letter: string):
       anonymizeTransaction(transaction, fakeIds, index),
     ),
     investments: recorded.investments.map((investment) => anonymizeInvestment(investment, fakeIds)),
+    bills: [...recorded.billsByAccount].flatMap(([accountId, bills]) =>
+      bills.map((bill) => anonymizeBill(bill, fakeIds, accountId)),
+    ),
   };
 }
 
@@ -290,6 +355,25 @@ function summarizeItem(recorded: RecordedItem, letter: string): void {
   recorded.investments.forEach((investment) => investments.add(investment.type));
   print(` investimentos: ${recorded.investments.length}`);
   investments.lines().forEach((line) => print(line));
+  summarizeBills(recorded);
+}
+
+// Só contagens e presença de campos, nunca valores ou datas.
+function summarizeBills(recorded: RecordedItem): void {
+  const fields = new Counter();
+  let billCount = 0;
+  for (const bills of recorded.billsByAccount.values()) {
+    for (const bill of bills) {
+      billCount += 1;
+      fields.add(`fechamento ${bill.billClosingDate === null ? 'ausente' : 'presente'}`);
+      fields.add(`mínimo ${bill.minimumPaymentAmount === null ? 'ausente' : 'presente'}`);
+      fields.add(`pagamentos ${bill.payments.length > 0 ? 'com registro' : 'sem registro'}`);
+      fields.add(`total ${signOf(bill.totalAmount)}`);
+    }
+  }
+  const failed = recorded.billsFailedCount;
+  print(` faturas: ${billCount} em ${recorded.billsByAccount.size} cartões (${failed} com falha)`);
+  fields.lines().forEach((line) => print(line));
 }
 
 function summarizeTransactions(recordedItems: readonly RecordedItem[]): void {

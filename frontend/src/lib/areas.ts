@@ -33,6 +33,21 @@ export function findAreaByPath(pathname: string): AppArea | undefined {
   return APP_AREAS.find((area) => area.path === pathname);
 }
 
+// Telas que abrem a partir de uma área e não aparecem no menu: o item da área continua marcado.
+const BILLS_PATH_PATTERN = /^\/contas\/[^/]+\/faturas$/;
+const BILLS_TITLE = 'Faturas';
+
+/** Título do topo: o da área, ou o da tela que abre dentro dela (faturas de um cartão). */
+export function findScreenTitle(pathname: string): string | undefined {
+  if (BILLS_PATH_PATTERN.test(pathname)) return BILLS_TITLE;
+  return findAreaByPath(pathname)?.title;
+}
+
+export function isAreaActive(area: AppArea, pathname: string): boolean {
+  if (pathname === area.path) return true;
+  return area.path === '/contas' && BILLS_PATH_PATTERN.test(pathname);
+}
+
 export function listAreasByGroup(group: AreaGroup): AppArea[] {
   return APP_AREAS.filter((area) => area.group === group);
 }

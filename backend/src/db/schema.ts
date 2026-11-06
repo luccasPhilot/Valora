@@ -228,6 +228,27 @@ export const investmentSnapshots = pgTable(
   (table) => [primaryKey({ columns: [table.investmentId, table.date] })],
 );
 
+export const creditCardBills = pgTable(
+  'credit_card_bills',
+  {
+    id: primaryId(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    pluggyBillId: text('pluggy_bill_id').notNull().unique(),
+    dueDate: day('due_date').notNull(),
+    closingDate: day('closing_date'),
+    totalCents: cents('total_cents').notNull(),
+    paidCents: cents('paid_cents').notNull().default(0),
+    minimumPaymentCents: cents('minimum_payment_cents'),
+    raw: jsonb('raw'),
+    updatedAt: timestamptz('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('credit_card_bills_account_id_due_date_idx').on(table.accountId, table.dueDate),
+  ],
+);
+
 export const syncRuns = pgTable(
   'sync_runs',
   {

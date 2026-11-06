@@ -35,7 +35,7 @@ A situação de uma fatura MUST ser `paid` quando o valor pago cobrir o total (o
 - **THEN** a situação é `open`
 
 ### Requirement: Fatura atual e próximas faturas
-`GET /api/v1/credit-card-bills` MUST devolver uma entrada por cartão não oculto, com a fatura atual e até 3 próximas faturas. A fatura atual MUST ser a primeira fatura não paga com vencimento de hoje em diante; se não houver, a vencida mais recente não paga. As próximas MUST vir em ordem de vencimento. A resposta MUST NOT expor o `raw`.
+`GET /api/v1/credit-card-bills` MUST devolver uma entrada por cartão não oculto, com a fatura atual e até 3 próximas faturas. A fatura atual MUST ser, nesta ordem: a primeira fatura fechada não paga com vencimento de hoje em diante; a última fatura, se já venceu sem pagamento; e, sem nenhuma das duas, a fatura aberta montada a partir do saldo da conta. As próximas MUST ser as faturas fechadas seguintes à atual, em ordem de vencimento. A resposta MUST NOT expor o `raw`.
 
 #### Scenario: Cartão com três faturas
 - **WHEN** o cartão tem faturas vencendo em 10/11, 10/12 e 10/01 e hoje é 05/11/2026
@@ -49,8 +49,20 @@ A situação de uma fatura MUST ser `paid` quando o valor pago cobrir o total (o
 - **WHEN** o cartão está marcado como "Ocultar dos totais"
 - **THEN** ele não aparece na resposta
 
-### Requirement: Fatura atual sem faturas gravadas
-Quando um cartão não tiver faturas gravadas, a resposta MUST trazer a fatura atual a partir do `balance_cents` da conta e do vencimento informado nos dados do cartão, com `dueDate` nulo se o banco não informar. A resposta MUST NOT inventar próximas faturas.
+### Requirement: Fatura aberta a partir do saldo da conta
+O Pluggy só devolve faturas fechadas. Quando o cartão não tiver fatura fechada pendente (ou não tiver faturas gravadas), a resposta MUST trazer a fatura atual a partir do `balance_cents` da conta. Com faturas gravadas, o vencimento MUST ser estimado em um mês depois do vencimento da última fatura; sem faturas, MUST vir do vencimento informado nos dados do cartão, com `dueDate` nulo se o banco não informar. A resposta MUST NOT inventar próximas faturas.
+
+#### Scenario: Todas as faturas fechadas estão pagas
+- **WHEN** o cartão tem saldo de `250000`, a última fatura vence em 10/10/2026 e está paga, e hoje é 06/11/2026
+- **THEN** a fatura atual vale `250000` com vencimento estimado em 10/11/2026, `isEstimatedDueDate` verdadeiro, e a lista de próximas fica vazia
+
+#### Scenario: Última fatura vencida sem pagamento
+- **WHEN** a última fatura venceu em 10/10/2026 sem nenhum pagamento e hoje é 06/11/2026
+- **THEN** a fatura atual é essa fatura, com situação `overdue`
+
+#### Scenario: Pagamento parcial antigo
+- **WHEN** uma fatura de agosto tem pagamento parcial, a última fatura está paga e o cartão tem saldo
+- **THEN** a fatura de agosto não vira a atual e a atual vem do saldo da conta
 
 #### Scenario: Conector sem faturas e com vencimento
 - **WHEN** o cartão tem saldo de `250000` e os dados da conta informam vencimento em 15/11/2026

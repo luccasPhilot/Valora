@@ -12,6 +12,9 @@ const syncStatsSchema = z.object({
   transactionsUpdated: z.int(),
   transactionsRemoved: z.int(),
   investments: z.int(),
+  // Execuções antigas, gravadas antes das faturas, não têm estes campos.
+  bills: z.int().default(0),
+  billsFailed: z.int().default(0),
 });
 
 export type SyncRunStatus = z.infer<typeof syncRunStatusSchema>;

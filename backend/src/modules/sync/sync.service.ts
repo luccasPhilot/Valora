@@ -5,7 +5,12 @@ import type {
 } from '../connections/connections.repository.js';
 import type { ItemConnectionState } from './item-status.js';
 import type { PluggyAccountList, PluggyClient, PluggyItemOverview } from './pluggy-client.js';
-import type { SyncedInvestment, SyncedTransaction, TransactionWindow } from './sync.types.js';
+import type {
+  SyncedCreditCardBill,
+  SyncedInvestment,
+  SyncedTransaction,
+  TransactionWindow,
+} from './sync.types.js';
 import type { ItemRepositories, SyncUnitOfWork } from './sync.unit-of-work.js';
 import type { SyncLock, SyncLockHandle } from './sync-lock.repository.js';
 import { addStats, EMPTY_STATS, type ItemOutcome, summarizeRun } from './sync-outcome.js';
@@ -65,6 +70,9 @@ interface ItemData {
   readonly accountList: PluggyAccountList;
   readonly transactionsByAccount: ReadonlyMap<string, readonly SyncedTransaction[]>;
   readonly investments: readonly SyncedInvestment[];
+  readonly billsByAccount: ReadonlyMap<string, readonly SyncedCreditCardBill[]>;
+  /** Cartões cujas faturas não puderam ser lidas: o banco sincroniza mesmo assim. */
+  readonly billsFailed: number;
 }
 
 interface ItemSave {
@@ -219,10 +227,30 @@ export class SyncService {
       transactionsByAccount.set(account.pluggyAccountId, transactions);
     }
     const investments = await this.deps.pluggy.listInvestments(itemId);
-    return { accountList, transactionsByAccount, investments };
+    const { billsByAccount, billsFailed } = await this.fetchBills(accountList);
+    return { accountList, transactionsByAccount, investments, billsByAccount, billsFailed };
   }
 
-  // Ordem: contas e fotos → transações → categorias → investimentos e fotos → conexão sincronizada.
+  // Fatura é complemento: o saldo e as transações valem mais, então a falha de um cartão não derruba o banco.
+  private async fetchBills(accountList: PluggyAccountList) {
+    const billsByAccount = new Map<string, SyncedCreditCardBill[]>();
+    let billsFailed = 0;
+    for (const account of accountList.accounts) {
+      if (account.type !== 'credit_card') continue;
+      try {
+        billsByAccount.set(
+          account.pluggyAccountId,
+          await this.deps.pluggy.listCreditCardBills(account.pluggyAccountId),
+        );
+      } catch (error) {
+        billsFailed += 1;
+        this.deps.logger.warn({ errorType: errorTypeOf(error) }, 'credit card bills fetch failed');
+      }
+    }
+    return { billsByAccount, billsFailed };
+  }
+
+  // Ordem: contas e fotos → transações → categorias → investimentos e fotos → faturas → conexão sincronizada.
   private saveItemData({ connection, overview, data, window }: ItemSave): Promise<SyncStats> {
     const today = todayInSaoPaulo(this.deps.now());
     return this.deps.unitOfWork.run(async (repositories) => {
@@ -239,12 +267,19 @@ export class SyncService {
         data.investments,
         today,
       );
+      const billCount = await saveBills(repositories, { accountIds, data });
       await repositories.connections.markSynced(connection.id, {
         institutionName: data.accountList.institutionName ?? overview.connectorName,
         institutionLogoUrl: overview.institutionLogoUrl,
         syncedAt: this.deps.now(),
       });
-      const counts = { ...EMPTY_STATS, accounts: accounts.length, investments: investmentCount };
+      const counts = {
+        ...EMPTY_STATS,
+        accounts: accounts.length,
+        investments: investmentCount,
+        bills: billCount,
+        billsFailed: data.billsFailed,
+      };
       return addStats(transactionStats, counts);
     });
   }
@@ -281,6 +316,20 @@ async function saveAccounts(
   }));
   await repositories.accounts.saveSnapshots(snapshots, today);
   return accountIds;
+}
+
+async function saveBills(
+  repositories: ItemRepositories,
+  { accountIds, data }: Pick<TransactionsSave, 'accountIds' | 'data'>,
+): Promise<number> {
+  let billCount = 0;
+  for (const [pluggyAccountId, bills] of data.billsByAccount) {
+    billCount += await repositories.creditCardBills.upsertMany(
+      idOf(accountIds, pluggyAccountId),
+      bills,
+    );
+  }
+  return billCount;
 }
 
 async function saveTransactions(
