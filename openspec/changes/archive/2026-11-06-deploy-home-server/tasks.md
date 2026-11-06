@@ -34,19 +34,19 @@
 - [x] 4.2 Instalar a Tailscale no servidor e no celular; ativar MagicDNS e HTTPS Certificates
 - [x] 4.3 Clonar em `~/Valora`, preencher o `infra/.env` e subir com `docker compose -f infra/compose.yml up -d --build`
 - [x] 4.4 `sudo tailscale serve --bg --https=8443 3000`
-- [ ] 4.5 Instalar o cron do backup aos domingos às 03:00 (`~/Valora/infra/scripts/backup.sh`, com o caminho completo)
-- [ ] 4.6 Rodar `infra/scripts/restore-check.sh` com o primeiro backup e registrar o resultado
-- [ ] 4.7 Testar o `infra/scripts/deploy.sh` no servidor: com o banco no ar ele faz o backup antes de subir, e com um commit ruim falha sem derrubar o que está rodando
+- [x] 4.5 Instalar o cron do backup aos domingos às 03:00 (`~/Valora/infra/scripts/backup.sh`, com o caminho completo)
+- [x] 4.6 Rodar `infra/scripts/restore-check.sh` com o primeiro backup e registrar o resultado
+- [x] 4.7 Testar o `infra/scripts/deploy.sh` no servidor: com o banco no ar ele faz o backup antes de subir, e com um commit ruim falha sem derrubar o que está rodando
 
 ## 5. Conferência
 
-- [ ] 5.1 Celular na Tailscale abre o app em HTTPS com certificado válido
-- [ ] 5.2 Aparelho da rede de casa não alcança `http://<ip>:3000`, o backend nem a porta 5432
-- [ ] 5.3 Reiniciar o servidor: containers e `tailscale serve` voltam sozinhos
-- [ ] 5.4 Conferir o critério de pronto da Fase 1 (`docs/07-roadmap.md`) com dados reais
+- [x] 5.1 Celular na Tailscale abre o app em HTTPS com certificado válido
+- [x] 5.2 Aparelho da rede de casa não alcança `http://<ip>:3000`, o backend nem a porta 5432
+- [x] 5.3 Reiniciar o servidor: containers e `tailscale serve` voltam sozinhos
+- [x] 5.4 Conferir o critério de pronto da Fase 1 (`docs/07-roadmap.md`) com dados reais
 
 ## 6. Documentação
 
 - [x] 6.1 Atualizar `docs/05-deploy.md` e `infra/README.md` com os comandos finais, o procedimento de atualização e o rollback
 - [x] 6.2 Atualizar a seção "Comandos" do `CLAUDE.md` (subir e atualizar a produção, backup, conferência de restauração)
-- [ ] 6.3 Marcar como `[x]` os itens de "Servidor de casa" da Fase 1 em `docs/07-roadmap.md`
+- [x] 6.3 Marcar como `[x]` os itens de "Servidor de casa" da Fase 1 em `docs/07-roadmap.md`
