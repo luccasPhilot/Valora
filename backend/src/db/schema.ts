@@ -338,3 +338,48 @@ export const syncRuns = pgTable(
     ),
   ],
 );
+
+export const goals = pgTable(
+  'goals',
+  {
+    id: primaryId(),
+    name: text('name').notNull(),
+    icon: text('icon').notNull(),
+    targetCents: cents('target_cents').notNull(),
+    // Soma de `goal_contributions`, mantida na mesma transação de cada aporte ou retirada.
+    savedCents: cents('saved_cents').notNull().default(0),
+    targetDate: day('target_date'),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    check('goals_target_positive_check', sql`${table.targetCents} > 0`),
+    check('goals_saved_not_negative_check', sql`${table.savedCents} >= 0`),
+  ],
+);
+
+export const goalContributions = pgTable(
+  'goal_contributions',
+  {
+    id: primaryId(),
+    goalId: uuid('goal_id')
+      .notNull()
+      .references(() => goals.id, { onDelete: 'cascade' }),
+    date: day('date').notNull(),
+    // Positivo = aporte, negativo = retirada.
+    amountCents: cents('amount_cents').notNull(),
+    kind: text('kind').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('goal_contributions_goal_id_date_idx').on(table.goalId, table.date),
+    check('goal_contributions_amount_not_zero_check', sql`${table.amountCents} <> 0`),
+    check(
+      'goal_contributions_kind_check',
+      sql`${table.kind} in ('initial', 'deposit', 'withdrawal')`,
+    ),
+    check(
+      'goal_contributions_kind_sign_check',
+      sql`(${table.kind} = 'withdrawal' and ${table.amountCents} < 0) or (${table.kind} <> 'withdrawal' and ${table.amountCents} > 0)`,
+    ),
+  ],
+);

@@ -94,6 +94,11 @@ export function apiPatch<T>(path: string, body: unknown, responseSchema: z.ZodTy
   return apiRequest('PATCH', path, responseSchema, body);
 }
 
+/** Para os DELETE que respondem 200 com o recurso atualizado (remover um aporte devolve a meta). */
+export function apiDeleteReturning<T>(path: string, responseSchema: z.ZodType<T>): Promise<T> {
+  return apiRequest('DELETE', path, responseSchema);
+}
+
 /** Para as rotas que respondem 204, sem corpo. */
 export async function apiDelete(path: string): Promise<void> {
   const response = await fetchOrThrow(path, 'DELETE');

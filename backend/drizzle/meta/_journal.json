@@ -36,6 +36,13 @@
       "when": 1793993246322,
       "tag": "0004_add_planned_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794002212571,
+      "tag": "0005_add_savings_goals",
+      "breakpoints": true
     }
   ]
 }

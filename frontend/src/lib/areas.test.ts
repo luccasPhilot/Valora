@@ -18,6 +18,13 @@ describe('findScreenTitle', () => {
     expect(title).toBe('Contas');
   });
 
+  it('should_return_goals_title_when_the_path_is_the_goals_area', () => {
+    // Arrange & Act
+    const title = findScreenTitle('/metas');
+    // Assert
+    expect(title).toBe('Metas');
+  });
+
   it('should_return_bills_title_when_the_path_is_the_card_bills_screen', () => {
     // Arrange & Act
     const title = findScreenTitle(BILLS_PATH);

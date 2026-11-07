@@ -92,6 +92,21 @@ Um orçamento é o limite de gasto de uma **categoria de despesa** em um **mês*
 - **Copiar do mês anterior** traz os limites do mês anterior só para as categorias ativas que ainda não têm limite no mês. Nunca sobrescreve um limite já definido.
 - O orçamento não se repete sozinho: um mês novo começa vazio, e você copia o anterior ou cria os limites.
 
+## Metas
+
+Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a entrada do apartamento. O valor acumulado é **informado à mão**, por aportes e retiradas com data; o app nunca movimenta dinheiro. Todas as contas são em centavos inteiros, sem IA.
+
+- **Valor acumulado.** É sempre a soma dos aportes e retiradas. O valor que você já tinha ao criar a meta entra como um aporte `initial`. Uma retirada maior que o acumulado é recusada, e remover um aporte desfaz o efeito dele (recusado se deixaria o acumulado negativo).
+- **Progresso.** `floor(acumulado × 100 ÷ desejado)`, limitado a 100%: R$ 0,01 faltando ainda mostra 99%, e passar do valor desejado mostra 100%.
+- **Ritmo.** A média mensal líquida dos últimos 90 dias: `(aportes − retiradas) × 30 ÷ 90`, arredondada para baixo. O **valor inicial não conta**, porque não foi guardado enquanto você usava o app. Meta com menos de 90 dias usa a idade dela em dias, com **mínimo de 30**, para o primeiro aporte não ser diluído. A tela mostra o ritmo usado para você entender a estimativa.
+- **Prazo estimado.** `ceil(faltante ÷ ritmo)` meses a partir de hoje. Sem ritmo (nenhum aporte, ou retiradas que anulam os aportes) não há estimativa e a situação é "Sem ritmo ainda". Acima de 600 meses (50 anos) a tela diz "mais de 50 anos", sem data.
+- **Situação**, sempre em ícone e texto, nunca só a cor:
+  - **Concluída:** acumulado maior ou igual ao desejado, qualquer que seja o prazo;
+  - **No ritmo:** a estimativa chega até o prazo (sem prazo informado, basta ter ritmo);
+  - **Atrasada:** a estimativa passa do prazo, ou o prazo venceu e a meta não foi atingida. A tela diz quanto guardar por mês (`ceil(faltante ÷ meses até o prazo)`, no mínimo 1 mês);
+  - **Sem ritmo ainda:** não há ritmo para estimar.
+- **Ordem da lista.** Não concluídas primeiro, pelo prazo mais próximo (sem prazo por último); concluídas no fim.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:

@@ -24,6 +24,9 @@ import { CreditCardBillsService } from './modules/credit-card-bills/credit-card-
 import { DashboardRepository } from './modules/dashboard/dashboard.repository.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
+import { GoalsRepository } from './modules/goals/goals.repository.js';
+import { goalsRoutes } from './modules/goals/goals.routes.js';
+import { GoalsService } from './modules/goals/goals.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
@@ -124,6 +127,8 @@ function registerModules(
     now,
   });
   app.register(plannedEntriesRoutes(plannedEntriesService), { prefix: API_PREFIX });
+  const goalsService = new GoalsService({ goals: new GoalsRepository(database.db), now });
+  app.register(goalsRoutes(goalsService), { prefix: API_PREFIX });
   const projectionService = new ProjectionService({
     accounts: accountsService,
     plannedEntries: plannedEntriesService,

@@ -1,18 +1,16 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
+import { iconNameSchema } from '../../shared/icon-schema.js';
 import type { CategoryRecord } from './categories.repository.js';
 import type { CategoriesService } from './categories.service.js';
 
 const MAX_NAME_LENGTH = 60;
-const MAX_ICON_LENGTH = 50;
-// Nome de ícone Lucide em kebab-case ("shopping-cart"). A tela só desenha os que conhece.
-const ICON_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const categoryBodySchema = z.object({
   name: z.string().trim().min(1).max(MAX_NAME_LENGTH),
   kind: z.enum(['expense', 'income', 'transfer']),
-  icon: z.string().max(MAX_ICON_LENGTH).regex(ICON_NAME_PATTERN),
+  icon: iconNameSchema,
 });
 
 const categoryResponseSchema = z.object({

@@ -244,16 +244,27 @@ A previsão não grava uma linha por mês: as **ocorrências são calculadas** a
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
-| `name` | text | |
+| `name` | text | 1 a 80 caracteres |
 | `icon` | text | ícone Lucide |
-| `target_cents` | bigint | valor desejado |
-| `saved_cents` | bigint | valor acumulado, informado à mão na v2 |
-| `target_date` | date | pode ser nulo |
-| `linked_account_id` | uuid | v3; pode ser nulo |
-| `linked_investment_id` | uuid | v3; pode ser nulo |
+| `target_cents` | bigint | valor desejado; maior que zero |
+| `saved_cents` | bigint | valor acumulado: a **soma de `goal_contributions`**, mantida na mesma transação de cada aporte ou retirada; nunca abaixo de zero |
+| `target_date` | date | prazo; pode ser nulo |
 | `created_at` | timestamptz | |
 
-O prazo estimado é calculado (pelo ritmo de aporte), não guardado.
+As colunas `linked_account_id` e `linked_investment_id` (meta vinculada a uma conta ou investimento, com valor automático) são da v3 e só entram na migration dessa fase.
+
+**`goal_contributions`**: o histórico de aportes e retiradas de uma meta. É a fonte da verdade do valor acumulado e a base do ritmo.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | uuid | |
+| `goal_id` | uuid | → `goals`; `ON DELETE CASCADE` |
+| `date` | date | dia do aporte; nunca depois de hoje |
+| `amount_cents` | bigint | positivo = aporte, negativo = retirada; nunca zero |
+| `kind` | text | `initial`, `deposit` ou `withdrawal` (o sinal de `amount_cents` acompanha o tipo) |
+| `created_at` | timestamptz | |
+
+Índice em (`goal_id`, `date`). Criar a meta com um valor já guardado grava um aporte `initial`, que **não entra no ritmo**: é o que existia antes de você usar o app. O ritmo e o prazo estimado são calculados, não guardados ([regras](01-produto.md#metas)).
 
 **`alerts`**
 

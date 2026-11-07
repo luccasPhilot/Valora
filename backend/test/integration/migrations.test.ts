@@ -19,6 +19,8 @@ const TABLES = [
   'category_rules',
   'connections',
   'credit_card_bills',
+  'goal_contributions',
+  'goals',
   'investment_snapshots',
   'investments',
   'planned_entries',
@@ -42,7 +44,7 @@ describe('migrations', () => {
     return result.rows.map((row) => row.table_name);
   }
 
-  it('should_create_the_fourteen_tables_when_migrations_run_on_an_empty_database', async () => {
+  it('should_create_the_sixteen_tables_when_migrations_run_on_an_empty_database', async () => {
     // Arrange (o global-setup já aplicou as migrations num banco vazio)
     // Act
     const tables = await listPublicTables();

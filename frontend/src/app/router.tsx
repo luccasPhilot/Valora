@@ -13,6 +13,7 @@ export const appRoutes: RouteObject[] = [
       { path: 'transacoes', lazy: () => import('@/features/transactions/transactions-page') },
       { path: 'orcamentos', lazy: () => import('@/features/budgets/budgets-page') },
       { path: 'planejamento', lazy: () => import('@/features/planning/planning-page') },
+      { path: 'metas', lazy: () => import('@/features/goals/goals-page') },
       { path: 'contas', lazy: () => import('@/features/accounts/accounts-page') },
       {
         path: 'contas/:accountId/faturas',
