@@ -171,18 +171,18 @@ Categorias não têm cor própria. O ícone de categoria aparece numa bolinha `s
 
 ## Tipografia
 
-Duas famílias, servidas pelo próprio app (pacotes `@fontsource-variable/manrope` e `@fontsource-variable/inter`), sem depender do Google Fonts:
+Duas famílias, servidas pelo próprio app (pacotes `@fontsource/montserrat-alternates` e `@fontsource-variable/inter`), sem depender do Google Fonts:
 
-- **Manrope:** títulos e valores em destaque. Combina com o desenho do logotipo.
+- **Montserrat Alternates:** títulos, valores em destaque, itens do menu e o nome "Valora". Geométrica e redonda, com o "a" de um andar só e a cauda no pé do "a", como o nome do logotipo. Só os pesos 500, 600 e 700 são carregados (a fonte não é variável).
 - **Inter:** texto, listas, tabelas e formulários. Muito legível em tamanhos pequenos.
 
 | Estilo | Tamanho / altura da linha | Peso | Fonte | Uso |
 |---|---|---|---|---|
-| `display` | 36/44 (celular), 48/56 (computador) | 700 | Manrope | Saldo total |
-| `title-1` | 24/32 | 700 | Manrope | Título da página |
-| `value-lg` | 28/32 | 700 | Manrope | Valores dos cards de resumo |
-| `title-2` | 20/28 | 600 | Manrope | Título de seção, título de estado vazio e de erro |
-| `title-3` | 16/24 | 600 | Manrope | Título de card |
+| `display` | 36/44 (celular), 48/56 (computador) | 700 | Montserrat Alternates | Saldo total |
+| `title-1` | 24/32 | 700 | Montserrat Alternates | Título da página |
+| `value-lg` | 28/32 | 700 | Montserrat Alternates | Valores dos cards de resumo |
+| `title-2` | 20/28 | 600 | Montserrat Alternates | Título de seção, título de estado vazio e de erro |
+| `title-3` | 16/24 | 600 | Montserrat Alternates | Título de card |
 | `body` | 16/24 | 400 | Inter | Texto padrão e campos (16 px evita o zoom automático no iPhone) |
 | `body-sm` | 14/20 | 400 ou 500 | Inter | Listas, tabelas, rótulos |
 | `caption` | 12/16 | 500 | Inter | Legendas, eixos de gráfico, metadados |
@@ -229,7 +229,7 @@ No tema escuro, a profundidade vem da superfície mais clara e da borda, não de
 
 O logotipo do Valora tem o **símbolo** e o **nome**. O símbolo é um "V" de duas fitas verdes: a da esquerda mais escura, a da direita mais clara, com uma dobra no encontro. Foi redesenhado em SVG a partir da imagem do logotipo (`Valora Green Ribbon Logo.png`) e fica em `frontend/src/components/brand/`.
 
-- Menu expandido: símbolo (28 px de altura) e o nome "Valora" em Manrope 700, com 12 px entre os dois. Recolhido: só o símbolo.
+- Menu expandido: símbolo (28 px de altura) e o nome "Valora" em Montserrat Alternates 500, com 12 px entre os dois. Recolhido: só o símbolo.
 - É um link para o Início, com nome acessível "Valora".
 - As cores vêm dos tokens `--logo-ribbon-deep`, `--logo-ribbon` e `--logo-ribbon-light`, que mudam com o tema para a fita clara não sumir sobre o fundo branco.
 - **Exceção ao "sem gradiente":** o símbolo tem um degradê suave dentro de cada fita, como no logotipo original. Nenhuma outra peça da interface usa degradê.
@@ -264,7 +264,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 | Rodapé do menu | Categorias e regras, Ajustes | v1 |
 
 - O menu só mostra áreas que já existem. Um grupo aparece quando a primeira área dele fica pronta.
-- O item ativo fica com fundo `secondary`, texto `secondary-foreground` em negrito e o ícone em `primary`. Os itens têm 44 px de altura e `radius-sm`.
+- O item ativo fica com fundo `secondary`, texto `secondary-foreground` em negrito e o ícone em `primary`. Os itens têm 44 px de altura e `radius-sm`, com o nome em Montserrat Alternates (16 px, peso 500; o ativo em 700), a mesma fonte do nome "Valora" e dos títulos das páginas.
 - O nome do grupo usa o estilo `label` (caixa-alta, `muted-foreground`).
 
 **Celular e tablet (< 1024 px):**
@@ -483,7 +483,9 @@ Formato do shadcn/ui com Tailwind v4. É a cópia exata de `frontend/src/styles/
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/manrope';
+@import '@fontsource/montserrat-alternates/500.css';
+@import '@fontsource/montserrat-alternates/600.css';
+@import '@fontsource/montserrat-alternates/700.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -605,7 +607,7 @@ Formato do shadcn/ui com Tailwind v4. É a cópia exata de `frontend/src/styles/
 
 @theme inline {
   --font-sans: 'Inter Variable', system-ui, sans-serif;
-  --font-display: 'Manrope Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Montserrat Alternates', 'Inter Variable', system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 8px);
   --radius-md: calc(var(--radius) - 4px);

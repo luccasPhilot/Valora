@@ -39,7 +39,7 @@ Projeto pessoal, sem datas. Cada fase só começa quando a anterior cumpre o cri
 ### Front-end
 
 - [x] React + Vite + Tailwind v4 + shadcn/ui.
-- [x] Tokens do [Design System](06-design-system.md#tokens-em-css) no `globals.css`, fontes Inter e Manrope servidas localmente.
+- [x] Tokens do [Design System](06-design-system.md#tokens-em-css) no `globals.css`, fontes Inter e Montserrat Alternates servidas localmente.
 - [x] Temas claro e escuro, com escolha Claro, Escuro e Sistema.
 - [x] Layout base responsivo: menu lateral que abre pelo botão de menu no celular e no tablet e fica fixo no computador, áreas seguras do celular ([regras](06-design-system.md#responsividade)).
 - [x] Funções de formatação (moeda, sinal, datas pt-BR, fuso `America/Sao_Paulo`) com testes.

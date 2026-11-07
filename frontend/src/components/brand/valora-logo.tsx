@@ -13,7 +13,7 @@ export function ValoraLogo() {
       <ValoraMark className="h-7 w-auto shrink-0" />
       <span
         aria-hidden="true"
-        className="font-display text-2xl font-bold tracking-tight group-data-[collapsible=icon]:hidden"
+        className="font-display text-2xl font-medium tracking-tight group-data-[collapsible=icon]:hidden"
       >
         Valora
       </span>
