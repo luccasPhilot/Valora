@@ -9,8 +9,11 @@ O front é um app de página única servido pelo nginx, e o acesso é só pela T
 - Abrir sem rede e mostrar os dados da última vez, dizendo claramente que são antigos.
 - Nunca perder nem duplicar uma escrita por causa de fila offline.
 
+- Qualquer endereço sem rota mostrar uma página do Valora, com o menu à mão e um caminho de volta, inclusive sem rede.
+
 **Non-Goals:**
 - Escrever offline e push.
+- Resposta 404 no servidor e tela de erro de renderização.
 
 ## Decisions
 
@@ -52,11 +55,21 @@ O front é um app de página única servido pelo nginx, e o acesso é só pela T
 **9. Privacidade.**
 - As respostas da API ficam no armazenamento do navegador do aparelho, o mesmo que já recebe esses dados na tela. Perder o aparelho sem bloqueio de tela expõe isso: é responsabilidade do usuário bloquear o celular. A observação entra em `docs/05-deploy.md`. Limpar os dados do site apaga o cache.
 
+**10. Página "Página não encontrada".**
+- Rota coringa `{ path: '*', lazy: () => import('@/features/not-found/not-found-page') }` **fora** do `AppShell`, depois da rota do shell, em `frontend/src/app/router.tsx`: a página ocupa a tela inteira, sem menu nem topo (decisão do usuário, depois da primeira versão, que ficava dentro do shell). O `*` só vale quando nenhuma rota mais específica casa, inclusive `/metas/abc`. A rota `contas/:accountId/faturas` segue tratando o cartão inexistente com a mensagem dela.
+- Conteúdo: "404" em destaque, "Página não encontrada", "Esta página não existe" e um único botão "Ir para o Início" (`Button asChild` com `Link to="/"`, 44 px de altura), centralizados em `min-h-dvh` e respeitando as áreas seguras do celular. O título (`h1`) lê "404 Página não encontrada". O endereço digitado não é mostrado.
+- Sem rede, funciona sem código extra: o `navigateFallback: '/index.html'` da decisão 2 entrega o app para qualquer navegação (menos `/api/`), e o roteador mostra a página.
+- *Alternativa:* `errorElement` na rota raiz. Descartada: no React Router ele também captura erros de renderização e de carregamento, e misturaria "endereço inexistente" com "algo quebrou".
+- *Alternativa:* rota coringa dentro do shell, com o menu à mão (a primeira versão). Trocada pelo usuário por tela cheia: com um botão só, o caminho de volta é óbvio, e a página não parece uma área do app.
+- O teste usa o roteador real (`createMemoryRouter(appRoutes)`, como o `app-shell.test.tsx`), com `/investimentos` e `/endereco-que-nao-existe`. O segundo nunca vira área, então o teste não quebra quando a Fase 3 criar Investimentos.
+
 ## Risks / Trade-offs
 
 - [Service worker velho preso no aparelho] → `sw.js` sem cache no nginx e fluxo de atualização por aviso; teste manual de duas versões em sequência.
 - [Mostrar números antigos como se fossem atuais] → O banner com data e hora é obrigatório e testado.
 - [iOS limita armazenamento e pode apagar o cache do PWA sem uso] → Aceito: o app volta a funcionar com rede; offline é conforto, não requisito de integridade.
+- [Uma área nova futura (ex.: `/investimentos`) ser registrada e a coringa continuar pegando] → A coringa só vale onde nenhuma outra rota casa; basta registrar a área.
+- [O servidor responder 200 para endereços desconhecidos] → Aceito: app privado e de página única, sem indexação.
 - [`NetworkFirst` com 5 s de espera deixa a tela lenta com rede ruim] → O tempo é curto o bastante e só afeta rede muito ruim.
 
 ## Open Questions
