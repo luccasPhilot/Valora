@@ -173,6 +173,19 @@ As migrations rodam no início do backend. Se algum container não ficar saudáv
 - O deploy é **manual e fica de fora do GitHub**: você roda o `deploy.sh` no servidor depois que o CI da `main` ficar verde. Assim o GitHub não tem nenhum caminho para executar código no servidor.
 - Recomendado: proteger a `main` (Settings → Branches) exigindo PR e o CI verde.
 
+## Versões e releases
+
+As versões seguem `vX.Y.Z` e cada uma vira um release no GitHub, com as notas montadas pelo workflow `.github/workflows/release.yml`. O texto vem da seção da versão no [CHANGELOG.md](../CHANGELOG.md) (escrita à mão, em português), seguida da lista automática de commits do intervalo (`.github/scripts/release-notes.sh`, que agrupa por tipo do Conventional Commits).
+
+Para publicar uma versão:
+
+1. Escreva a seção `## vX.Y.Z - AAAA-MM-DD` no topo do `CHANGELOG.md`, dentro da PR `develop` → `main`.
+2. Faça o merge da PR com **"Create a merge commit"**. Squash junta tudo num commit só e a lista de commits do release perde o histórico.
+3. Crie a tag no commit da `main`: `git tag vX.Y.Z && git push origin vX.Y.Z`. O push da tag dispara o workflow.
+4. Para publicar uma versão em outro commit (por exemplo, uma antiga), use **Actions → Release → Run workflow**, informando a tag e o commit.
+
+O workflow só publica o release; ele **não faz deploy**. A produção continua sendo atualizada pelo `deploy.sh`, que aceita a tag (`deploy.sh vX.Y.Z`).
+
 ## Saúde
 
 - O Compose tem healthcheck nos três serviços: o front pelo nginx, `GET /api/v1/health` no backend, `pg_isready` no banco.
