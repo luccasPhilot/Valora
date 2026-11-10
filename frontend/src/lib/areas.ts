@@ -8,6 +8,7 @@ import {
   Settings,
   Tags,
   Target,
+  TrendingUp,
 } from 'lucide-react';
 
 export type AreaGroup = 'daily' | 'footer';
@@ -29,6 +30,7 @@ export const APP_AREAS: readonly AppArea[] = [
   { path: '/planejamento', title: 'Planejamento', icon: CalendarClock, group: 'daily', phase: 2 },
   { path: '/metas', title: 'Metas', icon: Flag, group: 'daily', phase: 2 },
   { path: '/contas', title: 'Contas', icon: Landmark, group: 'daily', phase: 1 },
+  { path: '/investimentos', title: 'Investimentos', icon: TrendingUp, group: 'daily', phase: 3 },
   { path: '/categorias', title: 'Categorias e regras', icon: Tags, group: 'footer', phase: 1 },
   { path: '/ajustes', title: 'Ajustes', icon: Settings, group: 'footer', phase: 1 },
 ];

@@ -142,7 +142,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
 - [x] Sino de alertas no topo.
 - [x] Resumo de metas e projeção no Início.
 - [x] **PWA instalável** (`vite-plugin-pwa`): ícone, tela de abertura, funciona com os dados já carregados mesmo sem rede.
-- [x] **Página "não encontrado"** dentro do app para endereços sem rota (como `/investimentos`, que ainda não existe).
+- [x] **Página "não encontrado"** dentro do app para endereços sem rota (um endereço digitado errado, por exemplo).
 - [x] **Arquivar banco removido do Meu Pluggy** (`connections.archived_at`): "Remover do Valora" tira o banco das telas, do saldo e dos avisos mantendo o histórico, com "Reativar" na seção "Arquivados".
 
 **Pronto quando:**
@@ -155,7 +155,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
 
 ## Fase 3 (v3) — Patrimônio
 
-- [ ] **Investimentos:** posição de cada um, agrupada por tipo, e o total. Os dados já existem desde a Fase 1.
+- [x] **Investimentos:** posição de cada um, agrupada por tipo, e o total. Os dados já existem desde a Fase 1.
 - [ ] **Evolução do patrimônio:** contas + investimentos − fatura em aberto, mês a mês, a partir das fotos diárias.
 - [ ] **Metas vinculadas** a um investimento ou conta, que se atualizam sozinhas.
 - [ ] **Relatórios**, todos com a opção "Ver em tabela":

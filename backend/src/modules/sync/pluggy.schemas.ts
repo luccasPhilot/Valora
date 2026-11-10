@@ -53,6 +53,7 @@ export const pluggyInvestmentSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
   type: z.string().min(1),
+  subtype: z.string().min(1).nullish(),
   balance: z.number(),
 });
 

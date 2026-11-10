@@ -359,6 +359,21 @@ No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas tra
 - A barra de cada categoria é proporcional à maior categoria da lista; o percentual é sobre o gasto líquido total do mês. "Sem categoria" e "Outros" não abrem Transações.
 - O gráfico de área do saldo só aparece com 2 ou mais dias de foto de saldo.
 
+### Investimentos
+
+Ordem da tela, em todas as larguras (coluna única):
+
+1. **Resumo** (`secondary`, `radius-xl`): rótulo "Investimentos", total em `display` (`destructive` só se negativo) e "N posições em M instituições".
+2. **Por tipo:** a lista de barras horizontais numa cor só (`primary`), como em [Gastos por categoria](#gastos-por-categoria), com a bolinha `secondary` e o ícone do tipo, o nome, o valor e o percentual. A barra é proporcional ao maior tipo. Sem rosca.
+3. **Uma seção por tipo**, do maior para o menor: cabeçalho no estilo `label` com o total do tipo e as posições (nome truncado, "subtipo · instituição" em `muted-foreground`, saldo em `tabular-nums` e a fatia do total).
+4. Rodapé "N posições zeradas não aparecem na lista", só quando houver.
+
+**Detalhes de implementação:**
+- Abaixo de 400 px o nome do tipo ocupa a linha e o valor desce para a de baixo, para o nome nunca ser cortado; a partir de 400 px ficam na mesma linha.
+- Os nomes das posições são truncados; o saldo nunca é.
+- Vazio: "Nenhum investimento encontrado" com o botão "Ver contas".
+- "Ocultar valores" mascara os saldos e mantém os percentuais.
+
 ## Componentes
 
 A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora são montados em cima dela.

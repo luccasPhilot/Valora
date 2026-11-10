@@ -118,6 +118,17 @@ Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a en
   - **Sem ritmo ainda:** não há ritmo para estimar.
 - **Ordem da lista.** Não concluídas primeiro, pelo prazo mais próximo (sem prazo por último); concluídas no fim.
 
+## Investimentos
+
+A tela **Investimentos** mostra a posição de cada investimento dos seus bancos e corretoras, agrupada por tipo, e o total. É só leitura: o Valora não compra nem resgata nada.
+
+- **O que entra:** as posições de bancos **ativos**. Um banco arquivado sai da tela e do total, mas as fotos dele continuam guardadas ([regras](#remover-um-banco-do-valora)).
+- **Agrupamento:** pelo tipo do Pluggy: Renda fixa, Fundos, Ações, ETFs, Títulos e previdência, COE e Outros. O subtipo (CDB, Tesouro Direto, fundo multimercado...) e a instituição aparecem em cada linha.
+- **Percentuais:** a fatia de cada tipo e de cada posição no total, com uma casa decimal.
+- **Posições zeradas** (resgatadas, ou que o banco deixou de devolver) ficam fora da lista e aparecem só como "N posições zeradas não aparecem na lista".
+- **Não é o saldo total:** o "Saldo total" do Início continua sendo só corrente e poupança. Investimentos entram no patrimônio.
+- **Não mostra rentabilidade.** O Valora guarda só a posição, e a variação dela mistura aporte e rendimento.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:

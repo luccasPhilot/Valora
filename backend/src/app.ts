@@ -32,6 +32,9 @@ import { GoalsService } from './modules/goals/goals.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { InvestmentsRepository } from './modules/investments/investments.repository.js';
+import { investmentsRoutes } from './modules/investments/investments.routes.js';
+import { InvestmentsService } from './modules/investments/investments.service.js';
 import { PlannedEntriesRepository } from './modules/planned-entries/planned-entries.repository.js';
 import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.routes.js';
 import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
@@ -124,6 +127,8 @@ function registerModules(
     now,
   });
   app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
+  const investmentsService = new InvestmentsService(new InvestmentsRepository(database.db));
+  app.register(investmentsRoutes(investmentsService), { prefix: API_PREFIX });
   const budgetsService = new BudgetsService({
     budgets: new BudgetsRepository(database.db),
     categories: new CategoriesRepository(database.db),
