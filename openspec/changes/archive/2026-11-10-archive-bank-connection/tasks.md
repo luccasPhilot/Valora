@@ -39,7 +39,7 @@
 
 - [x] 6.1 Conferir a faixa, a confirmação e a tela Contas com a seção "Arquivados" em 320, 390, 768, 1024 e 1440 px, nos dois temas, sem rolagem horizontal
 - [x] 6.2 Revisar com `/ui-ux-pro-max`
-- [ ] 6.3 Passo manual com o seu caso real: abrir o app com a conexão órfã, arquivar pela faixa e conferir que faixa, alerta, contas e saldo dela saem, e que "Reativar" a traz de volta
+- [x] 6.3 Passo manual com o seu caso real: abrir o app com a conexão órfã, arquivar pela faixa e conferir que faixa, alerta, contas e saldo dela saem, e que "Reativar" a traz de volta
 
 ## 7. Documentação
 

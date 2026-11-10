@@ -6,7 +6,7 @@ Consulta de contas, cartões e totais (saldo total, faturas em aberto, limite di
 ## Requirements
 
 ### Requirement: Consulta de contas
-`GET /api/v1/accounts` MUST devolver todas as contas, inclusive "Dinheiro". Cada conta MUST trazer:
+`GET /api/v1/accounts` MUST devolver todas as contas dos bancos ativos (não arquivados), inclusive "Dinheiro". Cada conta MUST trazer:
 - `id`, `name`, `type`, `lastDigits`, `balanceCents`, `isHidden`;
 - `creditLimitCents` e `availableLimitCents` nos cartões;
 - a conexão (`institutionName`, `status`, `statusDetail`, `lastSyncedAt`), ou nulo em "Dinheiro".
@@ -17,8 +17,12 @@ O JSON bruto do Pluggy MUST NOT ser exposto.
 - **WHEN** a consulta é feita
 - **THEN** "Dinheiro" vem com `type: "cash"`, `balanceCents: null` e conexão nula
 
+#### Scenario: Banco arquivado
+- **WHEN** o banco "Conta Corrente" está arquivado
+- **THEN** as contas dele não vêm na resposta
+
 ### Requirement: Saldo total
-A resposta MUST trazer os totais calculados pela API:
+A resposta MUST trazer os totais calculados pela API, sempre sobre as contas de bancos ativos:
 - `totalBalanceCents`: soma dos saldos das contas `checking` e `savings` com `isHidden` falso;
 - `openCreditCardBillsCents`: soma das faturas atuais dos cartões não ocultos;
 - `availableCreditCents`: soma dos limites disponíveis dos cartões não ocultos.
@@ -36,6 +40,10 @@ Cartões e "Dinheiro" MUST NOT entrar no saldo total.
 #### Scenario: Cheque especial
 - **WHEN** a conta corrente está com saldo de −R$ 200,00 e a poupança com R$ 1.000,00
 - **THEN** `totalBalanceCents` é `80000`
+
+#### Scenario: Banco arquivado
+- **WHEN** um banco com conta corrente de R$ 3.000,00 está arquivado e outro banco tem R$ 1.000,00
+- **THEN** `totalBalanceCents` é `100000`
 
 ### Requirement: Ocultar conta dos totais
 `PATCH /api/v1/accounts/:id` com `isHidden` MUST mudar se a conta entra nos totais. A conta oculta MUST continuar na lista. Para a conta "Dinheiro", MUST responder 400 com `code: "VALIDATION_ERROR"`.
@@ -61,15 +69,23 @@ Contas MUST mostrar nome, final do número e saldo. Cartões MUST mostrar a fatu
 - **THEN** saldos, faturas e limites mostram `R$ ••••`
 
 ### Requirement: Conexão com problema
-Uma instituição com conexão em `error` ou `consent_expired` MUST mostrar o status e uma explicação de como reconectar pelo Meu Pluggy. Enquanto houver uma conexão assim, todas as telas MUST mostrar uma faixa no topo com o nome do banco, a data da última sincronização bem-sucedida e um atalho para a tela de Contas.
+Uma instituição ativa com conexão em `error`, `consent_expired` ou `item_not_found`, ou com `isConfigured` falso, MUST mostrar o status e uma explicação do que fazer: reconectar pelo Meu Pluggy nos dois primeiros casos, e "Remover do Valora" nos dois últimos (ver `bank-archiving`). Enquanto houver uma conexão assim, todas as telas MUST mostrar uma faixa no topo com o nome do banco, a data da última sincronização bem-sucedida e um atalho para a tela de Contas (ou o botão "Remover do Valora", nos dois últimos casos).
 
 #### Scenario: Consentimento expirado
 - **WHEN** a conexão do Itaú está com `consent_expired` e a última sincronização boa foi em 1º de novembro
 - **THEN** todas as telas mostram a faixa "Itaú não sincroniza desde 01/11", e tocar nela abre Contas
 
+#### Scenario: Banco removido do Meu Pluggy
+- **WHEN** a conexão está com `item_not_found`
+- **THEN** o status mostra "Removido do Meu Pluggy" e a faixa oferece "Remover do Valora"
+
 #### Scenario: Tudo certo
-- **WHEN** todas as conexões estão `ok`
+- **WHEN** todas as conexões ativas estão `ok` e dentro do `PLUGGY_ITEM_IDS`
 - **THEN** nenhuma faixa aparece
+
+#### Scenario: Banco arquivado com problema
+- **WHEN** o banco com erro foi arquivado
+- **THEN** nenhuma faixa aparece por causa dele
 
 ### Requirement: Status da sincronização no topo
 O topo de todas as telas MUST mostrar quando foi a última sincronização ("Atualizado hoje, 07:02", "Atualizado ontem, 07:01" ou a data). Tocar no status MUST disparar `POST /api/v1/sync-runs` e mostrar "Sincronizando…" até a execução terminar. Ao terminar, um aviso MUST informar quantas transações novas chegaram ou que houve erro, e os dados das telas MUST ser recarregados. Se a API responder `SYNC_IN_PROGRESS`, o status MUST passar a "Sincronizando…" e acompanhar a execução em andamento.
