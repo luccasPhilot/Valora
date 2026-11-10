@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStartSync } from '@/hooks/use-sync';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { MeuPluggySteps } from '../accounts/meu-pluggy-steps';
 import { DASHBOARD_GRID_CLASSES, DashboardCell } from './dashboard-grid';
@@ -11,6 +12,7 @@ import { DASHBOARD_GRID_CLASSES, DashboardCell } from './dashboard-grid';
 /** Primeiro uso: ainda não houve nenhuma sincronização, então não há número nenhum para mostrar. */
 export function FirstUseState() {
   const startSync = useStartSync();
+  const isOffline = useIsOffline();
   return (
     <EmptyState
       icon={Landmark}
@@ -19,7 +21,12 @@ export function FirstUseState() {
       action={
         <div className="flex flex-col items-center gap-4">
           <MeuPluggySteps />
-          <Button type="button" disabled={startSync.isPending} onClick={() => startSync.mutate()}>
+          <Button
+            type="button"
+            disabled={startSync.isPending || isOffline}
+            title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+            onClick={() => startSync.mutate()}
+          >
             <RefreshCw aria-hidden="true" />
             {startSync.isPending ? 'Sincronizando…' : 'Sincronizar agora'}
           </Button>
@@ -46,6 +53,12 @@ export function DashboardSkeleton() {
       </DashboardCell>
       <DashboardCell area="month">
         <Skeleton className="h-32 w-full rounded-xl lg:h-full" />
+      </DashboardCell>
+      <DashboardCell area="projection">
+        <Skeleton className="h-40 w-full rounded-xl lg:h-full" />
+      </DashboardCell>
+      <DashboardCell area="goals">
+        <Skeleton className="h-64 w-full rounded-xl" />
       </DashboardCell>
       <DashboardCell area="chart">
         <Skeleton className="h-80 w-full rounded-xl" />

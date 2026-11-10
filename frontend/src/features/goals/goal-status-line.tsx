@@ -11,6 +11,9 @@ interface StatusDisplay {
   readonly iconClass: string;
 }
 
+/** Só o que a situação precisa: serve tanto à meta completa quanto ao resumo do Início. */
+type StatusGoal = Pick<Goal, 'status' | 'estimatedDate' | 'requiredMonthlyCents'>;
+
 const STATUS_DISPLAY: Readonly<Record<GoalStatus, StatusDisplay>> = {
   completed: { icon: CircleCheck, iconClass: 'text-status-ok' },
   on_track: { icon: TrendingUp, iconClass: 'text-status-ok' },
@@ -18,13 +21,13 @@ const STATUS_DISPLAY: Readonly<Record<GoalStatus, StatusDisplay>> = {
   no_pace: { icon: Clock, iconClass: 'text-muted-foreground' },
 };
 
-function OnTrackText({ goal }: { goal: Goal }) {
+function OnTrackText({ goal }: { goal: StatusGoal }) {
   if (goal.estimatedDate === null) return <>{TOO_FAR_LABEL}</>;
   return <>No ritmo — chega em {formatEstimatedMonth(goal.estimatedDate)}</>;
 }
 
 /** O texto da situação: "No ritmo — chega em mar/2027", "Atrasada — precisa guardar R$ 500/mês"... */
-export function GoalStatusText({ goal }: { goal: Goal }) {
+export function GoalStatusText({ goal }: { goal: StatusGoal }) {
   if (goal.status === 'completed') return <>{COMPLETED_LABEL}</>;
   if (goal.status === 'no_pace') return <>{NO_PACE_LABEL}</>;
   if (goal.status === 'on_track') return <OnTrackText goal={goal} />;
@@ -38,7 +41,7 @@ export function GoalStatusText({ goal }: { goal: Goal }) {
 }
 
 /** Situação da meta sempre em ícone + texto, nunca só a cor. */
-export function GoalStatusLine({ goal }: { goal: Goal }) {
+export function GoalStatusLine({ goal }: { goal: StatusGoal }) {
   const display = STATUS_DISPLAY[goal.status];
   const StatusIcon = display.icon;
   return (

@@ -20,7 +20,9 @@ export function projectionEndDate(projection: Projection): string {
 }
 
 /** Aviso do saldo que fica abaixo de zero em algum dia; nulo se o saldo nunca passa de zero. */
-export function describeNegativeBalance(projection: Projection): string | null {
+export function describeNegativeBalance(
+  projection: Pick<Projection, 'lowestBalanceCents' | 'lowestBalanceDate'>,
+): string | null {
   if (projection.lowestBalanceCents >= 0) return null;
   return `Saldo negativo em ${formatIsoDayMonth(projection.lowestBalanceDate)}`;
 }

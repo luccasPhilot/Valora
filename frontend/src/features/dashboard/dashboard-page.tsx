@@ -7,9 +7,11 @@ import { BudgetsNearLimit } from './budgets-near-limit';
 import { DASHBOARD_GRID_CLASSES, DashboardCell } from './dashboard-grid';
 import { useDashboard } from './dashboard-queries';
 import { DashboardSkeleton, FirstUseState } from './dashboard-states';
+import { GoalsSummaryCard } from './goals-summary-card';
 import { IncomeExpenseChart } from './income-expense-chart';
 import { LatestTransactions } from './latest-transactions';
 import { MonthSummary } from './month-summary';
+import { ProjectionCard } from './projection-card';
 import { Shortcuts } from './shortcuts';
 import { SpendingByCategory } from './spending-by-category';
 
@@ -28,6 +30,14 @@ function DashboardContent({ dashboard }: { dashboard: Dashboard }) {
           incomeCents={dashboard.monthIncomeCents}
           expenseCents={dashboard.monthExpenseCents}
         />
+      </DashboardCell>
+      {dashboard.projection ? (
+        <DashboardCell area="projection">
+          <ProjectionCard projection={dashboard.projection} />
+        </DashboardCell>
+      ) : null}
+      <DashboardCell area="goals">
+        <GoalsSummaryCard goals={dashboard.goals.items} />
       </DashboardCell>
       <DashboardCell area="chart">
         <IncomeExpenseChart months={dashboard.incomeVsExpense} />

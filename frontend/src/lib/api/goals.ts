@@ -5,7 +5,7 @@ import { apiDelete, apiDeleteReturning, apiGet, apiPost, apiPut } from '../api-c
 // Contrato de /goals. O backend é o dono; estes schemas são a cópia do front
 // (backend/src/modules/goals/goals.routes.ts). A situação, o ritmo e o prazo chegam prontos.
 
-const goalStatusSchema = z.enum(['completed', 'no_pace', 'on_track', 'behind']);
+export const goalStatusSchema = z.enum(['completed', 'no_pace', 'on_track', 'behind']);
 
 export const goalContributionSchema = z.object({
   id: z.uuid(),
