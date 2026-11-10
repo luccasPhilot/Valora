@@ -36,7 +36,9 @@ jobs:
           fetch-depth: 0
 
       # O checkout não aceita SHA abreviado (cebb50f) em `ref`; com o histórico completo, o git resolve.
-      - name: Posicionar no commit do release
+      # O workspace fica na branch padrão (onde estão o script e o CHANGELOG): um release de versão
+      # antiga só precisa do histórico até o commit dele, não dos arquivos daquele commit.
+      - name: Resolver commit do release
         run: |
           RELEASE_SHA="$(git rev-parse --verify --quiet "${RELEASE_TARGET}^{commit}" \
             || git rev-parse --verify --quiet "origin/${RELEASE_TARGET}^{commit}" || true)"
@@ -44,7 +46,7 @@ jobs:
             echo "Não achei o commit ou a branch '$RELEASE_TARGET'" >&2
             exit 1
           fi
-          git checkout --detach "$RELEASE_SHA"
+          echo "RELEASE_SHA=$RELEASE_SHA" >> "$GITHUB_ENV"
 
       - name: Conferir formato da tag
         run: |
@@ -59,7 +61,7 @@ jobs:
         run: |
           CHANGELOG_SECTION="$(git show "origin/$DEFAULT_BRANCH:CHANGELOG.md" 2>/dev/null \
             | awk -v heading="## $RELEASE_TAG " 'index($0, heading) == 1 { found = 1; next } found && /^## / { exit } found' || true)"
-          COMMIT_LIST="$(bash .github/scripts/release-notes.sh "$RELEASE_TAG" HEAD)"
+          COMMIT_LIST="$(bash .github/scripts/release-notes.sh "$RELEASE_TAG" "$RELEASE_SHA")"
 
           if [[ -z "${CHANGELOG_SECTION//[[:space:]]/}" ]]; then
             echo "$COMMIT_LIST" > release-notes.md
@@ -83,4 +85,4 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --title "$RELEASE_TAG" \
             --notes-file release-notes.md \
-            --target "$(git rev-parse HEAD)"
+            --target "$RELEASE_SHA"
