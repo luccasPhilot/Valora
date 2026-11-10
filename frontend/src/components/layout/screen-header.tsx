@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { HideValuesButton } from '@/components/hide-values-button';
 import { SyncStatus } from '@/components/sync-status';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { AlertsBell } from '@/features/alerts/alerts-bell';
 
 interface ScreenHeaderProps {
   title: string;
@@ -25,6 +26,7 @@ export function ScreenHeader({ title, actions }: ScreenHeaderProps) {
           </div>
         </div>
         {actions}
+        <AlertsBell />
         <HideValuesButton />
       </div>
     </header>

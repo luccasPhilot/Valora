@@ -26,6 +26,7 @@ import {
 } from '@/lib/api/transactions';
 
 import { ACCOUNTS_QUERY_KEY } from '../accounts/accounts-queries';
+import { ALERTS_QUERY_KEY } from '../alerts/alerts-queries';
 import { BUDGETS_QUERY_KEY } from '../budgets/budgets-queries';
 import { DASHBOARD_QUERY_KEY } from '../dashboard/dashboard-query-key';
 
@@ -126,6 +127,7 @@ export function useChangeCategory() {
       // Mudar a categoria move o gasto de um orçamento para outro, e o Início soma por categoria.
       void queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
       if (!request.applyAlways) return;
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: CATEGORY_RULES_QUERY_KEY });
@@ -151,7 +153,7 @@ export function useDuplicateCount(today: string) {
 }
 
 // Lançar, editar, excluir e resolver duplicatas mudam a lista, os detalhes abertos, a contagem, o
-// gasto dos orçamentos e os números do Início.
+// gasto dos orçamentos (e os alertas deles) e os números do Início.
 function useRefreshTransactions() {
   const queryClient = useQueryClient();
   return () =>
@@ -162,6 +164,7 @@ function useRefreshTransactions() {
         DUPLICATE_COUNT_KEY,
         BUDGETS_QUERY_KEY,
         DASHBOARD_QUERY_KEY,
+        ALERTS_QUERY_KEY,
       ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     );
 }
