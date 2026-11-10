@@ -1,5 +1,6 @@
 import { firstDayOfMonth, firstDayOfPreviousMonth, todayInSaoPaulo } from '../../shared/dates.js';
 import { NotFoundError, ValidationError } from '../../shared/errors.js';
+import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import type { CategoriesRepository } from '../categories/categories.repository.js';
 import { budgetPercent, type BudgetStatus, budgetStatus } from './budget-status.js';
 import type { BudgetRecord, BudgetsRepository } from './budgets.repository.js';
@@ -23,6 +24,7 @@ export interface BudgetOverview {
 export interface BudgetsServiceDependencies {
   readonly budgets: BudgetsRepository;
   readonly categories: CategoriesRepository;
+  readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
   readonly now: () => Date;
 }
 
@@ -60,6 +62,7 @@ export class BudgetsService {
   async setLimit(categoryId: string, month: string, limitCents: number): Promise<BudgetItem> {
     await this.assertBudgetableCategory(categoryId);
     await this.deps.budgets.upsertLimit(categoryId, month, limitCents);
+    await this.deps.budgetAlerts.refresh();
     const [record] = await this.deps.budgets.findForMonth(month, categoryId);
     if (!record) throw new Error(`O limite da categoria ${categoryId} não foi gravado`);
     return toItem(record);
@@ -67,14 +70,17 @@ export class BudgetsService {
 
   async removeLimit(categoryId: string, month: string): Promise<void> {
     const wasRemoved = await this.deps.budgets.deleteLimit(categoryId, month);
+    if (wasRemoved) await this.deps.budgetAlerts.refresh();
     if (!wasRemoved) {
       throw new NotFoundError(`A categoria ${categoryId} não tem limite em ${month.slice(0, 7)}`);
     }
   }
 
   /** Devolve quantos limites foram copiados do mês anterior. */
-  copyFromPreviousMonth(month: string): Promise<number> {
-    return this.deps.budgets.copyLimits(firstDayOfPreviousMonth(month), month);
+  async copyFromPreviousMonth(month: string): Promise<number> {
+    const copied = await this.deps.budgets.copyLimits(firstDayOfPreviousMonth(month), month);
+    if (copied > 0) await this.deps.budgetAlerts.refresh();
+    return copied;
   }
 
   private currentMonth(): string {

@@ -2,6 +2,7 @@ import { todayInSaoPaulo } from '../../shared/dates.js';
 import { OpenFinanceReadOnlyError, ValidationError } from '../../shared/errors.js';
 import { normalizeDescription } from '../../shared/text.js';
 import type { AccountsRepository } from '../accounts/accounts.repository.js';
+import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import type { CategoriesRepository } from '../categories/categories.repository.js';
 import {
   assertCategoryIsSelectable,
@@ -32,6 +33,7 @@ export interface TransactionWritesDependencies {
   readonly categories: CategoriesRepository;
   readonly accounts: Pick<AccountsRepository, 'exists'>;
   readonly rules: Pick<CategoryRulesService, 'learnFromCorrection'>;
+  readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
   readonly now: () => Date;
 }
 
@@ -52,6 +54,7 @@ export class TransactionWritesService {
       descriptionNormalized: normalizeDescription(fields.description),
       amountCents: signedAmountCents(fields.type, fields.amountCents),
     });
+    await this.deps.budgetAlerts.refresh();
     return this.deps.reads.get(transactionId);
   }
 
@@ -66,6 +69,7 @@ export class TransactionWritesService {
     if (patch.applyAlways && patch.categoryId) {
       await this.deps.rules.learnFromCorrection(transactionId, patch.categoryId);
     }
+    await this.deps.budgetAlerts.refresh();
     return this.deps.reads.get(transactionId);
   }
 
@@ -73,6 +77,7 @@ export class TransactionWritesService {
     const current = await this.deps.reads.get(transactionId);
     if (current.source === 'open_finance') throw readOnlyError(current, 'excluída');
     await this.deps.writes.deleteManual(transactionId);
+    await this.deps.budgetAlerts.refresh();
   }
 
   private updateOpenFinance(

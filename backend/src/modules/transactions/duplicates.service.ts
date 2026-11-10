@@ -1,4 +1,5 @@
 import { NoDuplicatePendingError, NotFoundError } from '../../shared/errors.js';
+import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import type { PossibleDuplicatesRepository } from './possible-duplicates.repository.js';
 import type { TransactionRecord } from './transactions.repository.js';
 import type { TransactionsService } from './transactions.service.js';
@@ -8,6 +9,7 @@ export type DuplicateResolutionAction = 'merge' | 'keep_both';
 export interface DuplicatesServiceDependencies {
   readonly duplicates: PossibleDuplicatesRepository;
   readonly transactions: Pick<TransactionsService, 'get'>;
+  readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
 }
 
 export class DuplicatesService {
@@ -27,6 +29,8 @@ export class DuplicatesService {
     }
     if (action === 'merge') {
       await this.deps.duplicates.merge(transactionId, pending.manualId);
+      // Juntar apaga a manual e pode trocar a categoria: o gasto do mês muda.
+      await this.deps.budgetAlerts.refresh();
     } else {
       await this.deps.duplicates.clearMark(transactionId);
     }
