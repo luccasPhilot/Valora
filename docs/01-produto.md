@@ -28,10 +28,21 @@ O **saldo total** é a soma do saldo das contas **corrente e poupança** que voc
 
 Cheque especial entra como número negativo e reduz o total. O Início e a tela de Contas usam a mesma definição, calculada pela API.
 
+### Remover um banco do Valora
+
+Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele não some sozinho: fica parado com o aviso "não sincroniza desde…". O botão **"Remover do Valora"**, no aviso e em cada banco da tela Contas, **arquiva** o banco inteiro, com confirmação:
+
+- **Sai:** das contas, do saldo total, das faturas, da projeção do mês, do aviso e dos alertas, e a sincronização para de lê-lo.
+- **Fica:** todas as transações, faturas, investimentos e fotos de saldo. Receitas, despesas, categorias e orçamentos continuam contando o que o banco gerou, e a lista de Transações continua mostrando as transações dele.
+- **Saldo no passado:** a curva "evolução do saldo" do Início continua somando o banco nos dias anteriores ao arquivamento e o tira a partir dele, então ela tem um degrau nesse dia. A variação do mês (o "no mês" do cartão de saldo) só considera os bancos ativos, para não mostrar uma queda que não aconteceu.
+- **Dá para voltar:** a seção recolhida **"Arquivados"**, no fim da tela Contas, lista os bancos arquivados com **"Reativar"**.
+- O Valora avisa a causa: "foi removido do Meu Pluggy" ou "saiu da lista de sincronização". Qualquer banco pode ser arquivado, não só os com problema.
+- Contas de bancos arquivados não aparecem no filtro de Transações nem no lançamento manual.
+
 | Área | O que tem | Fase |
 |---|---|---|
 | **Início (Dashboard)** | Saldo total, receitas e despesas do mês, gráfico receitas x despesas, gastos por categoria, últimas transações, ocultar valores | v1 |
-| | Projeção do fim do mês, resumo das metas, alertas | v2 |
+| | Projeção do fim do mês e resumo das metas (até 3, com a situação de cada uma) no Início; alertas no sino | v2 |
 | | Evolução do patrimônio | v3 |
 | **Transações** | Lista agrupada por dia; filtros por período, categoria, tipo e conta; pesquisa; detalhe; trocar a categoria | v1 |
 | | Lançamento manual de receitas e despesas, aviso de possível duplicata | v1 |
@@ -117,6 +128,25 @@ Estes itens ficam de fora, inclusive no futuro:
 - **WhatsApp ou outro canal de chat.**
 - **Movimentar dinheiro** (pagamentos, Pix, transferências).
 - **Uso comercial.**
+
+## Alertas
+
+O sino no topo de cada tela lista os alertas ativos, com um contador de não lidos. Cada alerta nasce **uma vez** por situação e **não volta se você o dispensou**. Os de orçamento e conexão somem sozinhos quando a situação acaba; os de cobrança duplicada e assinatura são avisos de um fato e ficam até você dispensar.
+
+| Alerta | Quando nasce | Quando some |
+|---|---|---|
+| Orçamento em 80% | o gasto da categoria no mês chega a 80% do limite | o gasto cai (estorno), o limite sobe ou é removido, ou o mês acaba |
+| Orçamento estourado | o gasto passa do limite; substitui o aviso de 80% da mesma categoria | igual ao anterior |
+| Conexão com banco caída | a conexão fica com erro ou com o consentimento expirado | a conexão volta ao normal |
+| Cobrança duplicada | uma saída postada de uma conta repete a descrição e o valor de outra da mesma conta, com até 3 dias de diferença (só cobranças dos últimos 7 dias); o alerta é da mais recente | só quando você dispensa |
+| Assinatura detectada | 3 ou mais cobranças de mesmo valor e descrição em sequência, com 25 a 35 dias entre elas, a última com até 45 dias | só quando você dispensa |
+
+- Os percentuais (80% e 100%) são fixos e as mensagens não mostram valores.
+- A faixa de aviso de banco fora do ar continua; o sino é um aviso a mais.
+- Cobrança duplicada e assinatura só olham saídas **postadas do Open Finance**. Ficam de fora pendentes, lançamentos manuais, parcelas, transferências (categoria do Valora `transfer` ou categoria do Pluggy iniciada por "Transfer", como Pix e TED para pessoas) e valores abaixo de R$ 5,00. Três cobranças iguais seguidas geram dois alertas, um por cobrança a mais.
+- Descrição e valor precisam ser exatamente iguais; assinatura com valor que muda só é detectada depois de 3 cobranças no novo valor. Cobrança duplicada não compara contas diferentes.
+- Na primeira sincronização depois de ativar, cada assinatura em andamento gera um alerta de uma vez só ("Marcar todos como lidos" zera o contador).
+- "Ver transações" abre a lista do dia da cobrança, pesquisando pela descrição.
 
 ## Referência: Pierre
 

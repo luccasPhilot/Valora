@@ -331,10 +331,12 @@ Ordem no celular, logo abaixo do topo de tela (título "Início" e status da sin
    - na v2, Orçamentos dá lugar a Metas.
    - "Adicionar receita" e "Registrar despesa" abrem o formulário de [Nova transação](#nova-transação) já com o tipo escolhido.
 3. Receitas e despesas do mês: dois números lado a lado.
-4. Receitas x despesas dos últimos 6 meses: barras agrupadas, slots 1 e 2.
-5. Gastos por categoria: a lista de barras da seção [Gastos por categoria](#gastos-por-categoria).
-6. Orçamentos mais perto do limite (os 3 primeiros).
-7. Últimas 5 transações, com "Ver todas".
+4. **Projeção do fim do mês** (v2): saldo projetado em `type-value-lg`, aviso "Saldo negativo em 20/11" (ícone e texto, `destructive`) só quando o menor saldo é negativo, e "Ver planejamento". Sem nada previsto, o estado vazio "Planeje o mês". O saldo projetado só fica vermelho se terminar negativo.
+5. **Metas** (v2): até 3 linhas com ícone, nome, percentual, barra, "R$ x de R$ y" e a situação em ícone e texto (a mesma de Metas), e "Ver metas". Sem metas em andamento, o estado vazio com "Criar meta".
+6. Receitas x despesas dos últimos 6 meses: barras agrupadas, slots 1 e 2.
+7. Gastos por categoria: a lista de barras da seção [Gastos por categoria](#gastos-por-categoria).
+8. Orçamentos mais perto do limite (os 3 primeiros).
+9. Últimas 5 transações, com "Ver todas".
 
 Sem saudação: o espaço vai direto para o saldo.
 
@@ -343,10 +345,11 @@ No computador, os mesmos blocos ficam numa grade de 12 colunas, sem mudar a orde
 | Linha | Blocos (colunas) |
 |---|---|
 | 1 e 2 | Card de saldo (7) e atalhos (7) empilhados à esquerda; receitas e despesas do mês (5) à direita, uma sobre a outra, ocupando as duas linhas |
-| 3 | Gráfico de receitas x despesas (7) e gastos por categoria (5) |
-| 4 | Orçamentos (5) e últimas transações (7) |
+| 3 | Projeção do fim do mês (5) e metas (7) |
+| 4 | Gráfico de receitas x despesas (7) e gastos por categoria (5) |
+| 5 | Orçamentos (5) e últimas transações (7) |
 
-No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas transações ocupam a linha toda; categorias e orçamentos ficam lado a lado.
+No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas transações ocupam a linha toda; projeção e metas, e também categorias e orçamentos, ficam lado a lado. Quando a projeção não vem (mês que não é o atual), o cartão some e o das metas fica sozinho.
 
 **Detalhes de implementação:**
 - Os dois números do mês ficam lado a lado a partir de 400 px; abaixo disso empilham, para o valor nunca ser cortado (em 320 px, "+ R$ 12.345,67" não cabe em meia coluna).
@@ -379,7 +382,7 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Badge de origem | `Badge` | "Manual" em `secondary`, com ícone `pencil-line`. Transações do Open Finance não têm badge |
 | Possível duplicata | `Badge` + `Alert` | Badge "Possível duplicata" (ícone `copy`, texto `warning` sobre `warning-surface`) no item; faixa no topo de Transações quando houver duplicatas para conferir; no detalhe, as duas transações lado a lado com "Juntar" (primário) e "São diferentes" (contorno) |
 | Trocar categoria | `Command` | Busca de categoria + opção "Aplicar sempre para '<descrição>'", que cria a regra |
-| Status de conexão | `Badge` | OK, Sincronizando, Erro, Consentimento expirado |
+| Status de conexão | `Badge` | OK, Sincronizando, Erro, Consentimento expirado, Removido do Meu Pluggy |
 | Aviso de conexão | `Alert` | Faixa no topo quando um banco não sincroniza |
 | Notificação rápida | `Sonner` (toast) | "Sincronização concluída: 12 transações novas" |
 | Carregando | `Skeleton` | No formato do conteúdo que vai aparecer, não um spinner |
@@ -426,8 +429,12 @@ Erros aparecem embaixo do campo, em `destructive`, em linguagem simples ("Inform
 | Carregando | Skeleton no formato do conteúdo |
 | Vazio | Ícone, uma frase e uma ação. Ex.: "Nenhuma transação neste período" + "Mudar período" |
 | Erro | O que deu errado em linguagem simples + "Tentar de novo". Sem código técnico na tela |
-| Sem conexão com o servidor | Faixa avisando que os dados podem estar desatualizados |
+| Sem conexão com o servidor | Faixa `warning-surface` com ícone e texto: "Sem conexão. Mostrando os dados de 05/11 às 08:12." (ou "…podem estar desatualizados" sem data). Some quando a rede volta. Quando uma escrita falha, acrescenta "Sem conexão: esta ação precisa de internet.", e "Sincronizar" e os botões de salvar ficam desabilitados |
+| Versão nova do app | Faixa `secondary` com "Nova versão disponível" e o botão **Atualizar**; nada recarrega sem o toque |
+| Endereço sem rota | Página em tela cheia, sem menu: "404" em destaque (`type-display`, `primary`), "Página não encontrada", "Esta página não existe" e um único botão **Ir para o Início**. Não mostra o endereço digitado |
 | Conexão com banco caída | Faixa com o banco afetado e o caminho para reconectar no Meu Pluggy |
+| Banco removido do Meu Pluggy ou fora da lista de sincronização | Faixa `warning-surface` com ícone e texto que diz a causa ("foi removido do Meu Pluggy" / "saiu da lista de sincronização") e o botão **Remover do Valora** (botão normal, fora do link, com confirmação; vermelho só para excluir, e arquivar se desfaz). Nos celulares estreitos o botão desce para a linha de baixo, com a largura toda |
+| Bancos arquivados | Seção recolhida **Arquivados (n)** no fim da tela Contas, com o nome, as contas e a última sincronização de cada banco e o botão **Reativar**. Só aparece quando há arquivados; carregando mostra um skeleton e, com erro, "Tentar de novo" sem derrubar o resto |
 | Funcionalidade ainda não pronta | Tela de demonstração com o selo **"Demonstração"** bem visível, nunca dados falsos parecendo reais |
 
 ## Gráficos

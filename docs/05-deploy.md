@@ -73,6 +73,29 @@ O app fica em `https://<nome-da-maquina>.<sua-tailnet>.ts.net`, com certificado 
 
 **Nunca use `tailscale funnel`**: ele publica o app na internet aberta. A v1 não tem tela de login justamente porque só os seus aparelhos chegam até ela.
 
+## Instalar no celular
+
+Abra o endereço `https://<nome-da-maquina>.<sua-tailnet>.ts.net` (HTTPS pela Tailscale) no navegador do celular:
+
+- **iPhone (Safari):** Compartilhar → **Adicionar à Tela de Início**.
+- **Android (Chrome):** menu ⋮ → **Instalar app**.
+
+O app abre pelo ícone do Valora, em tela cheia, sem a barra do navegador.
+
+**Quem já tem um atalho antigo no iPhone:** o iOS guarda o ícone e a tela de abertura do momento em que o atalho foi criado. Remova o atalho antigo e adicione de novo para pegar o ícone e a abertura do Valora.
+
+**O que muda com o app instalado:**
+
+- **Sem rede (ou com a Tailscale desligada) o app abre** e mostra os dados da última vez que você os viu, com o aviso "Sem conexão. Mostrando os dados de 05/11 às 08:12." Só valem as telas que você já abriu com rede.
+- **Escrever exige rede.** Lançar, editar, excluir, salvar e sincronizar ficam desabilitados sem conexão e falham na hora, com "Sem conexão: esta ação precisa de internet". Nada fica numa fila para ser enviado depois.
+- **Depois de cada atualização do servidor** ([Atualizar o app](#atualizar-o-app)), o app mostra "Nova versão disponível" com o botão **Atualizar**. A versão nova só entra, e a tela só recarrega, quando você toca nele.
+
+**Cuidados:**
+
+- As respostas da API ficam guardadas no armazenamento do navegador do aparelho, o mesmo que já recebe esses dados na tela. **Bloqueie o celular**: quem abrir o aparelho desbloqueado vê os dados.
+- Limpar os dados do site no navegador apaga esse cache. O iOS também pode apagá-lo se o app ficar muito tempo sem uso; basta abrir com rede de novo.
+- Um service worker travado numa versão velha se resolve apagando os dados do site (iPhone: Ajustes → Safari → Avançado → Dados de Sites) e abrindo de novo.
+
 ## Variáveis de ambiente
 
 Em produção, ficam em `infra/.env` no servidor. O repositório só tem os exemplos, sem valores reais: `infra/.env.example` (produção) e `backend/.env.example` (desenvolvimento).
@@ -85,6 +108,8 @@ Em produção, ficam em `infra/.env` no servidor. O repositório só tem os exem
 | `PLUGGY_ITEM_IDS` | (ids dos bancos no Meu Pluggy) | Bancos que a sincronização lê |
 | `SYNC_CRON` | `0 7 * * *` | Horário da sincronização diária |
 | `LOG_LEVEL` | `info` | Nível dos logs |
+
+**Tirar um banco:** remover o banco do Meu Pluggy não tira o Valora do ar nem limpa as telas. Use **"Remover do Valora"** no app (aviso no topo ou tela Contas): o banco é arquivado e o histórico fica guardado. Depois, se quiser, tire o id do `PLUGGY_ITEM_IDS` do `infra/.env` e reinicie o backend; deixar o id lá não faz mal, porque a sincronização pula o banco arquivado.
 
 O banco, a porta, o fuso (`America/Sao_Paulo`) e o endereço do banco (`DATABASE_URL`, montado com a `POSTGRES_PASSWORD`) são fixos no `infra/compose.yml`, não precisam estar no `.env`.
 

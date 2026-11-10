@@ -44,10 +44,13 @@ Se um banco novo mandar algo diferente, rode `npm run fixtures:record` em `backe
 | `pluggy_item_id` | text | único |
 | `institution_name` | text | |
 | `institution_logo_url` | text | pode ser nulo |
-| `status` | text | `ok`, `syncing`, `error`, `consent_expired` |
+| `status` | text | `ok`, `syncing`, `error`, `consent_expired`, `item_not_found` (o Pluggy diz que o item não existe mais) |
 | `status_detail` | text | mensagem para mostrar na tela |
 | `last_synced_at` | timestamptz | |
+| `archived_at` | timestamptz | pode ser nulo. Preenchido quando o usuário remove o banco do Valora: nada é apagado, o banco sai das telas e a sincronização o pula. Nulo = banco ativo |
 | `created_at`, `updated_at` | timestamptz | |
+
+O que sai quando `archived_at` está preenchido: as contas (e o saldo, as faturas e a projeção), a faixa de aviso e os alertas de conexão. O que fica: todas as transações, faturas, investimentos e fotos de saldo, que continuam contando em receitas, despesas e orçamentos. A curva de saldo do Início soma o banco só nos dias anteriores ao dia do arquivamento. Se o `PLUGGY_ITEM_IDS` não tem mais o id do banco, isso não é gravado: a API calcula `isConfigured` na leitura.
 
 **`accounts`**: contas e cartões.
 
@@ -277,4 +280,7 @@ As colunas `linked_account_id` e `linked_investment_id` (meta vinculada a uma co
 | `connection_id` | uuid | pode ser nulo |
 | `message` | text | |
 | `created_at` | timestamptz | |
-| `read_at`, `dismissed_at` | timestamptz | podem ser nulos |
+| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>` |
+| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento e conexão; `duplicate_charge` e `subscription_detected` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
+
+`type` tem `CHECK` com os cinco tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.

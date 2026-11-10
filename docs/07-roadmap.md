@@ -134,13 +134,16 @@ Regras em [produto](01-produto.md#lançamento-manual).
 - [x] **Receitas e despesas previstas** (`planned_entries`), avulsas ou recorrentes. Marcar como realizada: vincular a uma transação (sempre por escolha sua), realizar sem vincular ou pular o mês (`planned_entry_occurrences`).
 - [x] **Projeção do fim do mês:** saldo de hoje + receitas previstas − despesas previstas − faturas que vencem (a fatura já contém as parcelas do mês).
 - [x] **Metas** (`goals`, `goal_contributions`): nome, ícone, valor desejado, valor acumulado informado à mão, progresso, prazo estimado pelo ritmo de aporte.
-- [ ] **Alertas** (`alerts`):
-  - [ ] cobrança duplicada: mesmo valor e mesmo estabelecimento em poucos dias;
-  - [ ] assinatura detectada: mesmo valor se repetindo todo mês;
-  - [ ] orçamento em 80% e estourado;
-  - [ ] conexão com banco caída ou consentimento expirado.
-- [ ] Sino de alertas no topo; resumo de metas e projeção no Início.
-- [ ] **PWA instalável** (`vite-plugin-pwa`): ícone, tela de abertura, funciona com os dados já carregados mesmo sem rede.
+- [x] **Alertas** (`alerts`):
+  - [x] cobrança duplicada: mesmo valor e mesmo estabelecimento em poucos dias;
+  - [x] assinatura detectada: mesmo valor se repetindo todo mês;
+  - [x] orçamento em 80% e estourado;
+  - [x] conexão com banco caída ou consentimento expirado.
+- [x] Sino de alertas no topo.
+- [x] Resumo de metas e projeção no Início.
+- [x] **PWA instalável** (`vite-plugin-pwa`): ícone, tela de abertura, funciona com os dados já carregados mesmo sem rede.
+- [x] **Página "não encontrado"** dentro do app para endereços sem rota (como `/investimentos`, que ainda não existe).
+- [x] **Arquivar banco removido do Meu Pluggy** (`connections.archived_at`): "Remover do Valora" tira o banco das telas, do saldo e dos avisos mantendo o histórico, com "Reativar" na seção "Arquivados".
 
 **Pronto quando:**
 - dá para planejar o mês com previsões e ver a projeção do saldo;
