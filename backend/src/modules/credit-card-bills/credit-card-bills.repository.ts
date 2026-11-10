@@ -2,6 +2,7 @@ import { and, asc, eq, gt, gte, inArray, lt, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/database.js';
 import { accounts, connections, creditCardBills, transactions } from '../../db/schema.js';
+import { accountIsOfActiveConnection } from '../connections/active-connection.js';
 import type { StoredBill } from './bill-selection.js';
 import type { InstallmentTransaction } from './installment-projection.js';
 
@@ -37,7 +38,7 @@ function toDueDate(value: string | null): string | null {
 export class CreditCardBillsRepository {
   constructor(private readonly db: DbExecutor) {}
 
-  /** Cartões não ocultos. O `raw` fica aqui dentro: só o vencimento sai dele. */
+  /** Cartões não ocultos, de bancos ativos. O `raw` fica aqui dentro: só o vencimento sai dele. */
   async findVisibleCards(): Promise<CardRecord[]> {
     const rows = await this.db
       .select({
@@ -50,7 +51,13 @@ export class CreditCardBillsRepository {
       })
       .from(accounts)
       .leftJoin(connections, eq(connections.id, accounts.connectionId))
-      .where(and(eq(accounts.type, 'credit_card'), eq(accounts.isHidden, false)))
+      .where(
+        and(
+          eq(accounts.type, 'credit_card'),
+          eq(accounts.isHidden, false),
+          accountIsOfActiveConnection,
+        ),
+      )
       .orderBy(asc(connections.institutionName), asc(accounts.name));
     return rows.map(({ rawDueDate, ...card }) => ({
       ...card,

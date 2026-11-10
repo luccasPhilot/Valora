@@ -1,0 +1,6 @@
+{
+  "message": "item not found",
+  "code": 404,
+  "codeDescription": "ITEM_NOT_FOUND",
+  "errorId": "00000000-0000-4000-8000-000000000000"
+}

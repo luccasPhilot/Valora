@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
 import { centsSchema } from '../../shared/money.js';
+import { CONNECTION_STATUSES } from '../connections/connections.repository.js';
 import type { AccountRecord } from './accounts.repository.js';
 import type { AccountsService } from './accounts.service.js';
 
@@ -18,7 +19,7 @@ const accountResponseSchema = z.object({
     .object({
       id: z.uuid(),
       institutionName: z.string(),
-      status: z.enum(['ok', 'syncing', 'error', 'consent_expired']),
+      status: z.enum(CONNECTION_STATUSES),
       statusDetail: z.string().nullable(),
       lastSyncedAt: z.iso.datetime().nullable(),
     })

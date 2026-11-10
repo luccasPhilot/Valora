@@ -6,6 +6,8 @@ import type { Database } from './db/database.js';
 import { AccountsRepository } from './modules/accounts/accounts.repository.js';
 import { accountsRoutes } from './modules/accounts/accounts.routes.js';
 import { AccountsService } from './modules/accounts/accounts.service.js';
+import { createAlertsModule } from './modules/alerts/alerts.module.js';
+import { alertsRoutes } from './modules/alerts/alerts.routes.js';
 import { BudgetsRepository } from './modules/budgets/budgets.repository.js';
 import { budgetsRoutes } from './modules/budgets/budgets.routes.js';
 import { BudgetsService } from './modules/budgets/budgets.service.js';
@@ -90,18 +92,25 @@ function registerModules(
 ): Pick<ValoraApp, 'syncService' | 'categorySeedService' | 'accountsService'> {
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
-  const connectionsService = new ConnectionsService(new ConnectionsRepository(database.db));
   const now = deps.now ?? (() => new Date());
+  const alerts = createAlertsModule({ database, logger: app.log, now });
+  const connectionsService = new ConnectionsService(
+    new ConnectionsRepository(database.db),
+    deps.config.pluggyItemIds,
+    alerts.connectionAlertRefresher,
+  );
   const syncService = createSyncService({
     config: deps.config,
     database,
     pluggySdk: deps.pluggySdk,
+    alerts: alerts.evaluator,
     logger: app.log,
     now,
   });
   app.register(healthRoutes(healthService), { prefix: API_PREFIX });
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
+  app.register(alertsRoutes(alerts.alertsService), { prefix: API_PREFIX });
   const categories = createCategoriesModule(database);
   app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
   app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });
@@ -118,6 +127,7 @@ function registerModules(
   const budgetsService = new BudgetsService({
     budgets: new BudgetsRepository(database.db),
     categories: new CategoriesRepository(database.db),
+    budgetAlerts: alerts.budgetAlertRefresher,
     now,
   });
   app.register(budgetsRoutes(budgetsService), { prefix: API_PREFIX });
@@ -139,6 +149,7 @@ function registerModules(
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,
+    budgetAlerts: alerts.budgetAlertRefresher,
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
@@ -147,6 +158,8 @@ function registerModules(
     accounts: accountsService,
     budgets: budgetsService,
     transactions: transactions.transactionsService,
+    projection: projectionService,
+    goals: goalsService,
     now,
   });
   app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });

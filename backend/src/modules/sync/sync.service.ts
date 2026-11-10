@@ -1,10 +1,12 @@
 import { subtractDays, todayInSaoPaulo } from '../../shared/dates.js';
+import type { AlertEvaluator } from '../alerts/alert-evaluator.js';
 import type {
   ConnectionRecord,
   ConnectionsRepository,
 } from '../connections/connections.repository.js';
 import type { ItemConnectionState } from './item-status.js';
 import type { PluggyAccountList, PluggyClient, PluggyItemOverview } from './pluggy-client.js';
+import { PluggyItemNotFoundError } from './pluggy-errors.js';
 import type {
   SyncedCreditCardBill,
   SyncedInvestment,
@@ -27,6 +29,7 @@ const FOLLOW_UP_SYNC_DAYS = 30;
 const PLACEHOLDER_INSTITUTION_NAME = 'Banco não identificado';
 const UNEXPECTED_FAILURE_MESSAGE = 'Erro inesperado na sincronização. Tente de novo mais tarde.';
 const INTERRUPTED_RUN_MESSAGE = 'A sincronização foi interrompida porque a API reiniciou.';
+const ITEM_NOT_FOUND_MESSAGE = 'Este banco foi removido do Meu Pluggy. Remova-o do Valora.';
 
 type ItemStage = 'fetch_item' | 'fetch_data' | 'save_data';
 
@@ -53,6 +56,7 @@ export interface SyncServiceDependencies {
   readonly syncRuns: SyncRunsRepository;
   readonly connections: ConnectionsRepository;
   readonly unitOfWork: SyncUnitOfWork;
+  readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -87,6 +91,7 @@ function errorTypeOf(error: unknown): string {
 }
 
 const FAILED_ITEM: ItemOutcome = { status: 'failed' };
+const SKIPPED_ITEM: ItemOutcome = { status: 'skipped' };
 
 export class SyncService {
   constructor(private readonly deps: SyncServiceDependencies) {}
@@ -125,7 +130,7 @@ export class SyncService {
 
   private async execute(runId: string, lock: SyncLockHandle): Promise<void> {
     try {
-      const outcome = await this.syncAllItems();
+      const outcome = await this.evaluateAlerts(await this.syncAllItems());
       await this.deps.syncRuns.finish(runId, outcome);
       this.deps.logger.info({ runId, status: outcome.status, ...outcome.stats }, 'sync finished');
     } catch (error) {
@@ -135,6 +140,17 @@ export class SyncService {
       await lock.release().catch((error: unknown) => {
         this.deps.logger.error({ errorType: errorTypeOf(error) }, 'sync lock release failed');
       });
+    }
+  }
+
+  /** Passo 7: avalia os alertas com o resultado de qualquer sincronização. Falhar aqui só deixa o rastro nas estatísticas. */
+  private async evaluateAlerts(outcome: SyncRunOutcome): Promise<SyncRunOutcome> {
+    try {
+      await this.deps.alerts.evaluateAll();
+      return outcome;
+    } catch (error) {
+      this.deps.logger.error({ errorType: errorTypeOf(error) }, 'alerts evaluation failed');
+      return { ...outcome, stats: { ...outcome.stats, alertsFailed: 1 } };
     }
   }
 
@@ -160,6 +176,8 @@ export class SyncService {
 
   private async syncItem(itemId: string): Promise<ItemOutcome> {
     const connection = await this.deps.connections.ensure(itemId, PLACEHOLDER_INSTITUTION_NAME);
+    // Banco arquivado: nenhuma chamada ao Pluggy e nenhuma mudança de status, mesmo com o id no `.env`.
+    if (connection.archivedAt !== null) return SKIPPED_ITEM;
     const overview = await this.attempt(connection, 'fetch_item', () =>
       this.deps.pluggy.getItem(itemId),
     );
@@ -186,16 +204,26 @@ export class SyncService {
     try {
       return await work();
     } catch (error) {
-      this.deps.logger.warn(
-        { connectionId: connection.id, stage, errorType: errorTypeOf(error) },
-        'bank sync failed',
-      );
-      await this.deps.connections.updateStatus(connection.id, {
-        status: 'error',
-        statusDetail: STAGE_FAILURE_MESSAGES[stage],
-      });
+      await this.recordFailure(connection, stage, error);
       return null;
     }
+  }
+
+  /** O banco que não existe mais no Pluggy tem o próprio status; qualquer outra falha é `error`. */
+  private async recordFailure(
+    connection: ConnectionRecord,
+    stage: ItemStage,
+    error: unknown,
+  ): Promise<void> {
+    this.deps.logger.warn(
+      { connectionId: connection.id, stage, errorType: errorTypeOf(error) },
+      'bank sync failed',
+    );
+    const isItemMissing = error instanceof PluggyItemNotFoundError;
+    await this.deps.connections.updateStatus(connection.id, {
+      status: isItemMissing ? 'item_not_found' : 'error',
+      statusDetail: isItemMissing ? ITEM_NOT_FOUND_MESSAGE : STAGE_FAILURE_MESSAGES[stage],
+    });
   }
 
   private async updateConnectionStatus(

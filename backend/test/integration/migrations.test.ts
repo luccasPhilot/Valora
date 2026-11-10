@@ -13,6 +13,7 @@ const MIGRATION_COUNT = z
 
 const TABLES = [
   'accounts',
+  'alerts',
   'balance_snapshots',
   'budgets',
   'categories',
@@ -44,7 +45,7 @@ describe('migrations', () => {
     return result.rows.map((row) => row.table_name);
   }
 
-  it('should_create_the_sixteen_tables_when_migrations_run_on_an_empty_database', async () => {
+  it('should_create_the_seventeen_tables_when_migrations_run_on_an_empty_database', async () => {
     // Arrange (o global-setup já aplicou as migrations num banco vazio)
     // Act
     const tables = await listPublicTables();
@@ -60,6 +61,39 @@ describe('migrations', () => {
     const tablesAfter = await listPublicTables();
     // Assert
     expect(tablesAfter).toEqual(tablesBefore);
+  });
+
+  it('should_create_the_nullable_archived_at_column_in_connections', async () => {
+    // Arrange
+    // Act
+    const result = await database.db.execute<{ is_nullable: string; data_type: string }>(
+      sql`select is_nullable, data_type from information_schema.columns where table_name = 'connections' and column_name = 'archived_at'`,
+    );
+    // Assert
+    expect(result.rows[0]).toEqual({ is_nullable: 'YES', data_type: 'timestamp with time zone' });
+  });
+
+  it('should_accept_the_item_not_found_connection_status', async () => {
+    // Arrange
+    // Act
+    const insert = database.db.execute(
+      sql`insert into connections (pluggy_item_id, institution_name, status) values ('migration-check-item', 'Banco', 'item_not_found')`,
+    );
+    // Assert
+    await expect(insert).resolves.toBeDefined();
+    await database.db.execute(
+      sql`delete from connections where pluggy_item_id = 'migration-check-item'`,
+    );
+  });
+
+  it('should_still_reject_an_unknown_connection_status', async () => {
+    // Arrange
+    // Act
+    const insert = database.db.execute(
+      sql`insert into connections (pluggy_item_id, institution_name, status) values ('migration-check-bad', 'Banco', 'desconhecido')`,
+    );
+    // Assert
+    await expect(insert).rejects.toThrow();
   });
 
   it('should_not_register_the_migration_twice_when_migrations_run_again', async () => {

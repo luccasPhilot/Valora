@@ -29,6 +29,30 @@ const spendingItemSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 
+const projectionSummarySchema = z.object({
+  projectedBalanceCents: centsSchema,
+  lowestBalanceCents: centsSchema,
+  lowestBalanceDate: z.iso.date(),
+  hasPlannedItems: z.boolean(),
+});
+
+const goalsSummarySchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      icon: z.string(),
+      targetCents: centsSchema,
+      savedCents: centsSchema,
+      percent: z.int(),
+      status: z.enum(['completed', 'no_pace', 'on_track', 'behind']),
+      estimatedDate: z.iso.date().nullable(),
+      requiredMonthlyCents: centsSchema.nullable(),
+    }),
+  ),
+  activeCount: z.int(),
+});
+
 const dashboardResponseSchema = z.object({
   month: z.string(),
   totalBalanceCents: centsSchema,
@@ -42,6 +66,8 @@ const dashboardResponseSchema = z.object({
   spendingByCategory: z.array(spendingItemSchema),
   budgetsNearLimit: z.array(budgetItemSchema),
   latestTransactions: z.array(transactionResponseSchema),
+  projection: projectionSummarySchema.nullable(),
+  goals: goalsSummarySchema,
 });
 
 export function dashboardRoutes(service: DashboardService): FastifyPluginAsyncZod {
@@ -62,6 +88,8 @@ export function dashboardRoutes(service: DashboardService): FastifyPluginAsyncZo
           spendingByCategory: [...overview.spendingByCategory],
           budgetsNearLimit: overview.budgetsNearLimit.map(toBudgetItemResponse),
           latestTransactions: overview.latestTransactions.map(toTransactionResponse),
+          projection: overview.projection,
+          goals: { ...overview.goals, items: [...overview.goals.items] },
         };
       },
     );

@@ -41,13 +41,15 @@ export const connections = pgTable(
     status: text('status').notNull().default('ok'),
     statusDetail: text('status_detail'),
     lastSyncedAt: timestamptz('last_synced_at'),
+    // Preenchido quando o usuário tira o banco do dia a dia (nada é apagado). Nulo = banco ativo.
+    archivedAt: timestamptz('archived_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
   (table) => [
     check(
       'connections_status_check',
-      sql`${table.status} in ('ok', 'syncing', 'error', 'consent_expired')`,
+      sql`${table.status} in ('ok', 'syncing', 'error', 'consent_expired', 'item_not_found')`,
     ),
   ],
 );
@@ -380,6 +382,40 @@ export const goalContributions = pgTable(
     check(
       'goal_contributions_kind_sign_check',
       sql`(${table.kind} = 'withdrawal' and ${table.amountCents} < 0) or (${table.kind} <> 'withdrawal' and ${table.amountCents} > 0)`,
+    ),
+  ],
+);
+
+export const alerts = pgTable(
+  'alerts',
+  {
+    id: primaryId(),
+    type: text('type').notNull(),
+    transactionId: uuid('transaction_id').references(() => transactions.id, {
+      onDelete: 'set null',
+    }),
+    categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    connectionId: uuid('connection_id').references(() => connections.id, {
+      onDelete: 'set null',
+    }),
+    message: text('message').notNull(),
+    // Identifica a situação que gerou o alerta (ex.: `budget_warning:<categoryId>:2026-11`).
+    dedupeKey: text('dedupe_key').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    readAt: timestamptz('read_at'),
+    dismissedAt: timestamptz('dismissed_at'),
+    // Preenchido quando a situação acabou. Dispensar não resolve: a causa pode continuar.
+    resolvedAt: timestamptz('resolved_at'),
+  },
+  (table) => [
+    // Uma situação ativa tem um alerta só; depois de resolvida, outro pode nascer.
+    uniqueIndex('alerts_active_dedupe_key_key')
+      .on(table.dedupeKey)
+      .where(sql`${table.resolvedAt} is null`),
+    index('alerts_created_at_idx').on(table.createdAt),
+    check(
+      'alerts_type_check',
+      sql`${table.type} in ('duplicate_charge', 'subscription_detected', 'budget_warning', 'budget_exceeded', 'connection_error')`,
     ),
   ],
 );

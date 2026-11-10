@@ -2,6 +2,8 @@ import { firstDayOfMonth, lastDayOfMonth, todayInSaoPaulo } from '../../shared/d
 import { isIncludedInTotalBalance } from '../accounts/account-totals.js';
 import type { AccountsService } from '../accounts/accounts.service.js';
 import type { BudgetItem, BudgetsService } from '../budgets/budgets.service.js';
+import type { GoalsService } from '../goals/goals.service.js';
+import type { ProjectionService } from '../projection/projection.service.js';
 import type { TransactionRecord } from '../transactions/transactions.repository.js';
 import type { TransactionsService } from '../transactions/transactions.service.js';
 import type { BalancePoint, DashboardRepository, MonthTotals } from './dashboard.repository.js';
@@ -14,6 +16,12 @@ import {
   monthsEndingAt,
   type SpendingItem,
 } from './dashboard-calculations.js';
+import {
+  type GoalsSummary,
+  type ProjectionSummary,
+  summarizeGoals,
+  summarizeProjection,
+} from './dashboard-planning.js';
 
 const BUDGETS_NEAR_LIMIT_COUNT = 3;
 const LATEST_TRANSACTIONS_COUNT = 5;
@@ -30,6 +38,9 @@ export interface DashboardOverview {
   readonly spendingByCategory: readonly SpendingItem[];
   readonly budgetsNearLimit: readonly BudgetItem[];
   readonly latestTransactions: readonly TransactionRecord[];
+  /** Só existe para o mês atual: para os outros meses a projeção não faz sentido. */
+  readonly projection: ProjectionSummary | null;
+  readonly goals: GoalsSummary;
 }
 
 export interface DashboardServiceDependencies {
@@ -37,6 +48,8 @@ export interface DashboardServiceDependencies {
   readonly accounts: Pick<AccountsService, 'overview'>;
   readonly budgets: Pick<BudgetsService, 'overview'>;
   readonly transactions: Pick<TransactionsService, 'latest'>;
+  readonly projection: Pick<ProjectionService, 'projection'>;
+  readonly goals: Pick<GoalsService, 'list'>;
   readonly now: () => Date;
 }
 
@@ -47,14 +60,30 @@ export class DashboardService {
   async overview(month: string = this.currentMonth()): Promise<DashboardOverview> {
     const { accounts, totals } = await this.deps.accounts.overview();
     const balanceAccountIds = accounts.filter(isIncludedInTotalBalance).map(({ id }) => id);
-    const [balanceEvolution, incomeVsExpense, spending, budgets, latestTransactions] =
-      await Promise.all([
-        this.deps.dashboard.findBalanceEvolution(balanceAccountIds, month, lastDayOfMonth(month)),
-        this.findIncomeVsExpense(month),
-        this.deps.dashboard.findCategorySpending(month, lastDayOfMonth(month)),
-        this.deps.budgets.overview(month),
-        this.deps.transactions.latest(LATEST_TRANSACTIONS_COUNT),
-      ]);
+    const [
+      activeBalanceEvolution,
+      balanceEvolution,
+      incomeVsExpense,
+      spending,
+      budgets,
+      latestTransactions,
+      projection,
+      goals,
+    ] = await Promise.all([
+      // A variação do mês usa só os bancos ativos; o gráfico soma também o passado dos arquivados.
+      this.deps.dashboard.findBalanceEvolution(balanceAccountIds, month, lastDayOfMonth(month)),
+      this.deps.dashboard.findBalanceEvolutionWithArchived(
+        balanceAccountIds,
+        month,
+        lastDayOfMonth(month),
+      ),
+      this.findIncomeVsExpense(month),
+      this.deps.dashboard.findCategorySpending(month, lastDayOfMonth(month)),
+      this.deps.budgets.overview(month),
+      this.deps.transactions.latest(LATEST_TRANSACTIONS_COUNT),
+      this.findProjection(month),
+      this.deps.goals.list(),
+    ]);
     const requestedMonthTotals = incomeVsExpense.at(-1);
     return {
       month,
@@ -62,7 +91,7 @@ export class DashboardService {
       balanceEvolution,
       balanceChange: buildBalanceChange(
         totals.totalBalanceCents,
-        balanceEvolution,
+        activeBalanceEvolution,
         todayInSaoPaulo(this.deps.now()),
       ),
       monthIncomeCents: requestedMonthTotals?.incomeCents ?? 0,
@@ -71,7 +100,14 @@ export class DashboardService {
       spendingByCategory: buildSpendingBreakdown(spending),
       budgetsNearLimit: budgets.items.slice(0, BUDGETS_NEAR_LIMIT_COUNT),
       latestTransactions,
+      projection,
+      goals: summarizeGoals(goals),
     };
+  }
+
+  private async findProjection(month: string): Promise<ProjectionSummary | null> {
+    if (month !== this.currentMonth()) return null;
+    return summarizeProjection(await this.deps.projection.projection());
   }
 
   private async findIncomeVsExpense(month: string): Promise<MonthTotals[]> {

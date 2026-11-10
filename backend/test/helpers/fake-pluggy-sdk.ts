@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
+import { PluggyItemNotFoundError } from '../../src/modules/sync/pluggy-errors.js';
 import type { PluggySdk } from '../../src/modules/sync/pluggy-sdk.js';
 import type { TransactionWindow } from '../../src/modules/sync/sync.types.js';
 import { toSaoPauloDate } from '../../src/shared/dates.js';
@@ -75,16 +76,17 @@ export function fixturesRecordedAt(fixtures: readonly PluggyItemFixture[]): Date
   return new Date(first.recordedAt);
 }
 
-export class PluggyItemNotFoundError extends Error {
+export class FixtureNotFoundError extends Error {
   constructor(itemId: string) {
     super(`Item ${itemId} não existe nas fixtures`);
-    this.name = 'PluggyItemNotFoundError';
+    this.name = 'FixtureNotFoundError';
   }
 }
 
 /** Pluggy de mentira, servido pelas fixtures. Filtra as transações pela janela, como a API real. */
 export class FakePluggySdk implements PluggySdk {
   private pendingFetchItem: Promise<void> = Promise.resolve();
+  private readonly removedItemIds = new Set<string>();
   /** Janelas pedidas em `fetchAllTransactions`, na ordem. */
   readonly requestedWindows: TransactionWindow[] = [];
 
@@ -103,12 +105,24 @@ export class FakePluggySdk implements PluggySdk {
     return release;
   }
 
+  /** Simula o banco removido do Meu Pluggy: as chamadas por item passam a falhar como o SDK real. */
+  removeItem(itemId: string): void {
+    this.removedItemIds.add(itemId);
+  }
+
+  /** O banco volta a existir no Meu Pluggy. */
+  restoreItem(itemId: string): void {
+    this.removedItemIds.delete(itemId);
+  }
+
   async fetchItem(itemId: string): Promise<unknown> {
     await this.pendingFetchItem;
+    this.throwIfRemoved(itemId);
     return this.fixtureOf(itemId).item;
   }
 
   async fetchAccounts(itemId: string): Promise<unknown> {
+    this.throwIfRemoved(itemId);
     const accounts = this.fixtureOf(itemId).accounts;
     return { results: accounts, page: 1, total: accounts.length, totalPages: 1 };
   }
@@ -125,6 +139,7 @@ export class FakePluggySdk implements PluggySdk {
   }
 
   async fetchInvestmentsPage(itemId: string, page: number): Promise<unknown> {
+    this.throwIfRemoved(itemId);
     const investments = page === 1 ? this.fixtureOf(itemId).investments : [];
     return { results: investments, page, total: investments.length, totalPages: 1 };
   }
@@ -137,9 +152,13 @@ export class FakePluggySdk implements PluggySdk {
     return { results, page, total: bills.length, totalPages: 1 };
   }
 
+  private throwIfRemoved(itemId: string): void {
+    if (this.removedItemIds.has(itemId)) throw new PluggyItemNotFoundError();
+  }
+
   private fixtureOf(itemId: string): PluggyItemFixture {
     const fixture = this.fixtures.find((candidate) => candidate.item.id === itemId);
-    if (!fixture) throw new PluggyItemNotFoundError(itemId);
+    if (!fixture) throw new FixtureNotFoundError(itemId);
     return fixture;
   }
 }
