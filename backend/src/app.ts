@@ -6,6 +6,8 @@ import type { Database } from './db/database.js';
 import { AccountsRepository } from './modules/accounts/accounts.repository.js';
 import { accountsRoutes } from './modules/accounts/accounts.routes.js';
 import { AccountsService } from './modules/accounts/accounts.service.js';
+import { createAlertsModule } from './modules/alerts/alerts.module.js';
+import { alertsRoutes } from './modules/alerts/alerts.routes.js';
 import { BudgetsRepository } from './modules/budgets/budgets.repository.js';
 import { budgetsRoutes } from './modules/budgets/budgets.routes.js';
 import { BudgetsService } from './modules/budgets/budgets.service.js';
@@ -18,12 +20,23 @@ import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-catego
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
 import { connectionsRoutes } from './modules/connections/connections.routes.js';
 import { ConnectionsService } from './modules/connections/connections.service.js';
+import { CreditCardBillsRepository } from './modules/credit-card-bills/credit-card-bills.repository.js';
+import { creditCardBillsRoutes } from './modules/credit-card-bills/credit-card-bills.routes.js';
+import { CreditCardBillsService } from './modules/credit-card-bills/credit-card-bills.service.js';
 import { DashboardRepository } from './modules/dashboard/dashboard.repository.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
+import { GoalsRepository } from './modules/goals/goals.repository.js';
+import { goalsRoutes } from './modules/goals/goals.routes.js';
+import { GoalsService } from './modules/goals/goals.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { PlannedEntriesRepository } from './modules/planned-entries/planned-entries.repository.js';
+import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.routes.js';
+import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
+import { projectionRoutes } from './modules/projection/projection.routes.js';
+import { ProjectionService } from './modules/projection/projection.service.js';
 import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
@@ -79,18 +92,25 @@ function registerModules(
 ): Pick<ValoraApp, 'syncService' | 'categorySeedService' | 'accountsService'> {
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
-  const connectionsService = new ConnectionsService(new ConnectionsRepository(database.db));
   const now = deps.now ?? (() => new Date());
+  const alerts = createAlertsModule({ database, logger: app.log, now });
+  const connectionsService = new ConnectionsService(
+    new ConnectionsRepository(database.db),
+    deps.config.pluggyItemIds,
+    alerts.connectionAlertRefresher,
+  );
   const syncService = createSyncService({
     config: deps.config,
     database,
     pluggySdk: deps.pluggySdk,
+    alerts: alerts.evaluator,
     logger: app.log,
     now,
   });
   app.register(healthRoutes(healthService), { prefix: API_PREFIX });
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
+  app.register(alertsRoutes(alerts.alertsService), { prefix: API_PREFIX });
   const categories = createCategoriesModule(database);
   app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
   app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });
@@ -99,15 +119,37 @@ function registerModules(
   });
   const accountsService = new AccountsService(new AccountsRepository(database.db));
   app.register(accountsRoutes(accountsService), { prefix: API_PREFIX });
+  const creditCardBillsService = new CreditCardBillsService({
+    repository: new CreditCardBillsRepository(database.db),
+    now,
+  });
+  app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
   const budgetsService = new BudgetsService({
     budgets: new BudgetsRepository(database.db),
     categories: new CategoriesRepository(database.db),
+    budgetAlerts: alerts.budgetAlertRefresher,
     now,
   });
   app.register(budgetsRoutes(budgetsService), { prefix: API_PREFIX });
+  const plannedEntriesService = new PlannedEntriesService({
+    entries: new PlannedEntriesRepository(database.db),
+    categories: new CategoriesRepository(database.db),
+    now,
+  });
+  app.register(plannedEntriesRoutes(plannedEntriesService), { prefix: API_PREFIX });
+  const goalsService = new GoalsService({ goals: new GoalsRepository(database.db), now });
+  app.register(goalsRoutes(goalsService), { prefix: API_PREFIX });
+  const projectionService = new ProjectionService({
+    accounts: accountsService,
+    plannedEntries: plannedEntriesService,
+    creditCardBills: creditCardBillsService,
+    now,
+  });
+  app.register(projectionRoutes(projectionService), { prefix: API_PREFIX });
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,
+    budgetAlerts: alerts.budgetAlertRefresher,
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
@@ -116,6 +158,8 @@ function registerModules(
     accounts: accountsService,
     budgets: budgetsService,
     transactions: transactions.transactionsService,
+    projection: projectionService,
+    goals: goalsService,
     now,
   });
   app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });

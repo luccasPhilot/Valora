@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/manrope';
+@import '@fontsource/montserrat-alternates/500.css';
+@import '@fontsource/montserrat-alternates/600.css';
+@import '@fontsource/montserrat-alternates/700.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -123,7 +125,7 @@
 
 @theme inline {
   --font-sans: 'Inter Variable', system-ui, sans-serif;
-  --font-display: 'Manrope Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Montserrat Alternates', 'Inter Variable', system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 8px);
   --radius-md: calc(var(--radius) - 4px);

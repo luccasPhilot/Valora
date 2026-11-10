@@ -1,5 +1,6 @@
 import type { Database } from '../../db/database.js';
 import type { Config } from '../../shared/config.js';
+import type { AlertEvaluator } from '../alerts/alert-evaluator.js';
 import { ConnectionsRepository } from '../connections/connections.repository.js';
 import { PluggyClient } from './pluggy-client.js';
 import type { PluggySdk } from './pluggy-sdk.js';
@@ -12,6 +13,7 @@ export interface SyncModuleDependencies {
   readonly config: Config;
   readonly database: Database;
   readonly pluggySdk: PluggySdk;
+  readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -24,6 +26,7 @@ export function createSyncService(deps: SyncModuleDependencies): SyncService {
     syncRuns: new SyncRunsRepository(deps.database.db),
     connections: new ConnectionsRepository(deps.database.db),
     unitOfWork: new SyncUnitOfWork(deps.database.db),
+    alerts: deps.alerts,
     logger: deps.logger,
     now: deps.now,
   });

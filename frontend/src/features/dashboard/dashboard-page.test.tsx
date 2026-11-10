@@ -33,6 +33,18 @@ const SYNC_RUN = {
   stats: { transactionsInserted: 3 },
 };
 
+const TRIP_GOAL = {
+  id: '77777777-7777-4777-8777-777777777777',
+  name: 'Viagem',
+  icon: 'plane',
+  targetCents: 1000000,
+  savedCents: 400000,
+  percent: 40,
+  status: 'behind',
+  estimatedDate: null,
+  requiredMonthlyCents: 50000,
+};
+
 function dashboard(overrides: Record<string, unknown> = {}) {
   return {
     month: '2026-11',
@@ -75,6 +87,13 @@ function dashboard(overrides: Record<string, unknown> = {}) {
       },
     ],
     latestTransactions: [PHARMACY, fixture(7, { description: 'Padaria', amountCents: -1500 })],
+    projection: {
+      projectedBalanceCents: 480000,
+      lowestBalanceCents: 120000,
+      lowestBalanceDate: '2026-11-20',
+      hasPlannedItems: true,
+    },
+    goals: { items: [TRIP_GOAL], activeCount: 1 },
     ...overrides,
   };
 }
@@ -125,6 +144,8 @@ describe('Início', () => {
       'Saldo total',
       'Receitas do mês',
       'Despesas do mês',
+      'Projeção do fim do mês',
+      'Metas',
       'Receitas x despesas',
       'Gastos por categoria',
       'Orçamentos',
@@ -326,6 +347,182 @@ describe('Início — orçamentos e transações', () => {
     const link = await screen.findByRole('link', { name: 'Ver todas' });
     // Assert
     expect(link).toHaveAttribute('href', '/transacoes');
+  });
+});
+
+describe('Início — projeção do fim do mês', () => {
+  async function findProjectionCard(): Promise<HTMLElement> {
+    const heading = await screen.findByRole('heading', { name: 'Projeção do fim do mês' });
+    return heading.closest('section') as HTMLElement;
+  }
+
+  it('should_show_the_projected_balance_and_link_to_the_planning_when_there_are_planned_items', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const card = await findProjectionCard();
+    // Assert
+    expect({
+      text: card.textContent,
+      href: within(card).getByRole('link', { name: 'Ver planejamento' }).getAttribute('href'),
+    }).toEqual({
+      text: 'Projeção do fim do mêsVer planejamentoR$ 4.800,00Saldo projetado no fim do mês',
+      href: '/planejamento',
+    });
+  });
+
+  it('should_warn_with_icon_and_text_when_the_lowest_balance_is_negative', async () => {
+    // Arrange
+    stubDashboardApi(
+      dashboard({
+        projection: {
+          projectedBalanceCents: 20000,
+          lowestBalanceCents: -50000,
+          lowestBalanceDate: '2026-11-20',
+          hasPlannedItems: true,
+        },
+      }),
+    );
+    renderDashboard();
+    // Act
+    const warning = within(await findProjectionCard()).getByRole('status');
+    // Assert
+    expect({ text: warning.textContent, hasIcon: warning.querySelector('svg') !== null }).toEqual({
+      text: 'Saldo negativo em 20/11',
+      hasIcon: true,
+    });
+  });
+
+  it('should_not_use_red_when_every_balance_in_the_month_is_positive', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const card = await findProjectionCard();
+    // Assert
+    expect(card.querySelector('.text-destructive')).toBeNull();
+  });
+
+  it('should_use_red_on_the_projected_balance_when_it_ends_negative', async () => {
+    // Arrange
+    stubDashboardApi(
+      dashboard({
+        projection: {
+          projectedBalanceCents: -30000,
+          lowestBalanceCents: -30000,
+          lowestBalanceDate: '2026-11-30',
+          hasPlannedItems: true,
+        },
+      }),
+    );
+    renderDashboard();
+    // Act
+    const card = await findProjectionCard();
+    // Assert
+    expect(card.querySelector('p.text-destructive')).toHaveTextContent('−R$ 300,00');
+  });
+
+  it('should_offer_to_plan_the_month_when_nothing_is_planned', async () => {
+    // Arrange
+    stubDashboardApi(
+      dashboard({
+        projection: {
+          projectedBalanceCents: 485032,
+          lowestBalanceCents: 485032,
+          lowestBalanceDate: '2026-11-05',
+          hasPlannedItems: false,
+        },
+      }),
+    );
+    renderDashboard();
+    // Act
+    const link = within(await findProjectionCard()).getByRole('link', { name: 'Planeje o mês' });
+    // Assert
+    expect(link).toHaveAttribute('href', '/planejamento');
+  });
+
+  it('should_not_show_the_card_when_the_projection_is_null', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ projection: null }));
+    renderDashboard();
+    // Act
+    await screen.findByRole('heading', { name: 'Metas' });
+    // Assert
+    expect(
+      screen.queryByRole('heading', { name: 'Projeção do fim do mês' }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('Início — metas', () => {
+  async function findGoalsCard(): Promise<HTMLElement> {
+    const heading = await screen.findByRole('heading', { name: 'Metas' });
+    return heading.closest('section') as HTMLElement;
+  }
+
+  it('should_show_the_status_with_icon_and_text_when_a_goal_is_behind', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const status = within(await findGoalsCard()).getByText(/Atrasada/);
+    // Assert
+    expect({
+      text: status.parentElement?.textContent,
+      hasIcon: status.parentElement?.querySelector('svg') !== null,
+    }).toEqual({ text: 'Atrasada — precisa guardar R$ 500/mês', hasIcon: true });
+  });
+
+  it('should_show_the_progress_and_the_amounts_of_the_goal', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const card = await findGoalsCard();
+    // Assert
+    expect({
+      bar: within(card).getByRole('progressbar', { name: 'Viagem: 40% do valor desejado' }),
+      text: within(card).getByRole('listitem').textContent,
+    }).toEqual({
+      bar: expect.anything(),
+      text: expect.stringContaining('R$ 4.000 de R$ 10.000'),
+    });
+  });
+
+  it('should_link_to_the_goals_screen_when_there_are_goals', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const link = within(await findGoalsCard()).getByRole('link', { name: 'Ver metas' });
+    // Assert
+    expect(link).toHaveAttribute('href', '/metas');
+  });
+
+  it('should_show_at_most_the_goals_the_api_sends', async () => {
+    // Arrange
+    const goals = ['Um', 'Dois', 'Três'].map((name, index) => ({
+      ...TRIP_GOAL,
+      id: `77777777-7777-4777-8777-77777777777${index}`,
+      name,
+    }));
+    stubDashboardApi(dashboard({ goals: { items: goals, activeCount: 5 } }));
+    renderDashboard();
+    // Act
+    const card = await findGoalsCard();
+    // Assert
+    expect(within(card).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('should_offer_to_create_a_goal_when_there_are_none', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ goals: { items: [], activeCount: 0 } }));
+    renderDashboard();
+    // Act
+    const link = within(await findGoalsCard()).getByRole('link', { name: 'Criar meta' });
+    // Assert
+    expect(link).toHaveAttribute('href', '/metas');
   });
 });
 

@@ -15,11 +15,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { type AppArea, listAreasByGroup } from '@/lib/areas';
+import { type AppArea, isAreaActive, listAreasByGroup } from '@/lib/areas';
 
 // Item de 44 px; recolhido vira um quadrado de 44 px só com o ícone. O ativo é o único com fundo.
 const MENU_ITEM_CLASSES =
-  'h-11 gap-3 rounded-sm px-3 text-sm [&>svg]:size-5 group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:[&>span]:hidden data-[active=true]:bg-secondary data-[active=true]:font-bold data-[active=true]:text-secondary-foreground data-[active=true]:[&>svg]:text-primary';
+  'h-11 gap-3 rounded-sm px-3 font-display text-base font-medium [&>svg]:size-5 group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:[&>span]:hidden data-[active=true]:bg-secondary data-[active=true]:font-bold data-[active=true]:text-secondary-foreground data-[active=true]:[&>svg]:text-primary';
 const SIDE_PADDING_CLASSES = 'px-4 group-data-[collapsible=icon]:px-3.5';
 
 interface AreaMenuProps {
@@ -37,7 +37,7 @@ function AreaMenu({ areas }: AreaMenuProps) {
           <SidebarMenuButton
             asChild
             tooltip={area.title}
-            isActive={pathname === area.path}
+            isActive={isAreaActive(area, pathname)}
             className={MENU_ITEM_CLASSES}
           >
             <Link

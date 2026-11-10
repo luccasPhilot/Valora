@@ -28,18 +28,30 @@ O **saldo total** é a soma do saldo das contas **corrente e poupança** que voc
 
 Cheque especial entra como número negativo e reduz o total. O Início e a tela de Contas usam a mesma definição, calculada pela API.
 
+### Remover um banco do Valora
+
+Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele não some sozinho: fica parado com o aviso "não sincroniza desde…". O botão **"Remover do Valora"**, no aviso e em cada banco da tela Contas, **arquiva** o banco inteiro, com confirmação:
+
+- **Sai:** das contas, do saldo total, das faturas, da projeção do mês, do aviso e dos alertas, e a sincronização para de lê-lo.
+- **Fica:** todas as transações, faturas, investimentos e fotos de saldo. Receitas, despesas, categorias e orçamentos continuam contando o que o banco gerou, e a lista de Transações continua mostrando as transações dele.
+- **Saldo no passado:** a curva "evolução do saldo" do Início continua somando o banco nos dias anteriores ao arquivamento e o tira a partir dele, então ela tem um degrau nesse dia. A variação do mês (o "no mês" do cartão de saldo) só considera os bancos ativos, para não mostrar uma queda que não aconteceu.
+- **Dá para voltar:** a seção recolhida **"Arquivados"**, no fim da tela Contas, lista os bancos arquivados com **"Reativar"**.
+- O Valora avisa a causa: "foi removido do Meu Pluggy" ou "saiu da lista de sincronização". Qualquer banco pode ser arquivado, não só os com problema.
+- Contas de bancos arquivados não aparecem no filtro de Transações nem no lançamento manual.
+
 | Área | O que tem | Fase |
 |---|---|---|
 | **Início (Dashboard)** | Saldo total, receitas e despesas do mês, gráfico receitas x despesas, gastos por categoria, últimas transações, ocultar valores | v1 |
-| | Projeção do fim do mês, resumo das metas, alertas | v2 |
+| | Projeção do fim do mês e resumo das metas (até 3, com a situação de cada uma) no Início; alertas no sino | v2 |
 | | Evolução do patrimônio | v3 |
 | **Transações** | Lista agrupada por dia; filtros por período, categoria, tipo e conta; pesquisa; detalhe; trocar a categoria | v1 |
 | | Lançamento manual de receitas e despesas, aviso de possível duplicata | v1 |
 | **Contas e cartões** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |
-| | Faturas e parcelas futuras do cartão | v2 |
+| | Faturas do cartão: fatura atual com vencimento e situação (aberta, vencida, paga), próximas faturas e parcelas futuras por mês | v2 |
 | **Categorias e regras** | Categorias próprias, regras automáticas, regras que nascem quando você corrige uma categoria | v1 |
 | **Orçamentos** | Limite por categoria no mês, quanto já foi gasto, aviso perto do limite e quando estoura | v1 |
-| **Planejamento** | Receitas e despesas previstas (inclusive as que se repetem), projeção do saldo no fim do mês | v2 |
+| **Planejamento** | Receitas e despesas previstas (avulsas ou que se repetem todo mês ou todo ano), por mês: o que falta acontecer, o que já foi realizado e o que foi pulado, com os totais previstos. Você vincula uma previsão à transação real (o app sugere candidatas, mas nunca vincula sozinho), marca como realizada sem vincular, pula o mês ou desfaz; também pode pausar e excluir | v2 |
+| | Projeção do saldo no fim do mês: o saldo de hoje mais o que está previsto e menos as faturas que vencem, dia a dia, com o ponto mais baixo e o aviso de saldo negativo. Fica no topo da tela de Planejamento ([regras](#projeção-do-fim-do-mês)) | v2 |
 | **Metas** | Objetivo, valor desejado, valor acumulado (informado à mão), progresso, prazo estimado | v2 |
 | | Meta vinculada a um investimento ou conta, que se atualiza sozinha | v3 |
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |
@@ -64,6 +76,20 @@ Regras:
   - O app nunca junta sozinho.
 - **Saque:** um saque no banco chega pelo Open Finance como saída, com a categoria "Saque". Se você também lançar à mão o que gastou com aquele dinheiro, troque a categoria do saque para uma transferência, para não contar a despesa duas vezes.
 
+## Projeção do fim do mês
+
+Responde "como vou chegar ao fim do mês?" com uma conta que dá para conferir à mão:
+
+`saldo projetado = saldo de hoje + receitas previstas − despesas previstas − faturas que vencem até o último dia do mês`
+
+- **Saldo de hoje** é o saldo total de Contas (a mesma definição do Início).
+- **Só entra o que ainda vai acontecer.** Previsões realizadas já estão no saldo e as puladas não vão acontecer; as duas ficam de fora.
+- **Faturas, não parcelas.** Entra a parte não paga de cada fatura de cartão que vence no mês. A fatura já contém as parcelas do mês, então descontar as duas contaria a mesma saída duas vezes. Cartão oculto não entra, como no saldo.
+- **Atrasado entra hoje.** Previsão pendente com data passada e fatura vencida e não paga são descontadas hoje, e a tela marca "Atrasada" para você resolver. Esconder um gasto provável seria pior do que mostrá-lo.
+- **Saídas primeiro.** No mesmo dia, as saídas vêm antes das entradas, para o ponto mais baixo não ser otimista.
+- **Cartão sem vencimento** (o banco não informou e não há como estimar) não entra na conta, e a tela avisa qual cartão ficou de fora. Vencimento **estimado** entra e vem marcado.
+- **Não prevê gastos do dia a dia** (mercado, lazer) nem meses futuros, e os gastos no cartão ainda fora de fatura fechada entram só na fatura que vencer depois. A tela diz isso.
+
 ## Orçamentos
 
 Um orçamento é o limite de gasto de uma **categoria de despesa** em um **mês**. Categorias de receita e de transferência não têm orçamento.
@@ -77,6 +103,21 @@ Um orçamento é o limite de gasto de uma **categoria de despesa** em um **mês*
 - **Copiar do mês anterior** traz os limites do mês anterior só para as categorias ativas que ainda não têm limite no mês. Nunca sobrescreve um limite já definido.
 - O orçamento não se repete sozinho: um mês novo começa vazio, e você copia o anterior ou cria os limites.
 
+## Metas
+
+Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a entrada do apartamento. O valor acumulado é **informado à mão**, por aportes e retiradas com data; o app nunca movimenta dinheiro. Todas as contas são em centavos inteiros, sem IA.
+
+- **Valor acumulado.** É sempre a soma dos aportes e retiradas. O valor que você já tinha ao criar a meta entra como um aporte `initial`. Uma retirada maior que o acumulado é recusada, e remover um aporte desfaz o efeito dele (recusado se deixaria o acumulado negativo).
+- **Progresso.** `floor(acumulado × 100 ÷ desejado)`, limitado a 100%: R$ 0,01 faltando ainda mostra 99%, e passar do valor desejado mostra 100%.
+- **Ritmo.** A média mensal líquida dos últimos 90 dias: `(aportes − retiradas) × 30 ÷ 90`, arredondada para baixo. O **valor inicial não conta**, porque não foi guardado enquanto você usava o app. Meta com menos de 90 dias usa a idade dela em dias, com **mínimo de 30**, para o primeiro aporte não ser diluído. A tela mostra o ritmo usado para você entender a estimativa.
+- **Prazo estimado.** `ceil(faltante ÷ ritmo)` meses a partir de hoje. Sem ritmo (nenhum aporte, ou retiradas que anulam os aportes) não há estimativa e a situação é "Sem ritmo ainda". Acima de 600 meses (50 anos) a tela diz "mais de 50 anos", sem data.
+- **Situação**, sempre em ícone e texto, nunca só a cor:
+  - **Concluída:** acumulado maior ou igual ao desejado, qualquer que seja o prazo;
+  - **No ritmo:** a estimativa chega até o prazo (sem prazo informado, basta ter ritmo);
+  - **Atrasada:** a estimativa passa do prazo, ou o prazo venceu e a meta não foi atingida. A tela diz quanto guardar por mês (`ceil(faltante ÷ meses até o prazo)`, no mínimo 1 mês);
+  - **Sem ritmo ainda:** não há ritmo para estimar.
+- **Ordem da lista.** Não concluídas primeiro, pelo prazo mais próximo (sem prazo por último); concluídas no fim.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:
@@ -87,6 +128,25 @@ Estes itens ficam de fora, inclusive no futuro:
 - **WhatsApp ou outro canal de chat.**
 - **Movimentar dinheiro** (pagamentos, Pix, transferências).
 - **Uso comercial.**
+
+## Alertas
+
+O sino no topo de cada tela lista os alertas ativos, com um contador de não lidos. Cada alerta nasce **uma vez** por situação e **não volta se você o dispensou**. Os de orçamento e conexão somem sozinhos quando a situação acaba; os de cobrança duplicada e assinatura são avisos de um fato e ficam até você dispensar.
+
+| Alerta | Quando nasce | Quando some |
+|---|---|---|
+| Orçamento em 80% | o gasto da categoria no mês chega a 80% do limite | o gasto cai (estorno), o limite sobe ou é removido, ou o mês acaba |
+| Orçamento estourado | o gasto passa do limite; substitui o aviso de 80% da mesma categoria | igual ao anterior |
+| Conexão com banco caída | a conexão fica com erro ou com o consentimento expirado | a conexão volta ao normal |
+| Cobrança duplicada | uma saída postada de uma conta repete a descrição e o valor de outra da mesma conta, com até 3 dias de diferença (só cobranças dos últimos 7 dias); o alerta é da mais recente | só quando você dispensa |
+| Assinatura detectada | 3 ou mais cobranças de mesmo valor e descrição em sequência, com 25 a 35 dias entre elas, a última com até 45 dias | só quando você dispensa |
+
+- Os percentuais (80% e 100%) são fixos e as mensagens não mostram valores.
+- A faixa de aviso de banco fora do ar continua; o sino é um aviso a mais.
+- Cobrança duplicada e assinatura só olham saídas **postadas do Open Finance**. Ficam de fora pendentes, lançamentos manuais, parcelas, transferências (categoria do Valora `transfer` ou categoria do Pluggy iniciada por "Transfer", como Pix e TED para pessoas) e valores abaixo de R$ 5,00. Três cobranças iguais seguidas geram dois alertas, um por cobrança a mais.
+- Descrição e valor precisam ser exatamente iguais; assinatura com valor que muda só é detectada depois de 3 cobranças no novo valor. Cobrança duplicada não compara contas diferentes.
+- Na primeira sincronização depois de ativar, cada assinatura em andamento gera um alerta de uma vez só ("Marcar todos como lidos" zera o contador).
+- "Ver transações" abre a lista do dia da cobrança, pesquisando pela descrição.
 
 ## Referência: Pierre
 

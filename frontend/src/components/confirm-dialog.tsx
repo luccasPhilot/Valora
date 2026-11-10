@@ -16,6 +16,8 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   isPending: boolean;
   errorMessage: string | null;
+  /** `destructive` (padrão) para excluir; `default` para ações que se desfazem, como arquivar. */
+  confirmVariant?: 'destructive' | 'default';
   onConfirm: () => void;
 }
 
@@ -27,6 +29,7 @@ export function ConfirmDialog({
   confirmLabel,
   isPending,
   errorMessage,
+  confirmVariant = 'destructive',
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -45,7 +48,7 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button variant="destructive" disabled={isPending} onClick={onConfirm}>
+          <Button variant={confirmVariant} disabled={isPending} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </DialogFooter>

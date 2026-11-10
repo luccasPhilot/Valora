@@ -33,7 +33,7 @@ Conferência: `curl http://127.0.0.1:3000/api/v1/health` responde `{"status":"ok
 | `npm run test:integration` | Só os de integração (sobem um PostgreSQL com Testcontainers; precisam do Docker) |
 | `npm run db:generate` | Gera uma migration a partir das mudanças em `src/db/schema.ts` |
 | `npm run fixtures:categories` | Chama a API real do Pluggy e grava a lista pública de categorias em `test/fixtures/pluggy/categories.json`. Depois de regravar, atualize `src/modules/categories/seed/pluggy-categories.ts` e o mapeamento inicial (um teste confere a lista) |
-| `npm run fixtures:record` | Chama a API real do Pluggy uma vez e regrava as fixtures anonimizadas de `test/fixtures/pluggy/`. Mostra só um resumo com contagens (sinal por tipo de conta, horário das datas, status de cada banco) |
+| `npm run fixtures:record` | Chama a API real do Pluggy uma vez e regrava as fixtures anonimizadas de `test/fixtures/pluggy/`. Grava também as faturas de cada cartão. Mostra só um resumo com contagens (sinal por tipo de conta, horário das datas, status de cada banco, campos presentes nas faturas). Use com o `.env` apontando para os bancos reais: no sandbox do Pluggy ele regrava as fixtures com o conector errado (o MeuPluggy tem id 200) |
 
 ## Sincronização
 

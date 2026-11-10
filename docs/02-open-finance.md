@@ -60,6 +60,8 @@ O Valora não consegue descobrir sozinho quais itens existem: listar os itens da
 
 Na próxima sincronização, cada id novo vira uma conexão. Tirar um id da lista faz a sincronização parar de ler aquele banco, mas o histórico dele continua guardado.
 
+**Tirar um banco das telas.** Tirar o id do `.env` (ou remover o banco do Meu Pluggy) só para a leitura: a conexão continua no Valora, parada no último estado, e o aviso "não sincroniza desde…", o alerta, as contas e o saldo dela continuam aparecendo. Para tirá-la de verdade, use **"Remover do Valora"** (no aviso ou na tela Contas): o banco é **arquivado**, sai do saldo, das listas e dos avisos, a sincronização o pula e **nada é apagado**. O id pode ficar no `.env`; o app o ignora. O Valora reconhece sozinho os dois casos: o Pluggy responde que o item não existe mais (status `item_not_found`) e o id que saiu do `PLUGGY_ITEM_IDS`. Um banco arquivado volta pelo botão **"Reativar"** da seção "Arquivados".
+
 No MeuPluggy, o conector se chama sempre "MeuPluggy", qualquer que seja o banco. O nome que aparece no Valora vem da conta corrente do item (veja as [convenções do Pluggy](04-modelo-de-dados.md#convenções-do-pluggy)).
 
 ## Dados disponíveis

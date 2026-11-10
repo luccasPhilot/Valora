@@ -45,6 +45,16 @@ export class NoDuplicatePendingError extends AppError {
   readonly statusCode = 409;
 }
 
+export class TransactionAlreadyLinkedError extends AppError {
+  readonly code = 'TRANSACTION_ALREADY_LINKED';
+  readonly statusCode = 409;
+}
+
+export class TransactionNotCompatibleError extends AppError {
+  readonly code = 'TRANSACTION_NOT_COMPATIBLE';
+  readonly statusCode = 422;
+}
+
 export class SyncInProgressError extends AppError {
   readonly code = 'SYNC_IN_PROGRESS';
   readonly statusCode = 409;

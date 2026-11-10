@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import type { Category, CategoryRule, CategoryRuleInput, MatchType } from '@/lib/api/categories';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { MATCH_TYPE_LABELS, MATCH_TYPE_ORDER, parseMatchType } from './category-labels';
 import { CategorySelect } from './category-select';
@@ -41,6 +42,7 @@ export function RuleForm({
   onCancel,
 }: RuleFormProps) {
   const ids = { pattern: useId(), matchType: useId(), category: useId(), priority: useId() };
+  const isOffline = useIsOffline();
   const [pattern, setPattern] = useState(rule?.pattern ?? '');
   const [matchType, setMatchType] = useState<MatchType>(rule?.matchType ?? 'contains');
   const [categoryId, setCategoryId] = useState(rule?.categoryId ?? '');
@@ -120,7 +122,11 @@ export function RuleForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isPending || !canSubmit}>
+        <Button
+          type="submit"
+          disabled={isPending || !canSubmit || isOffline}
+          title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+        >
           Salvar
         </Button>
       </div>

@@ -1,6 +1,7 @@
 import { firstDayOfMonth, lastDayOfMonth, todayInSaoPaulo } from '../../shared/dates.js';
 import { NotFoundError } from '../../shared/errors.js';
 import { normalizeDescription } from '../../shared/text.js';
+import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import type { CategoriesRepository } from '../categories/categories.repository.js';
 import { assertCategoryIsSelectable } from '../categories/category-availability.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
@@ -34,6 +35,7 @@ export interface TransactionsServiceDependencies {
   readonly transactions: TransactionsQueryRepository;
   readonly categories: CategoriesRepository;
   readonly rules: Pick<CategoryRulesService, 'learnFromCorrection'>;
+  readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
   readonly now: () => Date;
 }
 
@@ -72,6 +74,8 @@ export class TransactionsService {
     if (change.applyAlways) {
       await this.deps.rules.learnFromCorrection(transactionId, change.categoryId);
     }
+    // Trocar a categoria (e o "Aplicar sempre", que recategoriza o histórico) muda o gasto dos orçamentos.
+    await this.deps.budgetAlerts.refresh();
     return this.get(transactionId);
   }
 

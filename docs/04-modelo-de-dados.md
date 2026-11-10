@@ -44,10 +44,13 @@ Se um banco novo mandar algo diferente, rode `npm run fixtures:record` em `backe
 | `pluggy_item_id` | text | único |
 | `institution_name` | text | |
 | `institution_logo_url` | text | pode ser nulo |
-| `status` | text | `ok`, `syncing`, `error`, `consent_expired` |
+| `status` | text | `ok`, `syncing`, `error`, `consent_expired`, `item_not_found` (o Pluggy diz que o item não existe mais) |
 | `status_detail` | text | mensagem para mostrar na tela |
 | `last_synced_at` | timestamptz | |
+| `archived_at` | timestamptz | pode ser nulo. Preenchido quando o usuário remove o banco do Valora: nada é apagado, o banco sai das telas e a sincronização o pula. Nulo = banco ativo |
 | `created_at`, `updated_at` | timestamptz | |
+
+O que sai quando `archived_at` está preenchido: as contas (e o saldo, as faturas e a projeção), a faixa de aviso e os alertas de conexão. O que fica: todas as transações, faturas, investimentos e fotos de saldo, que continuam contando em receitas, despesas e orçamentos. A curva de saldo do Início soma o banco só nos dias anteriores ao dia do arquivamento. Se o `PLUGGY_ITEM_IDS` não tem mais o id do banco, isso não é gravado: a API calcula `isConfigured` na leitura.
 
 **`accounts`**: contas e cartões.
 
@@ -200,7 +203,9 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `account_id` | uuid | → `accounts` (cartão) |
 | `pluggy_bill_id` | text | único |
 | `due_date` | date | vencimento |
+| `closing_date` | date | fechamento informado pelo Pluggy; pode ser nulo |
 | `total_cents` | bigint | |
+| `paid_cents` | bigint | soma dos pagamentos da fatura (`payments[].amount`); padrão 0 |
 | `minimum_payment_cents` | bigint | |
 | `raw` | jsonb | |
 
@@ -218,23 +223,51 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `end_month` | date | pode ser nulo |
 | `is_active` | boolean | |
 
-Como marcar uma previsão como realizada (ligar a uma transação real) fica para definir na v2.
+A previsão não grava uma linha por mês: as **ocorrências são calculadas** a partir de `recurrence`, `start_month`, `end_month` e `day_of_month` (dia 31 em fevereiro cai no 28 ou 29). `none` vale só em `start_month`; `monthly`, em todo mês do início ao fim; `yearly`, no mês de `start_month` a cada ano. Previsão pausada (`is_active = false`) não gera ocorrências. Os dois meses são sempre o dia 1.
+
+**`planned_entry_occurrences`**: o que você decidiu sobre uma ocorrência. Sem linha, a ocorrência do mês está pendente.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `planned_entry_id` | uuid | → `planned_entries`; `ON DELETE CASCADE` |
+| `month` | date | dia 1 do mês da ocorrência; chave primária junto com `planned_entry_id` |
+| `status` | text | `realized` ou `skipped` |
+| `transaction_id` | uuid | → `transactions`; pode ser nulo; `ON DELETE SET NULL`; índice único onde não é nulo |
+| `decided_at` | timestamptz | |
+
+**Como realizar uma ocorrência:** é sempre uma ação sua, nunca automática.
+- **Vincular** a uma transação do mesmo mês e do mesmo sinal que ainda não realiza outra ocorrência. O app sugere até 5 candidatas (a até 7 dias da data prevista, com a mesma categoria ou valor dentro de 20%).
+- **Marcar como realizada sem vincular** (`status = 'realized'`, `transaction_id` nulo), quando a transação não veio.
+- **Pular o mês** (`status = 'skipped'`, sem transação).
+- **Desfazer** apaga a linha e a ocorrência volta a pendente.
+- Excluir a transação vinculada deixa a ocorrência `realized`, sem vínculo. Editar a previsão vale para todos os meses, inclusive os já realizados.
 
 **`goals`**: metas.
 
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
-| `name` | text | |
+| `name` | text | 1 a 80 caracteres |
 | `icon` | text | ícone Lucide |
-| `target_cents` | bigint | valor desejado |
-| `saved_cents` | bigint | valor acumulado, informado à mão na v2 |
-| `target_date` | date | pode ser nulo |
-| `linked_account_id` | uuid | v3; pode ser nulo |
-| `linked_investment_id` | uuid | v3; pode ser nulo |
+| `target_cents` | bigint | valor desejado; maior que zero |
+| `saved_cents` | bigint | valor acumulado: a **soma de `goal_contributions`**, mantida na mesma transação de cada aporte ou retirada; nunca abaixo de zero |
+| `target_date` | date | prazo; pode ser nulo |
 | `created_at` | timestamptz | |
 
-O prazo estimado é calculado (pelo ritmo de aporte), não guardado.
+As colunas `linked_account_id` e `linked_investment_id` (meta vinculada a uma conta ou investimento, com valor automático) são da v3 e só entram na migration dessa fase.
+
+**`goal_contributions`**: o histórico de aportes e retiradas de uma meta. É a fonte da verdade do valor acumulado e a base do ritmo.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | uuid | |
+| `goal_id` | uuid | → `goals`; `ON DELETE CASCADE` |
+| `date` | date | dia do aporte; nunca depois de hoje |
+| `amount_cents` | bigint | positivo = aporte, negativo = retirada; nunca zero |
+| `kind` | text | `initial`, `deposit` ou `withdrawal` (o sinal de `amount_cents` acompanha o tipo) |
+| `created_at` | timestamptz | |
+
+Índice em (`goal_id`, `date`). Criar a meta com um valor já guardado grava um aporte `initial`, que **não entra no ritmo**: é o que existia antes de você usar o app. O ritmo e o prazo estimado são calculados, não guardados ([regras](01-produto.md#metas)).
 
 **`alerts`**
 
@@ -247,4 +280,7 @@ O prazo estimado é calculado (pelo ritmo de aporte), não guardado.
 | `connection_id` | uuid | pode ser nulo |
 | `message` | text | |
 | `created_at` | timestamptz | |
-| `read_at`, `dismissed_at` | timestamptz | podem ser nulos |
+| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>` |
+| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento e conexão; `duplicate_charge` e `subscription_detected` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
+
+`type` tem `CHECK` com os cinco tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.

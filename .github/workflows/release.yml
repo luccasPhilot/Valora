@@ -1,0 +1,76 @@
+name: Release
+
+# Publica um GitHub Release com as notas montadas a partir dos commits (Conventional Commits).
+#
+# - Push de uma tag vX.Y.Z: publica o release dessa tag.
+# - Disparo manual: cria a tag no commit informado e publica o release. Serve também
+#   para publicar, depois, um release de uma versão antiga (ex.: v0.0.1 no commit da main de então).
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag do release (ex.: v0.0.1)'
+        required: true
+      target:
+        description: 'Commit ou branch onde a tag será criada (ex.: cebb50f)'
+        required: true
+        default: main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publicar release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      RELEASE_TARGET: ${{ inputs.target || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Histórico e tags completos: as notas dependem de achar a tag anterior.
+          fetch-depth: 0
+          ref: ${{ inputs.target || github.sha }}
+
+      - name: Conferir formato da tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag '$RELEASE_TAG' fora do formato vX.Y.Z" >&2
+            exit 1
+          fi
+
+      # Texto do release = seção da versão no CHANGELOG.md (escrita à mão, em português) da branch
+      # padrão + lista automática dos commits do intervalo. Sem seção no CHANGELOG, só a lista.
+      - name: Montar notas
+        run: |
+          CHANGELOG_SECTION="$(git show "origin/$DEFAULT_BRANCH:CHANGELOG.md" 2>/dev/null \
+            | awk -v heading="## $RELEASE_TAG " 'index($0, heading) == 1 { found = 1; next } found && /^## / { exit } found' || true)"
+          COMMIT_LIST="$(bash .github/scripts/release-notes.sh "$RELEASE_TAG" HEAD)"
+
+          if [[ -z "${CHANGELOG_SECTION//[[:space:]]/}" ]]; then
+            echo "$COMMIT_LIST" > release-notes.md
+          else
+            {
+              echo "$CHANGELOG_SECTION"
+              echo
+              echo "<details><summary>Commits deste release</summary>"
+              echo
+              echo "$COMMIT_LIST"
+              echo
+              echo "</details>"
+            } > release-notes.md
+          fi
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
+      - name: Publicar release
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --title "$RELEASE_TAG" \
+            --notes-file release-notes.md \
+            --target "$(git rev-parse HEAD)"

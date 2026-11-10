@@ -58,7 +58,9 @@ export function useConnections() {
 
 /** As conexões que pararam de sincronizar (erro ou consentimento expirado). */
 export function findBrokenConnections(connections: readonly Connection[]): Connection[] {
-  return connections.filter((connection) => isConnectionBroken(connection.status));
+  return connections.filter(
+    (connection) => isConnectionBroken(connection.status) || !connection.isConfigured,
+  );
 }
 
 /**

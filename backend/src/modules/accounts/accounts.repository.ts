@@ -1,11 +1,13 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
 import { accounts, connections } from '../../db/schema.js';
+import { accountIsOfActiveConnection } from '../connections/active-connection.js';
+import { CONNECTION_STATUSES } from '../connections/connections.repository.js';
 
 const accountTypeSchema = z.enum(['checking', 'savings', 'credit_card', 'cash']);
-const connectionStatusSchema = z.enum(['ok', 'syncing', 'error', 'consent_expired']);
+const connectionStatusSchema = z.enum(CONNECTION_STATUSES);
 
 export type AccountType = z.infer<typeof accountTypeSchema>;
 export type AccountConnectionStatus = z.infer<typeof connectionStatusSchema>;
@@ -101,8 +103,14 @@ export class AccountsRepository {
     return rows.length > 0;
   }
 
+  /** A conta existe e é de um banco ativo (ou é a "Dinheiro"): em banco arquivado não se lança nada novo. */
   async exists(accountId: string): Promise<boolean> {
-    return (await this.db.$count(accounts, eq(accounts.id, accountId))) > 0;
+    const rows = await this.db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .leftJoin(connections, eq(connections.id, accounts.connectionId))
+      .where(and(eq(accounts.id, accountId), accountIsOfActiveConnection));
+    return rows.length > 0;
   }
 
   async findAll(): Promise<AccountRecord[]> {
@@ -110,6 +118,7 @@ export class AccountsRepository {
       .select(accountColumns)
       .from(accounts)
       .leftJoin(connections, eq(connections.id, accounts.connectionId))
+      .where(accountIsOfActiveConnection)
       .orderBy(asc(connections.institutionName), asc(accounts.name));
     return rows.map(toRecord);
   }
@@ -119,7 +128,7 @@ export class AccountsRepository {
       .select(accountColumns)
       .from(accounts)
       .leftJoin(connections, eq(connections.id, accounts.connectionId))
-      .where(eq(accounts.id, accountId));
+      .where(and(eq(accounts.id, accountId), accountIsOfActiveConnection));
     return row ? toRecord(row) : null;
   }
 

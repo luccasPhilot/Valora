@@ -7,6 +7,8 @@ import {
   formatDate,
   formatDayHeader,
   formatDayMonth,
+  formatDayMonthAtTime,
+  formatIsoDayMonth,
   formatMoment,
   formatMonth,
   formatMonthName,
@@ -221,6 +223,26 @@ describe('formatDayMonth', () => {
   });
 });
 
+describe('formatIsoDayMonth', () => {
+  it('should_show_day_and_month_when_a_calendar_date_is_given', () => {
+    // Arrange
+    const isoDate = '2026-11-10';
+    // Act
+    const text = formatIsoDayMonth(isoDate);
+    // Assert
+    expect(text).toBe('10/11');
+  });
+
+  it('should_throw_when_the_date_is_not_in_iso_format', () => {
+    // Arrange
+    const invalid = '10/11/2026';
+    // Act
+    const format = () => formatIsoDayMonth(invalid);
+    // Assert
+    expect(format).toThrow(RangeError);
+  });
+});
+
 describe('formatMoment', () => {
   const now = new Date('2026-11-05T15:00:00Z'); // 05/11 12:00 em São Paulo
 
@@ -283,5 +305,16 @@ describe('formatCurrencyTrimmed', () => {
     const call = () => formatCurrencyTrimmed(cents);
     // Assert
     expect(call).toThrow(RangeError);
+  });
+});
+
+describe('formatDayMonthAtTime', () => {
+  it('should_return_day_month_and_time_in_sao_paulo', () => {
+    // Arrange
+    const instant = new Date('2026-11-05T11:12:00Z');
+    // Act
+    const text = formatDayMonthAtTime(instant);
+    // Assert
+    expect(text).toBe('05/11 às 08:12');
   });
 });

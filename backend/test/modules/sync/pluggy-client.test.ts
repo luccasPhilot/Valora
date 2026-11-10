@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { PluggyClient, PluggyResponseError } from '../../../src/modules/sync/pluggy-client.js';
 import type { SyncedTransaction } from '../../../src/modules/sync/sync.types.js';
 import {
+  buildBillFixture,
   FakePluggySdk,
   fixturesRecordedAt,
   loadPluggyFixtures,
+  type PluggyBillFixture,
   type PluggyItemFixture,
   type PluggyTransactionFixture,
 } from '../../helpers/fake-pluggy-sdk.js';
@@ -39,10 +41,10 @@ function busiestCardAccountIdOf(fixture: PluggyItemFixture): string {
   return busiest.id;
 }
 
-// O item 3 tem compras (DEBIT, positivas no Pluggy) e estornos (CREDIT, negativos) no cartão.
+// O item 2 tem compras (DEBIT, positivas no Pluggy) e estornos (CREDIT, negativos) no cartão.
 async function cardTransactions(type: 'DEBIT' | 'CREDIT'): Promise<SyncedTransaction[]> {
   const fixtures = loadPluggyFixtures();
-  const itemWithCard = fixtureAt(fixtures, 2);
+  const itemWithCard = fixtureAt(fixtures, 1);
   const cardAccountId = busiestCardAccountIdOf(itemWithCard);
   const typeById = new Map(itemWithCard.transactions.map((tx) => [tx.id, tx.type]));
   const transactions = await buildClient(fixtures).listTransactions(cardAccountId, WHOLE_YEAR);
@@ -90,7 +92,6 @@ describe('PluggyClient.listAccounts', () => {
     expect(accountList.accounts.map((account) => account.name)).toEqual([
       'Banco B',
       'CARTAO ACC-3',
-      'CARTAO ACC-4',
     ]);
   });
 
@@ -102,7 +103,6 @@ describe('PluggyClient.listAccounts', () => {
     // Assert
     expect(accountList.accounts.map((account) => account.type)).toEqual([
       'checking',
-      'credit_card',
       'credit_card',
     ]);
   });
@@ -165,5 +165,111 @@ describe('PluggyClient.listInvestments', () => {
     const investments = await client.listInvestments('item-3');
     // Assert
     expect(investments).toHaveLength(fixtureAt(fixtures, 2).investments.length);
+  });
+});
+
+describe('PluggyClient.listCreditCardBills', () => {
+  const CARD_ACCOUNT_ID = 'acc-card';
+
+  function clientWithBills(bills: PluggyBillFixture[]): PluggyClient {
+    const fixtures = loadPluggyFixtures();
+    fixtureAt(fixtures, 0).bills = bills;
+    return buildClient(fixtures);
+  }
+
+  it('should_convert_bill_amounts_to_cents_when_pluggy_sends_reais', async () => {
+    // Arrange
+    const bill = buildBillFixture({
+      id: 'bill-1',
+      accountId: CARD_ACCOUNT_ID,
+      dueDate: '2026-12-10',
+      totalAmount: 1234.56,
+    });
+    // Act
+    const [synced] = await clientWithBills([bill]).listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    expect(synced).toMatchObject({ pluggyBillId: 'bill-1', totalCents: 123456 });
+  });
+
+  it('should_keep_the_calendar_day_when_pluggy_sends_the_due_date_at_midnight_utc', async () => {
+    // Arrange
+    const bill = buildBillFixture({
+      id: 'bill-1',
+      accountId: CARD_ACCOUNT_ID,
+      dueDate: '2026-12-10',
+      totalAmount: 100,
+    });
+    // Act
+    const [synced] = await clientWithBills([bill]).listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    expect(synced?.dueDate).toBe('2026-12-10');
+  });
+
+  it('should_keep_the_calendar_day_when_pluggy_sends_the_due_date_at_3am_utc', async () => {
+    // Arrange
+    const bill = buildBillFixture({
+      id: 'bill-1',
+      accountId: CARD_ACCOUNT_ID,
+      dueDate: '2026-12-10',
+      dueTime: '03:00:00',
+      totalAmount: 100,
+    });
+    // Act
+    const [synced] = await clientWithBills([bill]).listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    expect(synced?.dueDate).toBe('2026-12-10');
+  });
+
+  it('should_sum_every_payment_when_the_bill_was_paid_in_parts', async () => {
+    // Arrange
+    const bill = buildBillFixture({
+      id: 'bill-1',
+      accountId: CARD_ACCOUNT_ID,
+      dueDate: '2026-12-10',
+      totalAmount: 1000,
+      paidAmounts: [300.1, 199.9],
+    });
+    // Act
+    const [synced] = await clientWithBills([bill]).listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    expect(synced?.paidCents).toBe(50000);
+  });
+
+  it('should_return_zero_paid_when_the_bill_has_no_payments', async () => {
+    // Arrange
+    const bill = buildBillFixture({
+      id: 'bill-1',
+      accountId: CARD_ACCOUNT_ID,
+      dueDate: '2026-12-10',
+      totalAmount: 100,
+    });
+    // Act
+    const [synced] = await clientWithBills([bill]).listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    expect(synced?.paidCents).toBe(0);
+  });
+
+  it('should_return_no_bills_when_the_card_has_none', async () => {
+    // Arrange
+    const client = clientWithBills([]);
+    // Act
+    const bills = await client.listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    expect(bills).toEqual([]);
+  });
+
+  it('should_fail_with_field_path_only_when_a_bill_has_no_total', async () => {
+    // Arrange
+    const bill = buildBillFixture({
+      id: 'bill-1',
+      accountId: CARD_ACCOUNT_ID,
+      dueDate: '2026-12-10',
+      totalAmount: 100,
+    });
+    const { totalAmount: _totalAmount, ...withoutTotal } = bill;
+    // Act
+    const call = clientWithBills([withoutTotal]).listCreditCardBills(CARD_ACCOUNT_ID);
+    // Assert
+    await expect(call).rejects.toThrow(new PluggyResponseError('faturas', ['totalAmount']).message);
   });
 });

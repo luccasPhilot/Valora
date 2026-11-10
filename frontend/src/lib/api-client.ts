@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { recordApiNetworkFailure, recordApiResponse } from './pwa/connectivity';
+
 const API_BASE_PATH = '/api/v1';
 const NETWORK_ERROR_CODE = 'NETWORK_ERROR';
 const UNEXPECTED_ERROR_CODE = 'UNEXPECTED_ERROR';
@@ -48,12 +50,15 @@ async function fetchOrThrow(
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   try {
-    return await fetch(`${API_BASE_PATH}${path}`, {
+    const response = await fetch(`${API_BASE_PATH}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
+    recordApiResponse(method, response.headers);
+    return response;
   } catch (error) {
+    recordApiNetworkFailure(method);
     throw new ApiError(0, NETWORK_ERROR_CODE, `Sem conexão com a API em ${path}`, [error]);
   }
 }
@@ -92,6 +97,17 @@ export function apiPut<T>(path: string, body: unknown, responseSchema: z.ZodType
 
 export function apiPatch<T>(path: string, body: unknown, responseSchema: z.ZodType<T>): Promise<T> {
   return apiRequest('PATCH', path, responseSchema, body);
+}
+
+/** Para os DELETE que respondem 200 com o recurso atualizado (remover um aporte devolve a meta). */
+export function apiDeleteReturning<T>(path: string, responseSchema: z.ZodType<T>): Promise<T> {
+  return apiRequest('DELETE', path, responseSchema);
+}
+
+/** Para os POST que respondem 204, sem corpo (ações como "marcar como lido"). */
+export async function apiPostNoContent(path: string): Promise<void> {
+  const response = await fetchOrThrow(path, 'POST');
+  if (!response.ok) throw await toApiError(response);
 }
 
 /** Para as rotas que respondem 204, sem corpo. */

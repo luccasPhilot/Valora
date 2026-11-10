@@ -22,6 +22,41 @@
       "when": 1793882629930,
       "tag": "0002_add_single_cash_account_index",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793971638996,
+      "tag": "0003_add_credit_card_bills",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793993246322,
+      "tag": "0004_add_planned_entries",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794002212571,
+      "tag": "0005_add_savings_goals",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794273830541,
+      "tag": "0006_add_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794316512013,
+      "tag": "0007_add_connection_archiving",
+      "breakpoints": true
     }
   ]
 }

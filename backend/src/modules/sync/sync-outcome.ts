@@ -1,7 +1,10 @@
 import type { SyncRunOutcome, SyncStats } from './sync-runs.repository.js';
 
 export type ItemOutcome =
-  { readonly status: 'synced'; readonly stats: SyncStats } | { readonly status: 'failed' };
+  | { readonly status: 'synced'; readonly stats: SyncStats }
+  | { readonly status: 'failed' }
+  /** Banco arquivado: nem foi consultado, e não conta como sucesso nem como falha. */
+  | { readonly status: 'skipped' };
 
 export const EMPTY_STATS: SyncStats = {
   accounts: 0,
@@ -9,6 +12,9 @@ export const EMPTY_STATS: SyncStats = {
   transactionsUpdated: 0,
   transactionsRemoved: 0,
   investments: 0,
+  bills: 0,
+  billsFailed: 0,
+  alertsFailed: 0,
 };
 
 const NO_BANK_SYNCED_MESSAGE = 'Nenhum banco sincronizou. Veja o status de cada conexão.';
@@ -20,6 +26,9 @@ export function addStats(left: SyncStats, right: SyncStats): SyncStats {
     transactionsUpdated: left.transactionsUpdated + right.transactionsUpdated,
     transactionsRemoved: left.transactionsRemoved + right.transactionsRemoved,
     investments: left.investments + right.investments,
+    bills: left.bills + right.bills,
+    billsFailed: left.billsFailed + right.billsFailed,
+    alertsFailed: left.alertsFailed + right.alertsFailed,
   };
 }
 
@@ -29,7 +38,8 @@ function partialMessage(failedCount: number, totalCount: number): string {
 }
 
 /** Junta o resultado de cada banco. A mensagem é do Valora e nunca leva valores ou descrições. */
-export function summarizeRun(itemOutcomes: readonly ItemOutcome[]): SyncRunOutcome {
+export function summarizeRun(allOutcomes: readonly ItemOutcome[]): SyncRunOutcome {
+  const itemOutcomes = allOutcomes.filter((outcome) => outcome.status !== 'skipped');
   const syncedStats = itemOutcomes.flatMap((outcome) =>
     outcome.status === 'synced' ? [outcome.stats] : [],
   );

@@ -216,6 +216,32 @@ describe('AccountsPage connection problems', () => {
   });
 });
 
+describe('AccountsPage card bills link', () => {
+  it('should_link_to_the_card_bills_screen_when_the_account_is_a_credit_card', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/accounts': overview([CREDIT_CARD]) });
+    renderPage();
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Cartão Ultravioleta/ }));
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Ver faturas' })).toHaveAttribute(
+      'href',
+      `/contas/${CREDIT_CARD.id}/faturas`,
+    );
+  });
+
+  it('should_not_offer_the_bills_link_when_the_account_is_not_a_credit_card', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/accounts': overview([SAVINGS]) });
+    renderPage();
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Poupança/ }));
+    // Assert
+    await screen.findByRole('button', { name: 'Ocultar dos totais' });
+    expect(screen.queryByRole('link', { name: 'Ver faturas' })).not.toBeInTheDocument();
+  });
+});
+
 describe('AccountsPage hide from totals', () => {
   it('should_hide_the_account_and_confirm_when_the_hide_option_is_pressed', async () => {
     // Arrange

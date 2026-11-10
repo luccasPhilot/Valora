@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Category, CategoryInput, CategoryKind } from '@/lib/api/categories';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
-import { CategoryGlyph, SUGGESTED_ICON_NAMES } from './category-icons';
 import { KIND_OPTION_LABELS, KIND_ORDER } from './category-labels';
+import { IconPicker } from './icon-picker';
 
 const DEFAULT_ICON = 'tag';
 const MAX_NAME_LENGTH = 60;
@@ -21,61 +22,6 @@ interface CategoryFormProps {
   onCancel: () => void;
 }
 
-interface IconPickerProps {
-  value: string;
-  onChange: (iconName: string) => void;
-}
-
-function IconPicker({ value, onChange }: IconPickerProps) {
-  const labelId = useId();
-  const [search, setSearch] = useState('');
-  const term = search.trim().toLowerCase();
-  const visibleIcons = SUGGESTED_ICON_NAMES.filter((iconName) => iconName.includes(term));
-
-  return (
-    <div className="space-y-2">
-      <span id={labelId} className="text-sm leading-5 font-medium">
-        Ícone
-      </span>
-      <Input
-        type="search"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Buscar ícone (em inglês, ex.: car)"
-        aria-label="Buscar ícone"
-      />
-      <div
-        role="radiogroup"
-        aria-labelledby={labelId}
-        className="grid max-h-40 grid-cols-5 gap-1 overflow-y-auto rounded-md border p-1 sm:grid-cols-6"
-      >
-        {visibleIcons.map((iconName) => {
-          const isSelected = iconName === value;
-          return (
-            <button
-              key={iconName}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              aria-label={iconName}
-              title={iconName}
-              onClick={() => onChange(iconName)}
-              className={`flex h-11 items-center justify-center rounded-md outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${
-                isSelected ? 'bg-secondary text-primary ring-2 ring-primary' : 'text-foreground'
-              }`}
-            >
-              <CategoryGlyph name={iconName} />
-            </button>
-          );
-        })}
-      </div>
-      {visibleIcons.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhum ícone com esse nome.</p>
-      ) : null}
-    </div>
-  );
-}
-
 export function CategoryForm({
   category,
   isPending,
@@ -84,6 +30,7 @@ export function CategoryForm({
   onCancel,
 }: CategoryFormProps) {
   const nameId = useId();
+  const isOffline = useIsOffline();
   const [name, setName] = useState(category?.name ?? '');
   const [kind, setKind] = useState<CategoryKind>(category?.kind ?? 'expense');
   const [icon, setIcon] = useState(category?.icon ?? DEFAULT_ICON);
@@ -119,7 +66,11 @@ export function CategoryForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isPending || isNameEmpty}>
+        <Button
+          type="submit"
+          disabled={isPending || isNameEmpty || isOffline}
+          title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+        >
           Salvar
         </Button>
       </div>

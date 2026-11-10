@@ -1,5 +1,6 @@
 import type { Database } from '../../db/database.js';
 import { AccountsRepository } from '../accounts/accounts.repository.js';
+import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import { CategoriesRepository } from '../categories/categories.repository.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
 import { DuplicatesService } from './duplicates.service.js';
@@ -12,6 +13,7 @@ import { TransactionsWriteRepository } from './transactions-write.repository.js'
 export interface TransactionsModuleDependencies {
   readonly database: Database;
   readonly categoryRulesService: CategoryRulesService;
+  readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
   readonly now: () => Date;
 }
 
@@ -28,6 +30,7 @@ export function createTransactionsModule(deps: TransactionsModuleDependencies): 
     transactions: new TransactionsQueryRepository(db),
     categories,
     rules: deps.categoryRulesService,
+    budgetAlerts: deps.budgetAlerts,
     now: deps.now,
   });
   return {
@@ -38,11 +41,13 @@ export function createTransactionsModule(deps: TransactionsModuleDependencies): 
       categories,
       accounts: new AccountsRepository(db),
       rules: deps.categoryRulesService,
+      budgetAlerts: deps.budgetAlerts,
       now: deps.now,
     }),
     duplicatesService: new DuplicatesService({
       duplicates: new PossibleDuplicatesRepository(db),
       transactions: transactionsService,
+      budgetAlerts: deps.budgetAlerts,
     }),
   };
 }

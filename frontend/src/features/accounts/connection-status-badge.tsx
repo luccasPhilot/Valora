@@ -1,4 +1,11 @@
-import { CircleAlert, CircleCheck, type LucideIcon, RefreshCw, TriangleAlert } from 'lucide-react';
+import {
+  CircleAlert,
+  CircleCheck,
+  type LucideIcon,
+  RefreshCw,
+  TriangleAlert,
+  Unplug,
+} from 'lucide-react';
 
 import type { ConnectionStatus } from '@/lib/api/accounts';
 
@@ -21,6 +28,11 @@ const STATUS_STYLES: Readonly<Record<ConnectionStatus, StatusStyle>> = {
     label: 'Consentimento expirado',
     icon: TriangleAlert,
     classes: 'bg-warning-surface text-warning',
+  },
+  item_not_found: {
+    label: 'Removido do Meu Pluggy',
+    icon: Unplug,
+    classes: 'bg-warning-surface text-destructive',
   },
 };
 

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 -120 1310 1310">
   <defs>
     <linearGradient id="left-ribbon" x1="0" y1="0" x2="0.35" y2="1">
       <stop offset="0" stop-color="#3FB873" />
@@ -9,14 +9,12 @@
       <stop offset="1" stop-color="#3FB873" />
     </linearGradient>
   </defs>
-  <g transform="translate(0 14)">
-    <path
-      d="M0.6 12.3H16C26 12.3 33 16 37 24.6L48.3 45.2L40 61C38 65 36 67 34 67C31 67 29 65 26.8 62.5L1.5 14.5Q-0.5 12.3 0.6 12.3Z"
-      fill="url(#left-ribbon)"
-    />
-    <path
-      d="M35.5 66.5L47 45L61 18.5C66 9 73 3.5 83 2.4C90 1.7 96 2 100 2.8C98 5 96.5 7.5 95.5 9.5L72.5 52.5C67 62 59 68.5 48 71.2C42 72 37 70.5 35.5 66.5Z"
-      fill="url(#right-ribbon)"
-    />
-  </g>
+  <path
+    d="M68 232C68 226 90 222 125 222L290 222C410 222 500 282 548 358L700 650L640 880C600 915 520 936 470 931C440 912 415 880 395 845L105 290C90 262 68 240 68 232Z"
+    fill="url(#left-ribbon)"
+  />
+  <path
+    d="M1362 100C1362 95 1340 90 1280 86C1130 80 960 120 878 260L562 885C540 915 500 935 470 931C525 966 605 986 690 986C800 986 920 940 995 830L1010 800L1330 190C1345 160 1358 130 1362 100Z"
+    fill="url(#right-ribbon)"
+  />
 </svg>

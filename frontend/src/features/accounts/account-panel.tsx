@@ -1,5 +1,6 @@
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 
 import { FormPanel } from '@/components/form-panel';
 import { Money } from '@/components/money';
@@ -71,6 +72,14 @@ export function AccountPanel({
       {account ? (
         <div className="space-y-5">
           <AccountDetails account={account} />
+          {account.type === 'credit_card' ? (
+            <Button asChild variant="secondary" className="w-full">
+              <Link to={`/contas/${account.id}/faturas`}>
+                <FileText aria-hidden="true" />
+                Ver faturas
+              </Link>
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"

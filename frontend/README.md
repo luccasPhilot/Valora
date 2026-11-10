@@ -16,7 +16,7 @@ npm ci
 | Comando | O que faz |
 |---|---|
 | `npm run dev` | Sobe o Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000` |
-| `npm run build` / `npm run preview` | Verifica os tipos e gera o `dist/` / serve o `dist/` localmente |
+| `npm run build` / `npm run preview` | Verifica os tipos e gera o `dist/` (com o service worker e o manifesto do PWA) / serve o `dist/` localmente. O PWA fica desligado no `npm run dev`: para testar o service worker, use build + preview |
 | `npm run typecheck` | Verifica os tipos |
 | `npm run lint` / `npm run lint:fix` | `check:tokens` + ESLint / ESLint com correção automática |
 | `npm run check:tokens` | Falha se achar cor em hex em `src/components` ou `src/features` (use os tokens) |

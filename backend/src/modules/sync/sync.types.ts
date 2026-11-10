@@ -35,6 +35,17 @@ export interface SyncedInvestment {
   readonly raw: unknown;
 }
 
+export interface SyncedCreditCardBill {
+  readonly pluggyBillId: string;
+  readonly dueDate: string;
+  readonly closingDate: string | null;
+  readonly totalCents: number;
+  readonly minimumPaymentCents: number | null;
+  /** Soma dos pagamentos já feitos da fatura. */
+  readonly paidCents: number;
+  readonly raw: unknown;
+}
+
 export interface TransactionWindow {
   /** Primeiro dia, AAAA-MM-DD, inclusive. */
   readonly from: string;
