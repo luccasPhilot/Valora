@@ -34,7 +34,17 @@ jobs:
         with:
           # Histórico e tags completos: as notas dependem de achar a tag anterior.
           fetch-depth: 0
-          ref: ${{ inputs.target || github.sha }}
+
+      # O checkout não aceita SHA abreviado (cebb50f) em `ref`; com o histórico completo, o git resolve.
+      - name: Posicionar no commit do release
+        run: |
+          RELEASE_SHA="$(git rev-parse --verify --quiet "${RELEASE_TARGET}^{commit}" \
+            || git rev-parse --verify --quiet "origin/${RELEASE_TARGET}^{commit}" || true)"
+          if [[ -z "$RELEASE_SHA" ]]; then
+            echo "Não achei o commit ou a branch '$RELEASE_TARGET'" >&2
+            exit 1
+          fi
+          git checkout --detach "$RELEASE_SHA"
 
       - name: Conferir formato da tag
         run: |
