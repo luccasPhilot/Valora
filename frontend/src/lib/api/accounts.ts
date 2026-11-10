@@ -5,7 +5,13 @@ import { apiGet, apiPatch } from '../api-client';
 // Contrato de /accounts. O backend é o dono; estes schemas são a cópia do front
 // (backend/src/modules/accounts/accounts.routes.ts).
 
-const connectionStatusSchema = z.enum(['ok', 'syncing', 'error', 'consent_expired']);
+export const connectionStatusSchema = z.enum([
+  'ok',
+  'syncing',
+  'error',
+  'consent_expired',
+  'item_not_found',
+]);
 
 const accountSchema = z.object({
   id: z.uuid(),

@@ -1,15 +1,20 @@
 import { Landmark } from 'lucide-react';
 
 import type { Account } from '@/lib/api/accounts';
+import { orphanCauseOf } from '@/lib/connection-status';
 import { formatMoment } from '@/lib/format';
 
 import type { InstitutionGroup } from './account-groups';
 import { AccountRow } from './account-row';
+import { ArchiveBankButton } from './archive-bank-button';
 import { ConnectionStatusBadge } from './connection-status-badge';
+import { OrphanHelp } from './orphan-help';
 import { ReconnectHelp } from './reconnect-help';
 
 interface InstitutionCardProps {
   group: InstitutionGroup;
+  /** O id do banco está no `PLUGGY_ITEM_IDS`. Vem da lista de conexões; na dúvida, vale como configurado. */
+  isConfigured?: boolean;
   onSelectAccount: (account: Account) => void;
 }
 
@@ -20,8 +25,13 @@ function describeLastSync(lastSyncedAt: string | null): string {
 }
 
 /** Um card por conexão: banco, status e última sincronização no cabeçalho; as contas como linhas. */
-export function InstitutionCard({ group, onSelectAccount }: InstitutionCardProps) {
+export function InstitutionCard({
+  group,
+  isConfigured = true,
+  onSelectAccount,
+}: InstitutionCardProps) {
   const { connection, accounts } = group;
+  const orphanCause = orphanCauseOf({ status: connection.status, isConfigured });
   const headingId = `institution-${group.connectionId}`;
   return (
     <section
@@ -42,13 +52,20 @@ export function InstitutionCard({ group, onSelectAccount }: InstitutionCardProps
           <ConnectionStatusBadge status={connection.status} />
         </div>
         <p className="text-xs text-muted-foreground">{describeLastSync(connection.lastSyncedAt)}</p>
-        {group.hasProblem ? <ReconnectHelp /> : null}
+        {orphanCause ? <OrphanHelp cause={orphanCause} /> : null}
+        {group.hasProblem && !orphanCause ? <ReconnectHelp /> : null}
       </header>
       <ul className="divide-y divide-border border-t">
         {accounts.map((account) => (
           <AccountRow key={account.id} account={account} onSelect={onSelectAccount} />
         ))}
       </ul>
+      <footer className="border-t p-4 sm:px-5">
+        <ArchiveBankButton
+          connectionId={group.connectionId}
+          institutionName={connection.institutionName}
+        />
+      </footer>
     </section>
   );
 }

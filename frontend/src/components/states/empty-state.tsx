@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
-  description?: string;
+  /** Texto simples ou um trecho com marcação inline (ex.: um endereço em `<code>`). */
+  description?: ReactNode;
   action?: ReactNode;
 }
 
