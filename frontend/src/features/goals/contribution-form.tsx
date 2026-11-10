@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ContributionInput } from '@/lib/api/goals';
 import { todayInSaoPaulo } from '@/lib/dates';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import {
   type ContributionFieldErrors,
@@ -50,6 +51,7 @@ export function ContributionForm({
 }: ContributionFormProps) {
   const fieldId = useId();
   const today = todayInSaoPaulo();
+  const isOffline = useIsOffline();
   const [values, setValues] = useState<ContributionFormValues>({ amountDigits: '', date: today });
   const [errors, setErrors] = useState<ContributionFieldErrors>({});
 
@@ -101,7 +103,11 @@ export function ContributionForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button
+          type="submit"
+          disabled={isPending || isOffline}
+          title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+        >
           {SUBMIT_LABELS[type]}
         </Button>
       </div>

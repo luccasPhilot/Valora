@@ -4,6 +4,7 @@ import { MoneyInput } from '@/components/money-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { IconPicker } from '../categories/icon-picker';
 import {
@@ -43,6 +44,7 @@ export function GoalForm({
   onSubmit,
 }: GoalFormProps) {
   const fieldId = useId();
+  const isOffline = useIsOffline();
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<GoalFieldErrors>({});
 
@@ -113,7 +115,12 @@ export function GoalForm({
           Não foi possível salvar a meta. Tente de novo.
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isPending || isOffline}
+        title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+      >
         {submitLabel}
       </Button>
     </form>

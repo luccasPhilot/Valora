@@ -7,6 +7,7 @@ import {
   formatDate,
   formatDayHeader,
   formatDayMonth,
+  formatDayMonthAtTime,
   formatIsoDayMonth,
   formatMoment,
   formatMonth,
@@ -304,5 +305,16 @@ describe('formatCurrencyTrimmed', () => {
     const call = () => formatCurrencyTrimmed(cents);
     // Assert
     expect(call).toThrow(RangeError);
+  });
+});
+
+describe('formatDayMonthAtTime', () => {
+  it('should_return_day_month_and_time_in_sao_paulo', () => {
+    // Arrange
+    const instant = new Date('2026-11-05T11:12:00Z');
+    // Act
+    const text = formatDayMonthAtTime(instant);
+    // Assert
+    expect(text).toBe('05/11 às 08:12');
   });
 });

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Category, CategoryInput, CategoryKind } from '@/lib/api/categories';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { KIND_OPTION_LABELS, KIND_ORDER } from './category-labels';
 import { IconPicker } from './icon-picker';
@@ -29,6 +30,7 @@ export function CategoryForm({
   onCancel,
 }: CategoryFormProps) {
   const nameId = useId();
+  const isOffline = useIsOffline();
   const [name, setName] = useState(category?.name ?? '');
   const [kind, setKind] = useState<CategoryKind>(category?.kind ?? 'expense');
   const [icon, setIcon] = useState(category?.icon ?? DEFAULT_ICON);
@@ -64,7 +66,11 @@ export function CategoryForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isPending || isNameEmpty}>
+        <Button
+          type="submit"
+          disabled={isPending || isNameEmpty || isOffline}
+          title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+        >
           Salvar
         </Button>
       </div>

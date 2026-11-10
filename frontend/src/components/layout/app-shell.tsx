@@ -2,8 +2,10 @@ import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router';
 
 import { ConnectionAlert } from '@/components/connection-alert';
+import { OfflineBanner } from '@/components/offline-banner';
 import { ScreenSkeleton } from '@/components/states/skeletons';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { UpdatePrompt } from '@/components/update-prompt';
 import { NewTransactionButton } from '@/features/transactions/new-transaction/new-transaction-button';
 import { NewTransactionProvider } from '@/features/transactions/new-transaction/new-transaction-provider';
 import { useSidebarPreference } from '@/hooks/use-sidebar-preference';
@@ -29,6 +31,8 @@ export function AppShell() {
             title={title}
             actions={pathname === TRANSACTIONS_PATH ? <NewTransactionButton /> : undefined}
           />
+          <OfflineBanner />
+          <UpdatePrompt />
           <ConnectionAlert />
           <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
             <Suspense fallback={<ScreenSkeleton />}>

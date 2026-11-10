@@ -137,6 +137,11 @@ export function formatDayMonth(instant: Date): string {
   return dayMonthFormat.format(instant);
 }
 
+/** Dia, mês e hora de um instante, como "05/11 às 08:12" (fuso de São Paulo). */
+export function formatDayMonthAtTime(instant: Date): string {
+  return `${dayMonthFormat.format(instant)} às ${timeFormat.format(instant)}`;
+}
+
 /** Dia e mês de uma data AAAA-MM-DD, como "10/11". */
 export function formatIsoDayMonth(isoDate: string): string {
   return dayMonthFormat.format(isoDateToInstant(isoDate));

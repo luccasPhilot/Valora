@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Mantenha as cores em sincronia com --background do src/styles/globals.css (um teste confere). -->
+    <meta name="theme-color" content="#f7f8f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Valora" />
+    <!-- Barra de status preta: combina com o entalhe do iPhone e fica legível nos dois temas. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <!-- Tela de abertura do iPhone 13 (390 x 844 pt a 3x = 1170 x 2532 px), clara e escura. -->
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-iphone13-light.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-iphone13-dark.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)"
+    />
     <title>Valora</title>
     <script>
       // Aplica o tema antes da primeira pintura para não piscar o tema errado.

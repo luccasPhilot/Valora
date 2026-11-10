@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import type { Category } from '@/lib/api/categories';
 import type { PlannedEntryInput } from '@/lib/api/planned-entries';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { KIND_OPTION_LABELS } from '../categories/category-labels';
 import { CategorySelect } from '../categories/category-select';
@@ -74,6 +75,7 @@ export function EntryForm({
 }: EntryFormProps) {
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const isOffline = useIsOffline();
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<EntryFieldErrors>({});
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
@@ -227,7 +229,12 @@ export function EntryForm({
             {submitMessage}
           </p>
         ) : null}
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isPending || isOffline}
+          title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+        >
           {submitLabel}
         </Button>
       </div>

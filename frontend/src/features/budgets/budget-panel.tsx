@@ -10,6 +10,7 @@ import type { Budget } from '@/lib/api/budgets';
 import type { Category } from '@/lib/api/categories';
 import { formatMonth } from '@/lib/format';
 import { centsToDigits, digitsToCents } from '@/lib/money-digits';
+import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { CategorySelect } from '../categories/category-select';
 import { transactionsLinkFor } from './budget-months';
@@ -62,6 +63,7 @@ interface LimitFormProps {
 function LimitForm({ target, availableCategories, isSaving, onSave }: LimitFormProps) {
   const fieldId = useId();
   const isCreating = target.kind === 'create';
+  const isOffline = useIsOffline();
   const [categoryId, setCategoryId] = useState(isCreating ? '' : target.budget.categoryId);
   const [digits, setDigits] = useState(isCreating ? '' : centsToDigits(target.budget.limitCents));
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -112,7 +114,12 @@ function LimitForm({ target, availableCategories, isSaving, onSave }: LimitFormP
         />
         <FieldError id={`${fieldId}-limit-error`} message={errors.limit} />
       </div>
-      <Button type="submit" className="w-full" disabled={isSaving}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isSaving || isOffline}
+        title={isOffline ? OFFLINE_ACTION_HINT : undefined}
+      >
         {isCreating ? 'Criar orçamento' : 'Salvar limite'}
       </Button>
     </form>
