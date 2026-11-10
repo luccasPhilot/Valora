@@ -23,6 +23,9 @@ export const appRoutes: RouteObject[] = [
       { path: 'ajustes', lazy: () => import('@/features/settings/settings-page') },
     ],
   },
+  // Fora do shell, de propósito: a página "não encontrado" ocupa a tela inteira, sem menu.
+  // Só vale para endereços que nenhuma rota acima reconhece.
+  { path: '*', lazy: () => import('@/features/not-found/not-found-page') },
 ];
 
 export const appRouter = createBrowserRouter(appRoutes);
