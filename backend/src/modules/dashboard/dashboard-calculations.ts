@@ -1,18 +1,10 @@
-import { firstDayOfPreviousMonth } from '../../shared/dates.js';
-import type { BalancePoint, CategorySpending, MonthTotals } from './dashboard.repository.js';
+import type { CategorySpending, MonthTotals } from './dashboard.repository.js';
 
 export const INCOME_VS_EXPENSE_MONTHS = 6;
 export const MAX_LISTED_CATEGORIES = 5;
 const OTHER_CATEGORIES_NAME = 'Outros';
 const UNCATEGORIZED_NAME = 'Sem categoria';
 const PERCENT_SCALE = 100;
-const TWO_DECIMALS = 100;
-
-export interface BalanceChange {
-  readonly cents: number;
-  /** Nulo quando o saldo da primeira foto é zero (não há base para a porcentagem). */
-  readonly percent: number | null;
-}
 
 export type SpendingItem =
   | {
@@ -29,32 +21,6 @@ export type SpendingItem =
       readonly amountCents: number;
       readonly percent: number;
     };
-
-/**
- * Diferença entre o saldo de hoje e o da primeira foto do mês. Sem foto de um dia anterior a hoje,
- * a variação seria sempre zero e enganosa; por isso vem nula.
- */
-export function buildBalanceChange(
-  currentBalanceCents: number,
-  evolution: readonly BalancePoint[],
-  today: string,
-): BalanceChange | null {
-  const [firstPoint] = evolution;
-  if (!firstPoint || firstPoint.date >= today) return null;
-  const cents = currentBalanceCents - firstPoint.balanceCents;
-  if (firstPoint.balanceCents === 0) return { cents, percent: null };
-  const ratio = (cents / Math.abs(firstPoint.balanceCents)) * PERCENT_SCALE;
-  return { cents, percent: Math.round(ratio * TWO_DECIMALS) / TWO_DECIMALS };
-}
-
-/** Os `count` meses (dia 1) que terminam em `month`, do mais antigo ao mais recente. */
-export function monthsEndingAt(month: string, count: number): string[] {
-  const months = [month];
-  while (months.length < count) {
-    months.unshift(firstDayOfPreviousMonth(months[0] ?? month));
-  }
-  return months;
-}
 
 /** Um item por mês pedido, com zero nos meses sem transações. */
 export function fillMonthTotals(

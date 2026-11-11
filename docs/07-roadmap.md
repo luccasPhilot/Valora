@@ -156,7 +156,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
 ## Fase 3 (v3) — Patrimônio
 
 - [x] **Investimentos:** posição de cada um, agrupada por tipo, e o total. Os dados já existem desde a Fase 1.
-- [ ] **Evolução do patrimônio:** contas + investimentos − fatura em aberto, mês a mês, a partir das fotos diárias.
+- [x] **Evolução do patrimônio:** contas + investimentos − fatura em aberto, mês a mês, a partir das fotos diárias.
 - [ ] **Metas vinculadas** a um investimento ou conta, que se atualizam sozinhas.
 - [ ] **Relatórios**, todos com a opção "Ver em tabela":
   - [ ] evolução financeira;

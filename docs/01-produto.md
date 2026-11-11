@@ -56,6 +56,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 | | Meta vinculada a um investimento ou conta, que se atualiza sozinha | v3 |
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |
 | **Investimentos** | Posição de cada investimento e o total | v3 |
+| | Patrimônio no topo da tela: contas + investimentos − faturas em aberto, a variação no mês e a evolução mês a mês ([regras](#patrimônio)) | v3 |
 | **Relatórios** | Evolução financeira, histórico de receitas e despesas, análise por categoria, evolução do patrimônio | v3 |
 
 ## Lançamento manual
@@ -126,8 +127,25 @@ A tela **Investimentos** mostra a posição de cada investimento dos seus bancos
 - **Agrupamento:** pelo tipo do Pluggy: Renda fixa, Fundos, Ações, ETFs, Títulos e previdência, COE e Outros. O subtipo (CDB, Tesouro Direto, fundo multimercado...) e a instituição aparecem em cada linha.
 - **Percentuais:** a fatia de cada tipo e de cada posição no total, com uma casa decimal.
 - **Posições zeradas** (resgatadas, ou que o banco deixou de devolver) ficam fora da lista e aparecem só como "N posições zeradas não aparecem na lista".
-- **Não é o saldo total:** o "Saldo total" do Início continua sendo só corrente e poupança. Investimentos entram no patrimônio.
+- **Não é o saldo total:** o "Saldo total" do Início continua sendo só corrente e poupança. Investimentos entram no [patrimônio](#patrimônio).
 - **Não mostra rentabilidade.** O Valora guarda só a posição, e a variação dela mistura aporte e rendimento.
+
+## Patrimônio
+
+O **patrimônio** é quanto você tem de fato: `contas + investimentos − faturas em aberto`. Aparece no topo da tela **Investimentos**, com o total, a variação no mês, as três partes e um gráfico de área mês a mês (6 ou 12 meses).
+
+- **O que entra:**
+  - contas corrente e poupança não ocultas (o mesmo [saldo total](#saldo-total));
+  - todos os investimentos;
+  - as faturas atuais dos cartões não ocultos, que **descontam**.
+  - Só de bancos **ativos**. A conta "Dinheiro" não tem saldo e fica de fora.
+- **O que não entra:** gastos no cartão que ainda não estão numa fatura fechada (o Pluggy só informa a fatura), financiamentos, empréstimos, imóveis, veículos e outros bens que não vêm do Open Finance. A tela avisa isso numa nota fixa.
+- **Hoje x passado:** o total de hoje vem das posições atuais, então confere com o que Contas e Investimentos mostram. A curva vem das **fotos diárias**.
+- **Foto que faltou:** cada conta e cada investimento vale a foto mais recente de até 7 dias antes do dia calculado. Uma falha curta da sincronização não abre um buraco no gráfico; depois de 7 dias sem foto, o item sai do total daquele dia.
+- **Um ponto por mês:** o último dia do mês com foto (hoje, no mês atual). Mês sem nenhuma foto fica sem ponto, sem zero inventado.
+- **Histórico só desde a primeira foto.** O Valora não reconstrói o passado a partir das transações. Com menos de dois meses de dados a tela diz "O histórico começa em…" e não desenha o gráfico.
+- **Banco arquivado:** o passado dele continua na curva, que tem um degrau no mês em que ele saiu, como a curva do saldo ([regras](#remover-um-banco-do-valora)). A variação do mês só usa bancos ativos, para não mostrar uma queda que não aconteceu.
+- **Variação no mês:** o patrimônio de hoje menos o da primeira foto do mês, com o percentual sobre o valor inicial. Sem foto de um dia anterior a hoje no mês, não aparece.
 
 ## Fora do escopo
 

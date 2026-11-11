@@ -7,7 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { HideValuesButton } from '@/components/hide-values-button';
 import { HideValuesProvider } from '@/components/hide-values-provider';
 
-import { errorResponse, stubRoutes } from '../../../test/helpers/stub-routes';
+import { netWorthRoute } from '../../../test/helpers/net-worth';
+import { errorResponse, type RouteHandler, stubRoutes } from '../../../test/helpers/stub-routes';
 import { Component as InvestmentsPage } from './investments-page';
 
 function item(id: number, overrides: Record<string, unknown> = {}) {
@@ -46,6 +47,11 @@ function overview(groups: unknown[], totals: Record<string, number> = {}) {
     });
 }
 
+// O patrimônio tem a própria consulta: estes testes cuidam da lista, então ela responde o padrão.
+function stubInvestmentRoutes(routes: Record<string, RouteHandler>) {
+  return stubRoutes({ ...netWorthRoute(), ...routes });
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -67,7 +73,7 @@ afterEach(() => {
 describe('InvestmentsPage', () => {
   it('should_show_the_total_and_the_position_count_when_there_are_investments', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -78,7 +84,7 @@ describe('InvestmentsPage', () => {
 
   it('should_list_the_positions_of_each_type_with_subtype_and_institution', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -89,7 +95,7 @@ describe('InvestmentsPage', () => {
 
   it('should_show_only_the_institution_when_the_position_has_no_subtype', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -99,7 +105,7 @@ describe('InvestmentsPage', () => {
 
   it('should_show_groups_in_the_order_the_api_sent_them', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -113,7 +119,7 @@ describe('InvestmentsPage', () => {
   it('should_label_an_unknown_type_as_outros_when_pluggy_sends_a_new_type', async () => {
     // Arrange
     const unknown = { ...FUNDOS, type: 'NEW_TYPE' };
-    stubRoutes({ 'GET /api/v1/investments': overview([unknown]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([unknown]) });
     // Act
     renderPage();
     // Assert
@@ -122,7 +128,7 @@ describe('InvestmentsPage', () => {
 
   it('should_mention_closed_positions_when_some_are_zeroed', async () => {
     // Arrange
-    stubRoutes({
+    stubInvestmentRoutes({
       'GET /api/v1/investments': overview([RENDA_FIXA], { closedCount: 3 }),
     });
     // Act
@@ -133,7 +139,7 @@ describe('InvestmentsPage', () => {
 
   it('should_not_mention_closed_positions_when_none_are_zeroed', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA]) });
     // Act
     renderPage();
     // Assert
@@ -143,7 +149,7 @@ describe('InvestmentsPage', () => {
 
   it('should_mask_the_values_but_keep_the_percentages_when_values_are_hidden', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     renderPage();
     const fixedIncome = await screen.findByRole('region', { name: 'Renda fixa' });
     // Act
@@ -157,7 +163,7 @@ describe('InvestmentsPage', () => {
 describe('InvestmentsPage hierarchy', () => {
   it('should_describe_the_composition_bar_in_text_when_the_chart_is_shown', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -167,7 +173,7 @@ describe('InvestmentsPage hierarchy', () => {
 
   it('should_list_the_legend_with_every_type_and_its_share_in_the_hero', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -181,7 +187,7 @@ describe('InvestmentsPage hierarchy', () => {
 
   it('should_rank_the_largest_positions_across_all_types', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA, FUNDOS]) });
     // Act
     renderPage();
     // Assert
@@ -201,7 +207,7 @@ describe('InvestmentsPage hierarchy', () => {
         item(index + 10, { name: `Título ${String(index + 1)}` }),
       ),
     };
-    stubRoutes({ 'GET /api/v1/investments': overview([many]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([many]) });
     renderPage();
     const card = await screen.findByRole('region', { name: 'Renda fixa' });
     const rowsBefore = within(card).getAllByRole('listitem').length;
@@ -216,7 +222,7 @@ describe('InvestmentsPage hierarchy', () => {
 
   it('should_not_offer_show_more_when_the_group_has_few_positions', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA]) });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': overview([RENDA_FIXA]) });
     // Act
     renderPage();
     // Assert
@@ -228,7 +234,9 @@ describe('InvestmentsPage hierarchy', () => {
 describe('InvestmentsPage states', () => {
   it('should_show_the_empty_state_with_a_link_to_accounts_when_there_are_no_positions', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': overview([], { totalCents: 0, positionsCount: 0 }) });
+    stubInvestmentRoutes({
+      'GET /api/v1/investments': overview([], { totalCents: 0, positionsCount: 0 }),
+    });
     // Act
     renderPage();
     // Assert
@@ -238,7 +246,9 @@ describe('InvestmentsPage states', () => {
 
   it('should_show_the_loading_skeleton_while_the_request_is_pending', () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': () => new Promise<Response>(() => undefined) });
+    stubInvestmentRoutes({
+      'GET /api/v1/investments': () => new Promise<Response>(() => undefined),
+    });
     // Act
     renderPage();
     // Assert
@@ -247,7 +257,7 @@ describe('InvestmentsPage states', () => {
 
   it('should_show_the_error_state_with_retry_when_the_api_fails', async () => {
     // Arrange
-    stubRoutes({ 'GET /api/v1/investments': () => errorResponse(500, 'INTERNAL_ERROR') });
+    stubInvestmentRoutes({ 'GET /api/v1/investments': () => errorResponse(500, 'INTERNAL_ERROR') });
     // Act
     renderPage();
     // Assert

@@ -1,76 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildBalanceChange,
   buildSpendingBreakdown,
   fillMonthTotals,
-  monthsEndingAt,
 } from '../../../src/modules/dashboard/dashboard-calculations.js';
-
-const TODAY = '2026-11-15';
-
-describe('buildBalanceChange', () => {
-  it('should_return_the_difference_in_cents_and_percent_when_there_is_a_previous_snapshot', () => {
-    // Arrange
-    const evolution = [{ date: '2026-11-01', balanceCents: 400000 }];
-    // Act
-    const change = buildBalanceChange(485032, evolution, TODAY);
-    // Assert
-    expect(change).toEqual({ cents: 85032, percent: 21.26 });
-  });
-
-  it('should_return_a_negative_change_when_the_balance_dropped', () => {
-    // Arrange
-    const evolution = [{ date: '2026-11-01', balanceCents: 100000 }];
-    // Act
-    const change = buildBalanceChange(75000, evolution, TODAY);
-    // Assert
-    expect(change).toEqual({ cents: -25000, percent: -25 });
-  });
-
-  it('should_return_null_percent_when_the_first_snapshot_is_zero', () => {
-    // Arrange
-    const evolution = [{ date: '2026-11-01', balanceCents: 0 }];
-    // Act
-    const change = buildBalanceChange(10000, evolution, TODAY);
-    // Assert
-    expect(change).toEqual({ cents: 10000, percent: null });
-  });
-
-  it('should_return_null_when_the_first_snapshot_is_from_today', () => {
-    // Arrange
-    const evolution = [{ date: TODAY, balanceCents: 400000 }];
-    // Act
-    const change = buildBalanceChange(400000, evolution, TODAY);
-    // Assert
-    expect(change).toBeNull();
-  });
-
-  it('should_return_null_when_there_are_no_snapshots', () => {
-    // Arrange
-    // Act
-    const change = buildBalanceChange(400000, [], TODAY);
-    // Assert
-    expect(change).toBeNull();
-  });
-});
-
-describe('monthsEndingAt', () => {
-  it('should_return_the_six_months_in_order_ending_at_the_given_month', () => {
-    // Arrange
-    // Act
-    const months = monthsEndingAt('2026-11-01', 6);
-    // Assert
-    expect(months).toEqual([
-      '2026-06-01',
-      '2026-07-01',
-      '2026-08-01',
-      '2026-09-01',
-      '2026-10-01',
-      '2026-11-01',
-    ]);
-  });
-});
 
 describe('fillMonthTotals', () => {
   it('should_fill_missing_months_with_zero', () => {

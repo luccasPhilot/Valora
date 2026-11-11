@@ -1,6 +1,8 @@
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { DataCard } from '@/components/cards/data-card';
+import { Metric } from '@/components/cards/metric';
 import { Money } from '@/components/money';
 import type { MonthTotals } from '@/lib/api/planned-entries';
 
@@ -8,22 +10,16 @@ import { expectedTotals } from './planning-labels';
 
 interface SummaryCardProps {
   title: string;
-  icon: ReactNode;
+  icon: LucideIcon;
+  valueClassName?: string;
   children: ReactNode;
 }
 
-function SummaryCard({ title, icon, children }: SummaryCardProps) {
+function SummaryCard({ title, icon, valueClassName, children }: SummaryCardProps) {
   return (
-    <section
-      aria-label={title}
-      className="min-w-0 space-y-2 rounded-xl border bg-card p-4 shadow-card sm:p-5"
-    >
-      <h2 className="type-label flex items-center gap-2">
-        {icon}
-        {title}
-      </h2>
-      <p className="font-display text-2xl font-bold tabular-nums">{children}</p>
-    </section>
+    <DataCard title={title} icon={icon} className="min-w-0 gap-2">
+      <Metric size="md" value={children} valueClassName={valueClassName} />
+    </DataCard>
   );
 }
 
@@ -32,18 +28,10 @@ export function PlanningSummary({ totals }: { totals: MonthTotals }) {
   const expected = expectedTotals(totals);
   return (
     <div className="grid gap-3 min-[400px]:grid-cols-2 sm:gap-4">
-      <SummaryCard
-        title="Receitas previstas"
-        icon={<ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />}
-      >
-        <span className="text-positive">
-          <Money cents={expected.incomeCents} isSigned />
-        </span>
+      <SummaryCard title="Receitas previstas" icon={ArrowDownLeft} valueClassName="text-positive">
+        <Money cents={expected.incomeCents} isSigned />
       </SummaryCard>
-      <SummaryCard
-        title="Despesas previstas"
-        icon={<ArrowUpRight className="size-4 text-primary" aria-hidden="true" />}
-      >
+      <SummaryCard title="Despesas previstas" icon={ArrowUpRight}>
         <Money cents={-expected.expenseCents} isSigned />
       </SummaryCard>
     </div>

@@ -11,6 +11,7 @@ import { describeClosedPositions } from './investment-labels';
 import { colorOfType, colorsByType } from './investment-view';
 import { InvestmentsHero } from './investments-hero';
 import { useInvestments } from './investments-queries';
+import { NetWorthCard } from './net-worth-card';
 import { TopPositions } from './top-positions';
 
 function InvestmentsSkeleton() {
@@ -46,7 +47,7 @@ function NoInvestmentsState({ closedCount }: { closedCount: number }) {
   );
 }
 
-export function Component() {
+function InvestmentsContent() {
   const investmentsQuery = useInvestments();
   if (investmentsQuery.isPending) return <InvestmentsSkeleton />;
   if (investmentsQuery.isError) {
@@ -85,6 +86,16 @@ export function Component() {
           {describeClosedPositions(investments.totals.closedCount)}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+// O patrimônio vem de outra consulta e fica no topo em qualquer estado da lista de investimentos.
+export function Component() {
+  return (
+    <div className="space-y-4">
+      <NetWorthCard />
+      <InvestmentsContent />
     </div>
   );
 }

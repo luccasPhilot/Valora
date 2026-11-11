@@ -4,6 +4,7 @@ import { getAccountsOverview, setAccountHidden } from '@/lib/api/accounts';
 import { listArchivedConnections, setConnectionArchived } from '@/lib/api/sync';
 
 import { DASHBOARD_QUERY_KEY } from '../dashboard/dashboard-query-key';
+import { NET_WORTH_QUERY_KEY } from '../investments/net-worth-query-key';
 
 /** Compartilhada com as opções de conta de Transações: as duas telas leem a mesma resposta. */
 export const ACCOUNTS_QUERY_KEY = ['accounts'] as const;
@@ -52,6 +53,7 @@ export function useSetAccountHidden() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: NET_WORTH_QUERY_KEY }),
       ]),
   });
 }

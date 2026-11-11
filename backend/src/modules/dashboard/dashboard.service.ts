@@ -1,4 +1,6 @@
 import { firstDayOfMonth, lastDayOfMonth, todayInSaoPaulo } from '../../shared/dates.js';
+import { monthsEndingAt } from '../../shared/months.js';
+import { buildValueChange, type ValueChange } from '../../shared/value-change.js';
 import { isIncludedInTotalBalance } from '../accounts/account-totals.js';
 import type { AccountsService } from '../accounts/accounts.service.js';
 import type { BudgetItem, BudgetsService } from '../budgets/budgets.service.js';
@@ -8,12 +10,9 @@ import type { TransactionRecord } from '../transactions/transactions.repository.
 import type { TransactionsService } from '../transactions/transactions.service.js';
 import type { BalancePoint, DashboardRepository, MonthTotals } from './dashboard.repository.js';
 import {
-  type BalanceChange,
-  buildBalanceChange,
   buildSpendingBreakdown,
   fillMonthTotals,
   INCOME_VS_EXPENSE_MONTHS,
-  monthsEndingAt,
   type SpendingItem,
 } from './dashboard-calculations.js';
 import {
@@ -31,7 +30,7 @@ export interface DashboardOverview {
   readonly month: string;
   readonly totalBalanceCents: number;
   readonly balanceEvolution: readonly BalancePoint[];
-  readonly balanceChange: BalanceChange | null;
+  readonly balanceChange: ValueChange | null;
   readonly monthIncomeCents: number;
   readonly monthExpenseCents: number;
   readonly incomeVsExpense: readonly MonthTotals[];
@@ -85,13 +84,14 @@ export class DashboardService {
       this.deps.goals.list(),
     ]);
     const requestedMonthTotals = incomeVsExpense.at(-1);
+    const [firstActivePoint] = activeBalanceEvolution;
     return {
       month,
       totalBalanceCents: totals.totalBalanceCents,
       balanceEvolution,
-      balanceChange: buildBalanceChange(
+      balanceChange: buildValueChange(
         totals.totalBalanceCents,
-        activeBalanceEvolution,
+        firstActivePoint && { date: firstActivePoint.date, cents: firstActivePoint.balanceCents },
         todayInSaoPaulo(this.deps.now()),
       ),
       monthIncomeCents: requestedMonthTotals?.incomeCents ?? 0,

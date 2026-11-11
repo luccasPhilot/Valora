@@ -1,7 +1,7 @@
-import { cn } from 'cn';
 import { CalendarClock, CircleAlert } from 'lucide-react';
 import { Link } from 'react-router';
 
+import { Metric } from '@/components/cards/metric';
 import { Money } from '@/components/money';
 import { Button } from '@/components/ui/button';
 import type { DashboardProjection } from '@/lib/api/dashboard';
@@ -28,17 +28,11 @@ function ProjectionValue({ projection }: { projection: DashboardProjection }) {
   const negativeWarning = describeNegativeBalance(projection);
   return (
     <div className="min-w-0 space-y-3">
-      <div className="space-y-1">
-        <p
-          className={cn(
-            'type-value-lg break-words tabular-nums',
-            projection.projectedBalanceCents < 0 && 'text-destructive',
-          )}
-        >
-          <Money cents={projection.projectedBalanceCents} />
-        </p>
-        <p className="text-sm text-muted-foreground">Saldo projetado no fim do mês</p>
-      </div>
+      <Metric
+        value={<Money cents={projection.projectedBalanceCents} />}
+        caption="Saldo projetado no fim do mês"
+        isNegative={projection.projectedBalanceCents < 0}
+      />
       {negativeWarning ? (
         <p role="status" className="flex items-center gap-2 text-sm font-semibold text-destructive">
           <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
