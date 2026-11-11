@@ -11,6 +11,7 @@ import type { BalancePoint, Dashboard } from '@/lib/api/dashboard';
 import { formatDate } from '@/lib/format';
 
 import { ChartTooltipCard } from './chart-tooltip';
+import { hasNetWorthToShow, NetWorthLine } from './net-worth-line';
 
 const SERIES_COLOR = 'var(--color-chart-1)';
 const AREA_FILL_OPACITY = 0.15;
@@ -69,7 +70,7 @@ function BalanceEvolutionChart({ points }: { points: readonly BalancePoint[] }) 
 
 /** Saldo total (corrente e poupança não ocultas), a variação no mês e a evolução em área pequena. */
 export function BalanceCard({ dashboard }: { dashboard: Dashboard }) {
-  const { totalBalanceCents, balanceChange, balanceEvolution } = dashboard;
+  const { totalBalanceCents, balanceChange, balanceEvolution, netWorth } = dashboard;
   return (
     <DataCard title="Saldo total" tier="hero" icon={Wallet} className="gap-3">
       <Metric
@@ -78,6 +79,7 @@ export function BalanceCard({ dashboard }: { dashboard: Dashboard }) {
         isNegative={totalBalanceCents < 0}
       />
       {balanceChange ? <ValueChange change={balanceChange} /> : null}
+      {hasNetWorthToShow(netWorth) ? <NetWorthLine netWorth={netWorth} /> : null}
       <BalanceEvolutionChart points={balanceEvolution} />
     </DataCard>
   );

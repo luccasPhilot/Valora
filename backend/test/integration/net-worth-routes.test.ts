@@ -1,14 +1,14 @@
-import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  balanceSnapshots,
-  connections,
-  investments,
-  investmentSnapshots,
-} from '../../src/db/schema.js';
 import { buildTestApp, type TestApp } from '../helpers/test-app.js';
-import { insertAccountWith, insertConnection } from './fixtures.js';
+import {
+  archiveConnection,
+  insertAccountSnapshot,
+  insertAccountWith,
+  insertConnection,
+  insertInvestmentSnapshot,
+  insertInvestmentWith,
+} from './fixtures.js';
 import { connectTestDatabase, truncateAllTables } from './test-database.js';
 
 // 10h em São Paulo, 15 de novembro de 2026.
@@ -33,36 +33,6 @@ async function getNetWorth(query = '') {
   return { statusCode: response.statusCode, body: response.json() };
 }
 
-async function insertAccountSnapshot(accountId: string, date: string, balanceCents: number) {
-  await database.db.insert(balanceSnapshots).values({ accountId, date, balanceCents });
-}
-
-async function insertInvestment(connectionId: string, balanceCents: number): Promise<string> {
-  const [investment] = await database.db
-    .insert(investments)
-    .values({
-      connectionId,
-      pluggyInvestmentId: `inv-${crypto.randomUUID()}`,
-      name: 'CDB teste',
-      type: 'FIXED_INCOME',
-      balanceCents,
-    })
-    .returning({ id: investments.id });
-  if (!investment) throw new Error('Fixture: investimento não foi criado');
-  return investment.id;
-}
-
-async function insertInvestmentSnapshot(investmentId: string, date: string, balanceCents: number) {
-  await database.db.insert(investmentSnapshots).values({ investmentId, date, balanceCents });
-}
-
-async function archiveConnection(connectionId: string, archivedAt: string) {
-  await database.db
-    .update(connections)
-    .set({ archivedAt: new Date(archivedAt) })
-    .where(eq(connections.id, connectionId));
-}
-
 describe('GET /api/v1/net-worth — patrimônio de hoje', () => {
   it('should_return_accounts_plus_investments_minus_open_bills_when_the_banks_are_active', async () => {
     // Arrange
@@ -74,7 +44,7 @@ describe('GET /api/v1/net-worth — patrimônio de hoje', () => {
       type: 'credit_card',
       balanceCents: 150000,
     });
-    await insertInvestment(connectionId, 1200000);
+    await insertInvestmentWith(database.db, connectionId, 1200000);
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -103,8 +73,8 @@ describe('GET /api/v1/net-worth — patrimônio de hoje', () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     await insertAccountWith(database.db, { connectionId, balanceCents: 300000 });
-    await insertInvestment(connectionId, 200000);
-    await archiveConnection(connectionId, '2026-11-10T13:00:00Z');
+    await insertInvestmentWith(database.db, connectionId, 200000);
+    await archiveConnection(database.db, connectionId, '2026-11-10T13:00:00Z');
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -135,10 +105,10 @@ describe('GET /api/v1/net-worth — patrimônio de hoje', () => {
       type: 'credit_card',
       balanceCents: 150000,
     });
-    const investmentId = await insertInvestment(connectionId, 1200000);
-    await insertAccountSnapshot(checkingId, TODAY, 500000);
-    await insertAccountSnapshot(cardId, TODAY, 150000);
-    await insertInvestmentSnapshot(investmentId, TODAY, 1200000);
+    const investmentId = await insertInvestmentWith(database.db, connectionId, 1200000);
+    await insertAccountSnapshot(database.db, checkingId, TODAY, 500000);
+    await insertAccountSnapshot(database.db, cardId, TODAY, 150000);
+    await insertInvestmentSnapshot(database.db, investmentId, TODAY, 1200000);
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -151,10 +121,10 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     const accountId = await insertAccountWith(database.db, { connectionId });
-    const investmentId = await insertInvestment(connectionId, 0);
-    await insertAccountSnapshot(accountId, '2026-10-30', 1000);
-    await insertAccountSnapshot(accountId, '2026-10-31', 1000);
-    await insertInvestmentSnapshot(investmentId, '2026-10-30', 5000);
+    const investmentId = await insertInvestmentWith(database.db, connectionId, 0);
+    await insertAccountSnapshot(database.db, accountId, '2026-10-30', 1000);
+    await insertAccountSnapshot(database.db, accountId, '2026-10-31', 1000);
+    await insertInvestmentSnapshot(database.db, investmentId, '2026-10-30', 5000);
     // Act
     const { body } = await getNetWorth('?from=2026-10&to=2026-10');
     // Assert
@@ -173,8 +143,8 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
   it('should_not_return_a_point_for_a_month_without_snapshots', async () => {
     // Arrange
     const accountId = await insertAccountWith(database.db);
-    await insertAccountSnapshot(accountId, '2026-09-20', 1000);
-    await insertAccountSnapshot(accountId, '2026-11-02', 2000);
+    await insertAccountSnapshot(database.db, accountId, '2026-09-20', 1000);
+    await insertAccountSnapshot(database.db, accountId, '2026-11-02', 2000);
     // Act
     const { body } = await getNetWorth('?from=2026-09');
     // Assert
@@ -188,8 +158,8 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
     // Arrange
     const visibleId = await insertAccountWith(database.db);
     const hiddenId = await insertAccountWith(database.db, { isHidden: true });
-    await insertAccountSnapshot(visibleId, '2026-10-31', 1000);
-    await insertAccountSnapshot(hiddenId, '2026-10-31', 999900);
+    await insertAccountSnapshot(database.db, visibleId, '2026-10-31', 1000);
+    await insertAccountSnapshot(database.db, hiddenId, '2026-10-31', 999900);
     // Act
     const { body } = await getNetWorth('?from=2026-10&to=2026-10');
     // Assert
@@ -204,11 +174,11 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
     const archivedId = await insertAccountWith(database.db, {
       connectionId: archivedConnectionId,
     });
-    await insertAccountSnapshot(activeId, '2026-09-30', 1000);
-    await insertAccountSnapshot(activeId, '2026-10-31', 1000);
-    await insertAccountSnapshot(archivedId, '2026-09-30', 3000);
-    await insertAccountSnapshot(archivedId, '2026-10-09', 3000);
-    await archiveConnection(archivedConnectionId, '2026-10-10T13:00:00Z');
+    await insertAccountSnapshot(database.db, activeId, '2026-09-30', 1000);
+    await insertAccountSnapshot(database.db, activeId, '2026-10-31', 1000);
+    await insertAccountSnapshot(database.db, archivedId, '2026-09-30', 3000);
+    await insertAccountSnapshot(database.db, archivedId, '2026-10-09', 3000);
+    await archiveConnection(database.db, archivedConnectionId, '2026-10-10T13:00:00Z');
     // Act
     const { body } = await getNetWorth('?from=2026-09&to=2026-10');
     // Assert
@@ -234,9 +204,9 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     const accountId = await insertAccountWith(database.db, { connectionId });
-    const investmentId = await insertInvestment(connectionId, 1000);
-    await insertAccountSnapshot(accountId, '2026-11-04', 1000);
-    await insertInvestmentSnapshot(investmentId, '2026-11-02', 1000);
+    const investmentId = await insertInvestmentWith(database.db, connectionId, 1000);
+    await insertAccountSnapshot(database.db, accountId, '2026-11-04', 1000);
+    await insertInvestmentSnapshot(database.db, investmentId, '2026-11-02', 1000);
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -246,8 +216,8 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
   it('should_return_only_the_last_twelve_months_when_no_range_is_given', async () => {
     // Arrange
     const accountId = await insertAccountWith(database.db);
-    await insertAccountSnapshot(accountId, '2025-11-20', 1000);
-    await insertAccountSnapshot(accountId, '2025-12-20', 2000);
+    await insertAccountSnapshot(database.db, accountId, '2025-11-20', 1000);
+    await insertAccountSnapshot(database.db, accountId, '2025-12-20', 2000);
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -257,7 +227,7 @@ describe('GET /api/v1/net-worth — pontos mensais', () => {
   it('should_cap_to_at_the_current_month_when_it_is_in_the_future', async () => {
     // Arrange
     const accountId = await insertAccountWith(database.db);
-    await insertAccountSnapshot(accountId, '2026-11-02', 1000);
+    await insertAccountSnapshot(database.db, accountId, '2026-11-02', 1000);
     // Act
     const { statusCode, body } = await getNetWorth('?from=2026-11&to=2027-03');
     // Assert
@@ -276,7 +246,7 @@ describe('GET /api/v1/net-worth — variação no mês', () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     const accountId = await insertAccountWith(database.db, { connectionId, balanceCents: 1050000 });
-    await insertAccountSnapshot(accountId, '2026-11-01', 1000000);
+    await insertAccountSnapshot(database.db, accountId, '2026-11-01', 1000000);
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -287,7 +257,7 @@ describe('GET /api/v1/net-worth — variação no mês', () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     const accountId = await insertAccountWith(database.db, { connectionId, balanceCents: 1000 });
-    await insertAccountSnapshot(accountId, TODAY, 1000);
+    await insertAccountSnapshot(database.db, accountId, TODAY, 1000);
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -306,9 +276,9 @@ describe('GET /api/v1/net-worth — variação no mês', () => {
       connectionId: archivedConnectionId,
       balanceCents: 1000,
     });
-    await insertAccountSnapshot(activeId, '2026-11-01', 5000);
-    await insertAccountSnapshot(archivedId, '2026-11-01', 1000);
-    await archiveConnection(archivedConnectionId, '2026-11-10T13:00:00Z');
+    await insertAccountSnapshot(database.db, activeId, '2026-11-01', 5000);
+    await insertAccountSnapshot(database.db, archivedId, '2026-11-01', 1000);
+    await archiveConnection(database.db, archivedConnectionId, '2026-11-10T13:00:00Z');
     // Act
     const { body } = await getNetWorth();
     // Assert
@@ -319,7 +289,7 @@ describe('GET /api/v1/net-worth — variação no mês', () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     const accountId = await insertAccountWith(database.db, { connectionId, balanceCents: 2000 });
-    await insertAccountSnapshot(accountId, '2026-11-01', 1000);
+    await insertAccountSnapshot(database.db, accountId, '2026-11-01', 1000);
     // Act
     const { body } = await getNetWorth('?from=2026-01&to=2026-03');
     // Assert

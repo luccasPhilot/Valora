@@ -1,6 +1,15 @@
+import { eq } from 'drizzle-orm';
+
 import type { Db } from '../../src/db/database.js';
 import type { transactions } from '../../src/db/schema.js';
-import { accounts, categories, connections } from '../../src/db/schema.js';
+import {
+  accounts,
+  balanceSnapshots,
+  categories,
+  connections,
+  investments,
+  investmentSnapshots,
+} from '../../src/db/schema.js';
 
 export async function insertAccount(db: Db): Promise<string> {
   const [connection] = await db
@@ -81,4 +90,48 @@ export function transactionValues(
     status: 'posted',
     ...overrides,
   };
+}
+
+export async function insertInvestmentWith(
+  db: Db,
+  connectionId: string,
+  balanceCents: number,
+): Promise<string> {
+  const [investment] = await db
+    .insert(investments)
+    .values({
+      connectionId,
+      pluggyInvestmentId: `inv-${crypto.randomUUID()}`,
+      name: 'CDB teste',
+      type: 'FIXED_INCOME',
+      balanceCents,
+    })
+    .returning({ id: investments.id });
+  if (!investment) throw new Error('Fixture: investimento não foi criado');
+  return investment.id;
+}
+
+export async function insertAccountSnapshot(
+  db: Db,
+  accountId: string,
+  date: string,
+  balanceCents: number,
+): Promise<void> {
+  await db.insert(balanceSnapshots).values({ accountId, date, balanceCents });
+}
+
+export async function insertInvestmentSnapshot(
+  db: Db,
+  investmentId: string,
+  date: string,
+  balanceCents: number,
+): Promise<void> {
+  await db.insert(investmentSnapshots).values({ investmentId, date, balanceCents });
+}
+
+export async function archiveConnection(db: Db, connectionId: string, archivedAt: string) {
+  await db
+    .update(connections)
+    .set({ archivedAt: new Date(archivedAt) })
+    .where(eq(connections.id, connectionId));
 }

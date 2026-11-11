@@ -43,7 +43,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 |---|---|---|
 | **Início (Dashboard)** | Saldo total, receitas e despesas do mês, gráfico receitas x despesas, gastos por categoria, últimas transações, ocultar valores | v1 |
 | | Projeção do fim do mês e resumo das metas (até 3, com a situação de cada uma) no Início; alertas no sino | v2 |
-| | Evolução do patrimônio | v3 |
+| | Variação do patrimônio no card de saldo, com o link para a curva em Investimentos | v3 |
 | **Transações** | Lista agrupada por dia; filtros por período, categoria, tipo e conta; pesquisa; detalhe; trocar a categoria | v1 |
 | | Lançamento manual de receitas e despesas, aviso de possível duplicata | v1 |
 | **Contas e cartões** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |

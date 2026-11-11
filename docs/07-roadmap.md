@@ -163,7 +163,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [ ] histórico de receitas e despesas;
   - [ ] análise por categoria ao longo dos meses;
   - [ ] evolução do patrimônio.
-- [ ] Variação do patrimônio no card de saldo do Início.
+- [x] Variação do patrimônio no card de saldo do Início.
 
 **Pronto quando:**
 - o patrimônio total confere com a soma dos bancos e corretoras;

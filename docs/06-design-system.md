@@ -325,6 +325,7 @@ Ordem no celular, logo abaixo do topo de tela (título "Início" e status da sin
 1. **Card de saldo** (`secondary`, `radius-xl`):
    - saldo total em `display`;
    - variação desde o início do mês (quando já houver histórico);
+   - linha **Patrimônio** (v3), abaixo da variação e separada por um filete: rótulo `type-label`, valor em tamanho `md` (vermelho só se negativo), a variação no mês no mesmo formato do saldo e o link "Ver patrimônio" para `/investimentos`. Só aparece quando há investimento ou fatura em aberto (sem eles o patrimônio é igual ao saldo) e some fora do mês atual. Sem variação, mostra só o valor e o link. O "Saldo total" continua sendo só corrente e poupança;
    - gráfico de área pequeno, com a evolução do mês.
 2. **Atalhos** em botões redondos, como no moodboard:
    - v1: Adicionar receita, Registrar despesa, Transações, Orçamentos;

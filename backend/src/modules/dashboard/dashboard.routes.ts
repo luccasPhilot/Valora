@@ -36,6 +36,13 @@ const projectionSummarySchema = z.object({
   hasPlannedItems: z.boolean(),
 });
 
+const netWorthSummarySchema = z.object({
+  totalCents: centsSchema,
+  investmentsCents: centsSchema,
+  openBillsCents: centsSchema,
+  change: z.object({ cents: centsSchema, percent: z.number().nullable() }).nullable(),
+});
+
 const goalsSummarySchema = z.object({
   items: z.array(
     z.object({
@@ -58,6 +65,7 @@ const dashboardResponseSchema = z.object({
   totalBalanceCents: centsSchema,
   balanceEvolution: z.array(z.object({ date: z.iso.date(), balanceCents: centsSchema })),
   balanceChange: z.object({ cents: centsSchema, percent: z.number().nullable() }).nullable(),
+  netWorth: netWorthSummarySchema.nullable(),
   monthIncomeCents: centsSchema,
   monthExpenseCents: centsSchema,
   incomeVsExpense: z.array(
@@ -82,6 +90,7 @@ export function dashboardRoutes(service: DashboardService): FastifyPluginAsyncZo
           totalBalanceCents: overview.totalBalanceCents,
           balanceEvolution: [...overview.balanceEvolution],
           balanceChange: overview.balanceChange,
+          netWorth: overview.netWorth,
           monthIncomeCents: overview.monthIncomeCents,
           monthExpenseCents: overview.monthExpenseCents,
           incomeVsExpense: [...overview.incomeVsExpense],

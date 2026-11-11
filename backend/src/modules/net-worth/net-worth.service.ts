@@ -26,6 +26,12 @@ export interface NetWorthOverview {
   readonly firstSnapshotDate: string | null;
 }
 
+/** O que o Início precisa: o patrimônio de hoje e a variação no mês, sem a série mensal. */
+export interface NetWorthSummary {
+  readonly current: NetWorthCurrent;
+  readonly monthChange: ValueChange | null;
+}
+
 export interface NetWorthServiceDependencies {
   readonly netWorth: NetWorthRepository;
   readonly accounts: Pick<AccountsService, 'overview'>;
@@ -41,17 +47,11 @@ export class NetWorthService {
     const range = parseMonthRange(query, today);
     // A janela também cobre o mês atual (para a variação) e os 7 dias de tolerância antes do início.
     const firstDay = range.from < firstDayOfMonth(today) ? range.from : firstDayOfMonth(today);
-    const [{ totals }, investments, snapshotRows, firstSnapshotDate] = await Promise.all([
-      this.deps.accounts.overview(),
-      this.deps.investments.overview(),
+    const [current, snapshotRows, firstSnapshotDate] = await Promise.all([
+      this.findCurrent(today),
       this.deps.netWorth.findSnapshots(subtractDays(firstDay, SNAPSHOT_TOLERANCE_DAYS), today),
       this.deps.netWorth.findFirstSnapshotDate(),
     ]);
-    const current = buildCurrent(today, {
-      accountsCents: totals.totalBalanceCents,
-      investmentsCents: investments.totals.totalCents,
-      openBillsCents: totals.openCreditCardBillsCents,
-    });
     const items = groupSnapshotRows(snapshotRows);
     return {
       current,
@@ -59,6 +59,32 @@ export class NetWorthService {
       monthChange: buildMonthChange(items, current.netWorthCents, today),
       firstSnapshotDate,
     };
+  }
+
+  /** Mesmo `current` e `monthChange` de `overview()`, lendo só as fotos do mês atual. */
+  async summary(): Promise<NetWorthSummary> {
+    const today = todayInSaoPaulo(this.deps.now());
+    const monthStart = firstDayOfMonth(today);
+    const [current, snapshotRows] = await Promise.all([
+      this.findCurrent(today),
+      this.deps.netWorth.findSnapshots(subtractDays(monthStart, SNAPSHOT_TOLERANCE_DAYS), today),
+    ]);
+    return {
+      current,
+      monthChange: buildMonthChange(groupSnapshotRows(snapshotRows), current.netWorthCents, today),
+    };
+  }
+
+  private async findCurrent(today: string): Promise<NetWorthCurrent> {
+    const [{ totals }, investments] = await Promise.all([
+      this.deps.accounts.overview(),
+      this.deps.investments.overview(),
+    ]);
+    return buildCurrent(today, {
+      accountsCents: totals.totalBalanceCents,
+      investmentsCents: investments.totals.totalCents,
+      openBillsCents: totals.openCreditCardBillsCents,
+    });
   }
 }
 

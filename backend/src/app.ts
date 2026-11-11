@@ -175,6 +175,7 @@ function registerModules(
     transactions: transactions.transactionsService,
     projection: projectionService,
     goals: goalsService,
+    netWorth: netWorthService,
     now,
   });
   app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });

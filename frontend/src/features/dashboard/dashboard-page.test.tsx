@@ -54,6 +54,12 @@ function dashboard(overrides: Record<string, unknown> = {}) {
       { date: '2026-11-05', balanceCents: 485032 },
     ],
     balanceChange: { cents: 85032, percent: 21.26 },
+    netWorth: {
+      totalCents: 1550000,
+      investmentsCents: 1200000,
+      openBillsCents: 150000,
+      change: { cents: 50000, percent: 3.33 },
+    },
     monthIncomeCents: 500000,
     monthExpenseCents: 200000,
     incomeVsExpense: [
@@ -177,7 +183,7 @@ describe('Início', () => {
 
   it('should_hide_the_change_when_there_is_no_snapshot_before_today', async () => {
     // Arrange
-    stubDashboardApi(dashboard({ balanceChange: null }));
+    stubDashboardApi(dashboard({ balanceChange: null, netWorth: null }));
     renderDashboard();
     // Act
     await screen.findByRole('heading', { name: 'Saldo total' });
@@ -523,6 +529,124 @@ describe('Início — metas', () => {
     const link = within(await findGoalsCard()).getByRole('link', { name: 'Criar meta' });
     // Assert
     expect(link).toHaveAttribute('href', '/metas');
+  });
+});
+
+describe('Início — patrimônio no card de saldo', () => {
+  const NET_WORTH_WITHOUT_CHANGE = {
+    totalCents: 1550000,
+    investmentsCents: 1200000,
+    openBillsCents: 0,
+    change: null,
+  };
+
+  async function findBalanceCard(): Promise<HTMLElement> {
+    const heading = await screen.findByRole('heading', { name: 'Saldo total' });
+    return heading.closest('section') as HTMLElement;
+  }
+
+  it('should_show_the_net_worth_with_its_change_and_the_link_when_there_are_investments', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(card).toHaveTextContent('PatrimônioVer patrimônioR$ 15.500,00+ R$ 500,00 (+3,3%)no mês');
+  });
+
+  it('should_open_investments_when_see_net_worth_is_pressed', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const link = within(await findBalanceCard()).getByRole('link', { name: 'Ver patrimônio' });
+    // Assert
+    expect(link).toHaveAttribute('href', '/investimentos');
+  });
+
+  it('should_show_the_line_when_there_is_only_an_open_bill', async () => {
+    // Arrange
+    stubDashboardApi(
+      dashboard({
+        netWorth: { ...NET_WORTH_WITHOUT_CHANGE, investmentsCents: 0, openBillsCents: 150000 },
+      }),
+    );
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(card).toHaveTextContent('Patrimônio');
+  });
+
+  it('should_not_show_the_line_when_there_are_no_investments_nor_bills', async () => {
+    // Arrange
+    stubDashboardApi(
+      dashboard({
+        netWorth: {
+          totalCents: 485032,
+          investmentsCents: 0,
+          openBillsCents: 0,
+          change: null,
+        },
+      }),
+    );
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(card).not.toHaveTextContent('Patrimônio');
+  });
+
+  it('should_not_show_the_line_when_the_net_worth_is_null', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ netWorth: null }));
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(card).not.toHaveTextContent('Patrimônio');
+  });
+
+  it('should_show_only_the_value_and_the_link_when_there_is_no_change', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ netWorth: NET_WORTH_WITHOUT_CHANGE, balanceChange: null }));
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(within(card).queryByText('no mês')).not.toBeInTheDocument();
+  });
+
+  it('should_use_red_on_the_net_worth_only_when_it_is_negative', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ netWorth: { ...NET_WORTH_WITHOUT_CHANGE, totalCents: -70000 } }));
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(card.querySelector('p.text-destructive')).toHaveTextContent('−R$ 700,00');
+  });
+
+  it('should_not_use_red_when_the_net_worth_is_positive', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const card = await findBalanceCard();
+    // Assert
+    expect(card.querySelector('.text-destructive')).toBeNull();
+  });
+
+  it('should_mask_the_net_worth_amounts_and_keep_the_percent_when_hide_values_is_on', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    const card = await findBalanceCard();
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Ocultar valores' }));
+    // Assert
+    expect(card).toHaveTextContent('PatrimônioVer patrimônioR$ ••••R$ •••• (+3,3%)no mês');
   });
 });
 
