@@ -36,12 +36,14 @@ export function GoalCard({ goal, onSelect }: GoalCardProps) {
           aria-label={`${goal.name}: ${goal.progressPercent}% do valor desejado`}
           indicatorClassName="bg-primary"
         />
-        <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm tabular-nums">
+        <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground tabular-nums">
           <span>
-            <Money cents={goal.savedCents} isTrimmed /> de{' '}
-            <Money cents={goal.targetCents} isTrimmed />
+            <span className="font-display text-lg font-bold">
+              <Money cents={goal.savedCents} isTrimmed />
+            </span>{' '}
+            de <Money cents={goal.targetCents} isTrimmed />
           </span>
-          <span className="text-muted-foreground">{goal.progressPercent}%</span>
+          <span>{goal.progressPercent}%</span>
         </span>
         <GoalStatusLine goal={goal} />
       </button>

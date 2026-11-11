@@ -160,7 +160,7 @@ O mapeamento inicial de `pluggy_category_mappings` fica em `backend/src/modules/
 
 Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 
-**`investments`** (gravado desde a Fase 1; tela só na v3)
+**`investments`** (gravado desde a Fase 1; tela na v3)
 
 | Coluna | Tipo | Observação |
 |---|---|---|
@@ -168,10 +168,13 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `connection_id` | uuid | → `connections` |
 | `pluggy_investment_id` | text | único |
 | `name` | text | |
-| `type` | text | tipo de investimento como o Pluggy informa |
+| `type` | text | tipo de investimento como o Pluggy informa (`FIXED_INCOME`, `MUTUAL_FUND`, `EQUITY`, `ETF`, `SECURITY`, `COE`) |
+| `subtype` | text | subtipo do Pluggy (`CDB`, `TREASURY`, `MULTIMARKET_FUND`...); pode ser nulo. A migration preencheu as linhas antigas com `raw->>'subtype'` |
 | `balance_cents` | bigint | posição atual |
 | `raw` | jsonb | |
 | `updated_at` | timestamptz | |
+
+**Posição que sumiu = posição zerada.** Quando um banco sincroniza com sucesso e deixa de devolver um investimento (resgatado e removido), a sincronização grava `balance_cents = 0` nele e a foto do dia `0`, inclusive se a lista vier vazia. Sem isso o último saldo ficaria somando para sempre. Se o investimento voltar, o upsert restaura a posição. Banco com erro não tem investimentos alterados.
 
 **`investment_snapshots`**: foto diária de cada investimento.
 

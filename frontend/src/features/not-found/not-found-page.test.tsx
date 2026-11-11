@@ -27,7 +27,7 @@ function renderApp(initialPath: string) {
 describe('Página não encontrada', () => {
   it('should_show_the_404_title_and_the_message_when_the_route_does_not_exist_yet', async () => {
     // Arrange
-    renderApp('/investimentos');
+    renderApp('/patrimonio');
     // Act
     const title = await screen.findByRole('heading', { name: PAGE_TITLE });
     // Assert
@@ -74,7 +74,7 @@ describe('Página não encontrada', () => {
 
   it('should_go_to_the_home_when_the_button_is_pressed', async () => {
     // Arrange
-    const router = renderApp('/investimentos');
+    const router = renderApp('/patrimonio');
     // Act
     await userEvent.click(await screen.findByRole('link', { name: 'Ir para o Início' }));
     // Assert
@@ -83,10 +83,10 @@ describe('Página não encontrada', () => {
 
   it('should_not_show_the_typed_address', async () => {
     // Arrange
-    renderApp('/investimentos');
+    renderApp('/patrimonio');
     // Act
     await screen.findByRole('heading', { name: PAGE_TITLE });
     // Assert
-    expect(screen.queryByText(/investimentos/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/patrimonio/i)).not.toBeInTheDocument();
   });
 });

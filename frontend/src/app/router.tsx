@@ -19,6 +19,7 @@ export const appRoutes: RouteObject[] = [
         path: 'contas/:accountId/faturas',
         lazy: () => import('@/features/credit-card-bills/credit-card-bills-page'),
       },
+      { path: 'investimentos', lazy: () => import('@/features/investments/investments-page') },
       { path: 'categorias', lazy: () => import('@/features/categories/categories-page') },
       { path: 'ajustes', lazy: () => import('@/features/settings/settings-page') },
     ],

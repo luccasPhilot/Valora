@@ -43,7 +43,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 |---|---|---|
 | **Início (Dashboard)** | Saldo total, receitas e despesas do mês, gráfico receitas x despesas, gastos por categoria, últimas transações, ocultar valores | v1 |
 | | Projeção do fim do mês e resumo das metas (até 3, com a situação de cada uma) no Início; alertas no sino | v2 |
-| | Evolução do patrimônio | v3 |
+| | Variação do patrimônio no card de saldo, com o link para a curva em Investimentos | v3 |
 | **Transações** | Lista agrupada por dia; filtros por período, categoria, tipo e conta; pesquisa; detalhe; trocar a categoria | v1 |
 | | Lançamento manual de receitas e despesas, aviso de possível duplicata | v1 |
 | **Contas e cartões** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |
@@ -56,6 +56,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 | | Meta vinculada a um investimento ou conta, que se atualiza sozinha | v3 |
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |
 | **Investimentos** | Posição de cada investimento e o total | v3 |
+| | Patrimônio no topo da tela: contas + investimentos − faturas em aberto, a variação no mês e a evolução mês a mês ([regras](#patrimônio)) | v3 |
 | **Relatórios** | Evolução financeira, histórico de receitas e despesas, análise por categoria, evolução do patrimônio | v3 |
 
 ## Lançamento manual
@@ -117,6 +118,34 @@ Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a en
   - **Atrasada:** a estimativa passa do prazo, ou o prazo venceu e a meta não foi atingida. A tela diz quanto guardar por mês (`ceil(faltante ÷ meses até o prazo)`, no mínimo 1 mês);
   - **Sem ritmo ainda:** não há ritmo para estimar.
 - **Ordem da lista.** Não concluídas primeiro, pelo prazo mais próximo (sem prazo por último); concluídas no fim.
+
+## Investimentos
+
+A tela **Investimentos** mostra a posição de cada investimento dos seus bancos e corretoras, agrupada por tipo, e o total. É só leitura: o Valora não compra nem resgata nada.
+
+- **O que entra:** as posições de bancos **ativos**. Um banco arquivado sai da tela e do total, mas as fotos dele continuam guardadas ([regras](#remover-um-banco-do-valora)).
+- **Agrupamento:** pelo tipo do Pluggy: Renda fixa, Fundos, Ações, ETFs, Títulos e previdência, COE e Outros. O subtipo (CDB, Tesouro Direto, fundo multimercado...) e a instituição aparecem em cada linha.
+- **Percentuais:** a fatia de cada tipo e de cada posição no total, com uma casa decimal.
+- **Posições zeradas** (resgatadas, ou que o banco deixou de devolver) ficam fora da lista e aparecem só como "N posições zeradas não aparecem na lista".
+- **Não é o saldo total:** o "Saldo total" do Início continua sendo só corrente e poupança. Investimentos entram no [patrimônio](#patrimônio).
+- **Não mostra rentabilidade.** O Valora guarda só a posição, e a variação dela mistura aporte e rendimento.
+
+## Patrimônio
+
+O **patrimônio** é quanto você tem de fato: `contas + investimentos − faturas em aberto`. Aparece no topo da tela **Investimentos**, com o total, a variação no mês, as três partes e um gráfico de área mês a mês (6 ou 12 meses).
+
+- **O que entra:**
+  - contas corrente e poupança não ocultas (o mesmo [saldo total](#saldo-total));
+  - todos os investimentos;
+  - as faturas atuais dos cartões não ocultos, que **descontam**.
+  - Só de bancos **ativos**. A conta "Dinheiro" não tem saldo e fica de fora.
+- **O que não entra:** gastos no cartão que ainda não estão numa fatura fechada (o Pluggy só informa a fatura), financiamentos, empréstimos, imóveis, veículos e outros bens que não vêm do Open Finance. A tela avisa isso numa nota fixa.
+- **Hoje x passado:** o total de hoje vem das posições atuais, então confere com o que Contas e Investimentos mostram. A curva vem das **fotos diárias**.
+- **Foto que faltou:** cada conta e cada investimento vale a foto mais recente de até 7 dias antes do dia calculado. Uma falha curta da sincronização não abre um buraco no gráfico; depois de 7 dias sem foto, o item sai do total daquele dia.
+- **Um ponto por mês:** o último dia do mês com foto (hoje, no mês atual). Mês sem nenhuma foto fica sem ponto, sem zero inventado.
+- **Histórico só desde a primeira foto.** O Valora não reconstrói o passado a partir das transações. Com menos de dois meses de dados a tela diz "O histórico começa em…" e não desenha o gráfico.
+- **Banco arquivado:** o passado dele continua na curva, que tem um degrau no mês em que ele saiu, como a curva do saldo ([regras](#remover-um-banco-do-valora)). A variação do mês só usa bancos ativos, para não mostrar uma queda que não aconteceu.
+- **Variação no mês:** o patrimônio de hoje menos o da primeira foto do mês, com o percentual sobre o valor inicial. Sem foto de um dia anterior a hoje no mês, não aparece.
 
 ## Fora do escopo
 

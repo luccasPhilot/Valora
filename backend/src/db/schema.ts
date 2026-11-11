@@ -283,6 +283,8 @@ export const investments = pgTable('investments', {
   pluggyInvestmentId: text('pluggy_investment_id').notNull().unique(),
   name: text('name').notNull(),
   type: text('type').notNull(),
+  // Subtipo do Pluggy (CDB, TREASURY...); nulo quando o Pluggy não manda.
+  subtype: text('subtype'),
   balanceCents: cents('balance_cents').notNull(),
   raw: jsonb('raw'),
   updatedAt: timestamptz('updated_at').notNull().defaultNow(),

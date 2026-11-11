@@ -25,6 +25,13 @@ describe('findScreenTitle', () => {
     expect(title).toBe('Metas');
   });
 
+  it('should_return_investments_title_when_the_path_is_the_investments_area', () => {
+    // Arrange & Act
+    const title = findScreenTitle('/investimentos');
+    // Assert
+    expect(title).toBe('Investimentos');
+  });
+
   it('should_return_bills_title_when_the_path_is_the_card_bills_screen', () => {
     // Arrange & Act
     const title = findScreenTitle(BILLS_PATH);

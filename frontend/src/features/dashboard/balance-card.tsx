@@ -1,18 +1,20 @@
-import { cn } from 'cn';
-import { TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { useId } from 'react';
 import { Area, AreaChart, Tooltip, type TooltipContentProps, XAxis, YAxis } from 'recharts';
 
+import { DataCard } from '@/components/cards/data-card';
+import { Metric } from '@/components/cards/metric';
+import { ValueChange } from '@/components/cards/value-change';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { BalancePoint, Dashboard } from '@/lib/api/dashboard';
-import { formatDate, formatPercent } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 
 import { ChartTooltipCard } from './chart-tooltip';
+import { hasNetWorthToShow, NetWorthLine } from './net-worth-line';
 
 const SERIES_COLOR = 'var(--color-chart-1)';
 const AREA_FILL_OPACITY = 0.15;
-const PERCENT_TO_RATIO = 100;
 const MIN_POINTS_FOR_CHART = 2;
 
 function BalanceTooltip({ active, payload }: TooltipContentProps) {
@@ -66,46 +68,19 @@ function BalanceEvolutionChart({ points }: { points: readonly BalancePoint[] }) 
   );
 }
 
-function signedPercent(percent: number): string {
-  const text = formatPercent(percent / PERCENT_TO_RATIO);
-  return percent > 0 ? `+${text}` : text;
-}
-
-function BalanceChange({ change }: { change: NonNullable<Dashboard['balanceChange']> }) {
-  const Icon = change.cents < 0 ? TrendingDown : TrendingUp;
-  return (
-    <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium">
-      <Icon
-        className={cn('size-4', change.cents > 0 ? 'text-positive' : 'text-muted-foreground')}
-        aria-hidden="true"
-      />
-      <span className={cn('tabular-nums', change.cents > 0 && 'text-positive')}>
-        <Money cents={change.cents} isSigned />
-        {change.percent === null ? null : ` (${signedPercent(change.percent)})`}
-      </span>
-      <span className="text-muted-foreground">no mês</span>
-    </p>
-  );
-}
-
 /** Saldo total (corrente e poupança não ocultas), a variação no mês e a evolução em área pequena. */
 export function BalanceCard({ dashboard }: { dashboard: Dashboard }) {
-  const titleId = useId();
-  const { totalBalanceCents, balanceChange, balanceEvolution } = dashboard;
+  const { totalBalanceCents, balanceChange, balanceEvolution, netWorth } = dashboard;
   return (
-    <section
-      aria-labelledby={titleId}
-      className="flex h-full flex-col gap-3 rounded-xl bg-secondary p-5"
-    >
-      <h2 id={titleId} className="type-label flex items-center gap-2">
-        <Wallet className="size-4 text-primary" aria-hidden="true" />
-        Saldo total
-      </h2>
-      <p className={cn('type-display tabular-nums', totalBalanceCents < 0 && 'text-destructive')}>
-        <Money cents={totalBalanceCents} />
-      </p>
-      {balanceChange ? <BalanceChange change={balanceChange} /> : null}
+    <DataCard title="Saldo total" tier="hero" icon={Wallet} className="gap-3">
+      <Metric
+        size="display"
+        value={<Money cents={totalBalanceCents} />}
+        isNegative={totalBalanceCents < 0}
+      />
+      {balanceChange ? <ValueChange change={balanceChange} /> : null}
+      {hasNetWorthToShow(netWorth) ? <NetWorthLine netWorth={netWorth} /> : null}
       <BalanceEvolutionChart points={balanceEvolution} />
-    </section>
+    </DataCard>
   );
 }

@@ -1,7 +1,26 @@
+import type { ValueChange } from '../../shared/value-change.js';
 import type { GoalItem } from '../goals/goals.service.js';
+import type { NetWorthSummary } from '../net-worth/net-worth.service.js';
 import type { ProjectionResult } from '../projection/projection.service.js';
 
 export const GOALS_SUMMARY_COUNT = 3;
+
+/** O patrimônio do card de saldo: os mesmos números de `GET /net-worth` (`current` e `monthChange`). */
+export interface NetWorthBlock {
+  readonly totalCents: number;
+  readonly investmentsCents: number;
+  readonly openBillsCents: number;
+  readonly change: ValueChange | null;
+}
+
+export function summarizeNetWorth({ current, monthChange }: NetWorthSummary): NetWorthBlock {
+  return {
+    totalCents: current.netWorthCents,
+    investmentsCents: current.investmentsCents,
+    openBillsCents: current.openBillsCents,
+    change: monthChange,
+  };
+}
 
 /** O resumo da projeção do fim do mês: os mesmos números da tela de Planejamento. */
 export interface ProjectionSummary {

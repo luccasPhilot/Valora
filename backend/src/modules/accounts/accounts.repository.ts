@@ -6,7 +6,7 @@ import { accounts, connections } from '../../db/schema.js';
 import { accountIsOfActiveConnection } from '../connections/active-connection.js';
 import { CONNECTION_STATUSES } from '../connections/connections.repository.js';
 
-const accountTypeSchema = z.enum(['checking', 'savings', 'credit_card', 'cash']);
+export const accountTypeSchema = z.enum(['checking', 'savings', 'credit_card', 'cash']);
 const connectionStatusSchema = z.enum(CONNECTION_STATUSES);
 
 export type AccountType = z.infer<typeof accountTypeSchema>;

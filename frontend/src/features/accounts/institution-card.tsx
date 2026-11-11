@@ -45,7 +45,7 @@ export function InstitutionCard({
           </span>
           <h2
             id={headingId}
-            className="min-w-32 flex-1 font-display text-base font-semibold break-words"
+            className="min-w-32 flex-1 font-display text-xl font-semibold break-words"
           >
             {connection.institutionName}
           </h2>

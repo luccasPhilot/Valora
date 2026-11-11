@@ -1,7 +1,8 @@
-import { cn } from 'cn';
 import type { LucideIcon } from 'lucide-react';
-import { type ReactNode, useId } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+
+import { DataCard } from '@/components/cards/data-card';
 
 interface DashboardSectionProps {
   title: string;
@@ -12,32 +13,18 @@ interface DashboardSectionProps {
   children: ReactNode;
 }
 
-/** Card de um bloco do Início: título no estilo `label` com ícone em `primary` (Design System). */
+/** Bloco do Início: o `DataCard` do Design System (título pequeno e apagado, conteúdo com o peso). */
 export function DashboardSection({
   title,
-  icon: Icon,
+  icon,
   action,
   className,
   children,
 }: DashboardSectionProps) {
-  const titleId = useId();
   return (
-    <section
-      aria-labelledby={titleId}
-      className={cn(
-        'flex h-full flex-col gap-4 rounded-xl border bg-card p-4 shadow-card sm:p-5',
-        className,
-      )}
-    >
-      <header className="flex items-center justify-between gap-3">
-        <h2 id={titleId} className="type-label flex min-w-0 items-center gap-2">
-          <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
-          {title}
-        </h2>
-        {action}
-      </header>
+    <DataCard title={title} icon={icon} action={action} className={className}>
       {children}
-    </section>
+    </DataCard>
   );
 }
 

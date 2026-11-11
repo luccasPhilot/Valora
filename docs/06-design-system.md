@@ -325,6 +325,7 @@ Ordem no celular, logo abaixo do topo de tela (título "Início" e status da sin
 1. **Card de saldo** (`secondary`, `radius-xl`):
    - saldo total em `display`;
    - variação desde o início do mês (quando já houver histórico);
+   - linha **Patrimônio** (v3), abaixo da variação e separada por um filete: rótulo `type-label`, valor em tamanho `md` (vermelho só se negativo), a variação no mês no mesmo formato do saldo e o link "Ver patrimônio" para `/investimentos`. Só aparece quando há investimento ou fatura em aberto (sem eles o patrimônio é igual ao saldo) e some fora do mês atual. Sem variação, mostra só o valor e o link. O "Saldo total" continua sendo só corrente e poupança;
    - gráfico de área pequeno, com a evolução do mês.
 2. **Atalhos** em botões redondos, como no moodboard:
    - v1: Adicionar receita, Registrar despesa, Transações, Orçamentos;
@@ -358,6 +359,52 @@ No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas tra
 - Cada gráfico tem um resumo para leitor de tela (a tabela dos 6 meses; o saldo no primeiro e no último dia do gráfico de área).
 - A barra de cada categoria é proporcional à maior categoria da lista; o percentual é sobre o gasto líquido total do mês. "Sem categoria" e "Outros" não abrem Transações.
 - O gráfico de área do saldo só aparece com 2 ou mais dias de foto de saldo.
+
+### Hierarquia dos cartões
+
+Todo cartão de dados tem a mesma escala de peso, para o olho achar o número primeiro. Os componentes ficam em `frontend/src/components/cards/` e **não têm cor própria**:
+
+| Nível | Elemento | Tratamento | Componente |
+|---|---|---|---|
+| 1 | **Cartão-herói** | `secondary`, `radius-xl`; a resposta principal da tela, um por tela | `DataCard tier="hero"` |
+| 2 | **Cartão de apoio** | `card` com borda e sombra | `DataCard` |
+| — | **Título do cartão** | `type-label` (12 px, caixa alta, apagado) com ícone de 14 px. Só diz o assunto | `DataCard` |
+| — | **Número-chave** | o maior texto do cartão: `type-display` no herói, `type-value-lg` nos demais, `md` (24 px) quando precisa caber em meia coluna | `Metric` |
+| — | **Contexto** | `text-sm`, `muted-foreground`, uma linha | `Metric caption` |
+| 3 | **Linhas** | sem moldura: nome `text-sm` médio, valor `text-sm` em negrito, subtítulo e percentual `text-xs` apagados | `ValueRow` |
+
+Regras:
+- Título, ícone e valor **nunca** têm o mesmo tamanho. O ícone não vira bolinha grande ao lado do título.
+- Listas longas mostram as 5 primeiras e "Mostrar mais N".
+- Vermelho só no número do herói quando negativo (saldo), nunca em despesa.
+- Grades de uma coluna usam `grid-cols-1` (coluna `minmax(0, 1fr)`): sem isso o cartão cresce até o conteúdo e alarga a página no celular.
+
+### Investimentos
+
+Ordem da tela, em todas as larguras (coluna única no celular; no computador, herói em 7 colunas e ranking em 5):
+
+0. **Patrimônio** (`DataCard tier="hero"`, largura toda): total em `display` (vermelho só se negativo), variação no mês (ícone e texto, igual à do saldo), as linhas "Contas", "Investimentos" e "Faturas em aberto" (com `−`), o controle "6 meses" / "12 meses" (padrão 12), o gráfico de área mensal e a nota "Patrimônio = contas + investimentos − faturas em aberto. Gastos no cartão ainda fora de fatura fechada não entram." Vem de outra consulta (`GET /net-worth`) e tem os próprios estados: se falhar, mostra "Tentar de novo" dentro do cartão e o resto da tela continua.
+1. **Herói** (nível 1): total em `display`, "N posições em M instituições", a **barra de composição por tipo** e a legenda (cor, tipo, valor, percentual).
+2. **Maiores posições** (nível 2): ranking numerado das 5 maiores, em barras finas de `primary`.
+3. **Posições por tipo**: um cartão por tipo (título pequeno, total em `type-value-lg`, "% do total" e as linhas, com "Mostrar mais").
+4. Rodapé "N posições zeradas não aparecem na lista", só quando houver.
+
+**Exceção de cor, só desta tela:** a barra de composição, a legenda e o marcador de cada cartão por tipo usam os slots da [paleta de gráficos](#paleta-de-gráficos) em ordem (tipos são poucos e fixos). **Não é um padrão para as outras telas**, que continuam com uma cor só. A cor só marca; o nome do tipo sempre aparece em texto, e a barra tem um resumo para leitor de tela.
+
+**Exceção ao "um herói por tela":** em Investimentos há dois cartões `secondary`, porque cada um responde a uma pergunta diferente ("quanto eu tenho?" e "como está investido?"). Os dois não competem: o patrimônio vem primeiro e é o único com gráfico.
+
+**Cartão de patrimônio e gráfico mensal:**
+- Gráfico de **área** com uma série só (slot 1 da paleta), linha de 2 px, preenchimento a 15% sumindo para 0, grade horizontal fina e eixo X com meses abreviados ("nov."). Sem legenda (uma série). O tooltip mostra o mês ("novembro de 2026") e o patrimônio.
+- O eixo vertical é discreto (valores compactos, 72 px de largura) e **some com "Ocultar valores"**.
+- Só desenha com **2 ou mais pontos**. Com menos, o lugar do gráfico diz "O histórico começa em 04/11. O gráfico aparece quando houver dois meses de dados." (ou "Ainda não há histórico de patrimônio…" sem nenhuma foto) e o controle de período some. Se o usuário escolheu "6 meses" e ficou sem 2 pontos, o controle continua visível, para ele poder voltar a "12 meses".
+- Resumo para leitor de tela: o patrimônio no primeiro e no último mês do gráfico.
+- Layout: duas colunas (5/12 com os números, 7/12 com o controle e o gráfico) **a partir de 1280 px**. Abaixo disso, uma coluna: com o menu fixo de 1024 px a coluna dos números fica estreita e "R$ 1.234.567,89" quebraria no meio.
+- Enquanto o novo período carrega, o gráfico anterior continua na tela.
+
+**Detalhes de implementação:**
+- Abaixo de 400 px, nome e valor do ranking e do total ficam em linhas separadas, para o nome nunca ser cortado.
+- Os nomes das posições são truncados; o saldo nunca é.
+- Vazio: "Nenhum investimento encontrado" com o botão "Ver contas". "Ocultar valores" mascara os saldos e mantém os percentuais.
 
 ## Componentes
 

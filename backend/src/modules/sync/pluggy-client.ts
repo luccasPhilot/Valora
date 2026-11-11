@@ -94,6 +94,7 @@ function toSyncedInvestment(investment: PluggyInvestment, raw: unknown): SyncedI
     pluggyInvestmentId: investment.id,
     name: investment.name.trim(),
     type: investment.type,
+    subtype: investment.subtype ?? null,
     balanceCents: toCents(investment.balance),
     raw,
   };

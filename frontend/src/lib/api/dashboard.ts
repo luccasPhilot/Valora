@@ -57,6 +57,14 @@ const goalSummarySchema = z.object({
   requiredMonthlyCents: z.int().nullable(),
 });
 
+const netWorthSummarySchema = z.object({
+  totalCents: z.int(),
+  investmentsCents: z.int(),
+  /** Positivo: é quanto se deve nos cartões, já descontado no total. */
+  openBillsCents: z.int(),
+  change: z.object({ cents: z.int(), percent: z.number().nullable() }).nullable(),
+});
+
 const dashboardSchema = z.object({
   /** AAAA-MM. */
   month: z.string(),
@@ -64,6 +72,8 @@ const dashboardSchema = z.object({
   balanceEvolution: z.array(z.object({ date: z.iso.date(), balanceCents: z.int() })),
   /** Nulo sem uma foto de saldo anterior a hoje no mês. */
   balanceChange: z.object({ cents: z.int(), percent: z.number().nullable() }).nullable(),
+  /** Nulo fora do mês atual. `change` é nulo sem uma foto anterior a hoje no mês. */
+  netWorth: netWorthSummarySchema.nullable(),
   monthIncomeCents: z.int(),
   monthExpenseCents: z.int(),
   /** Os 6 meses até o pedido, do mais antigo ao mais recente. */
@@ -81,6 +91,7 @@ export type Dashboard = z.infer<typeof dashboardSchema>;
 export type BalancePoint = Dashboard['balanceEvolution'][number];
 export type MonthTotals = Dashboard['incomeVsExpense'][number];
 export type SpendingItem = Dashboard['spendingByCategory'][number];
+export type DashboardNetWorth = z.infer<typeof netWorthSummarySchema>;
 export type DashboardProjection = NonNullable<Dashboard['projection']>;
 export type DashboardGoal = Dashboard['goals']['items'][number];
 

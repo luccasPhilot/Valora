@@ -31,6 +31,7 @@ export interface SyncedInvestment {
   readonly pluggyInvestmentId: string;
   readonly name: string;
   readonly type: string;
+  readonly subtype: string | null;
   readonly balanceCents: number;
   readonly raw: unknown;
 }

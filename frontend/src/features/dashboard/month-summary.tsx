@@ -1,7 +1,7 @@
 import { cn } from 'cn';
 import { ArrowDownLeft, ArrowUpRight, type LucideIcon } from 'lucide-react';
-import { useId } from 'react';
 
+import { DataCard } from '@/components/cards/data-card';
 import { Money } from '@/components/money';
 
 interface SummaryCardProps {
@@ -11,17 +11,9 @@ interface SummaryCardProps {
   valueClassName?: string;
 }
 
-function SummaryCard({ title, icon: Icon, cents, valueClassName }: SummaryCardProps) {
-  const titleId = useId();
+function SummaryCard({ title, icon, cents, valueClassName }: SummaryCardProps) {
   return (
-    <section
-      aria-labelledby={titleId}
-      className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-4 shadow-card"
-    >
-      <h3 id={titleId} className="type-label flex items-center gap-2">
-        <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
-        {title}
-      </h3>
+    <DataCard title={title} icon={icon} headingLevel="h3" className="min-w-0 gap-2">
       {/* O valor nunca quebra nem é cortado: se faltar espaço, é o rótulo que encolhe. */}
       <p
         className={cn(
@@ -31,7 +23,7 @@ function SummaryCard({ title, icon: Icon, cents, valueClassName }: SummaryCardPr
       >
         <Money cents={cents} isSigned />
       </p>
-    </section>
+    </DataCard>
   );
 }
 
