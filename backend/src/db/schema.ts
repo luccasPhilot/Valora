@@ -388,6 +388,33 @@ export const goalContributions = pgTable(
   ],
 );
 
+export const goalLinks = pgTable(
+  'goal_links',
+  {
+    id: primaryId(),
+    goalId: uuid('goal_id')
+      .notNull()
+      .references(() => goals.id, { onDelete: 'cascade' }),
+    accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'cascade' }),
+    investmentId: uuid('investment_id').references(() => investments.id, { onDelete: 'cascade' }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('goal_links_goal_id_idx').on(table.goalId),
+    // Parciais: cada linha tem só um dos dois itens, e nulos não podem colidir.
+    uniqueIndex('goal_links_goal_id_account_id_key')
+      .on(table.goalId, table.accountId)
+      .where(sql`${table.accountId} is not null`),
+    uniqueIndex('goal_links_goal_id_investment_id_key')
+      .on(table.goalId, table.investmentId)
+      .where(sql`${table.investmentId} is not null`),
+    check(
+      'goal_links_single_item_check',
+      sql`(${table.accountId} is not null and ${table.investmentId} is null) or (${table.accountId} is null and ${table.investmentId} is not null)`,
+    ),
+  ],
+);
+
 export const alerts = pgTable(
   'alerts',
   {

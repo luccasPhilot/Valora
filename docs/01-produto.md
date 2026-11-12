@@ -106,7 +106,7 @@ Um orçamento é o limite de gasto de uma **categoria de despesa** em um **mês*
 
 ## Metas
 
-Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a entrada do apartamento. O valor acumulado é **informado à mão**, por aportes e retiradas com data; o app nunca movimenta dinheiro. Todas as contas são em centavos inteiros, sem IA.
+Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a entrada do apartamento. O valor acumulado é **informado à mão**, por aportes e retiradas com data, ou acompanha o saldo de contas e investimentos numa [meta vinculada](#meta-vinculada); o app nunca movimenta dinheiro. Todas as contas são em centavos inteiros, sem IA.
 
 - **Valor acumulado.** É sempre a soma dos aportes e retiradas. O valor que você já tinha ao criar a meta entra como um aporte `initial`. Uma retirada maior que o acumulado é recusada, e remover um aporte desfaz o efeito dele (recusado se deixaria o acumulado negativo).
 - **Progresso.** `floor(acumulado × 100 ÷ desejado)`, limitado a 100%: R$ 0,01 faltando ainda mostra 99%, e passar do valor desejado mostra 100%.
@@ -118,6 +118,17 @@ Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a en
   - **Atrasada:** a estimativa passa do prazo, ou o prazo venceu e a meta não foi atingida. A tela diz quanto guardar por mês (`ceil(faltante ÷ meses até o prazo)`, no mínimo 1 mês);
   - **Sem ritmo ainda:** não há ritmo para estimar.
 - **Ordem da lista.** Não concluídas primeiro, pelo prazo mais próximo (sem prazo por último); concluídas no fim.
+
+### Meta vinculada
+
+Em vez de informar aportes, você pode **vincular a meta a contas e investimentos**: o valor acumulado passa a ser o saldo deles e muda sozinho a cada sincronização. O app continua só leitura.
+
+- **O que dá para vincular.** Até 10 itens por meta: contas corrente e poupança (inclusive as ocultas dos totais) e investimentos, sempre de bancos ativos. Não vale cartão de crédito, a conta "Dinheiro" nem item de banco arquivado.
+- **Valor acumulado.** `max(0, soma dos saldos atuais dos itens)`, o saldo inteiro de cada item, sem descontar nada. Saldo negativo (cheque especial) não deixa o valor abaixo de zero. Um item de banco arquivado continua listado, marcado "Banco removido do Valora: não conta", e conta zero.
+- **Valor inicial e vínculo não convivem:** criar uma meta vinculada com valor inicial é recusado. Aporte e retirada manuais também são recusados enquanto a meta é vinculada.
+- **Aportes antigos são preservados.** Vincular não apaga o histórico: os aportes ficam guardados, não contam enquanto a meta é vinculada e **voltam a valer se ela for desvinculada**. O formulário avisa nos dois sentidos.
+- **Ritmo.** Vem da variação dos saldos nas fotos diárias dos últimos 90 dias: `max(0, floor(Σ variações × 30 ÷ janela))`, onde a variação de cada item é o saldo atual menos a primeira foto dele na janela, e a janela vai de 30 a 90 dias (os dias desde a foto mais antiga usada). Item que só tem a foto de hoje soma zero: dinheiro novo não vira ritmo sem histórico. O ritmo mistura aporte e rendimento, e a tela avisa. Prazo, teto de 50 anos e situação seguem as regras acima.
+- **Mesmo item em mais de uma meta** conta inteiro em cada uma; o formulário avisa. Dividir um item entre metas fica fora do escopo.
 
 ## Investimentos
 

@@ -4,6 +4,7 @@ const YEAR_LENGTH = 4;
 const MONTH_END_INDEX = 7;
 
 export const NO_PACE_LABEL = 'Sem ritmo ainda — registre um aporte';
+export const LINKED_NO_PACE_LABEL = 'Sem ritmo ainda — o saldo ainda não cresceu';
 export const COMPLETED_LABEL = 'Concluída';
 export const TOO_FAR_LABEL = 'No ritmo atual, leva mais de 50 anos para chegar';
 

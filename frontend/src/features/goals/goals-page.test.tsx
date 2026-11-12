@@ -23,6 +23,9 @@ function goal(overrides: Record<string, unknown> = {}) {
     icon: 'plane',
     targetCents: 1000000,
     savedCents: 500000,
+    manualSavedCents: 500000,
+    isLinked: false,
+    links: [],
     targetDate: null,
     progressPercent: 50,
     status: 'on_track',
@@ -299,6 +302,7 @@ describe('GoalsPage create', () => {
       targetCents: 1000000,
       targetDate: null,
       initialCents: 150000,
+      links: [],
     });
   });
 });

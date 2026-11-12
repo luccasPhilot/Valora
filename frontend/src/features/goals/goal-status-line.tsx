@@ -3,7 +3,13 @@ import { CircleCheck, Clock, type LucideIcon, TrendingUp, TriangleAlert } from '
 import { Money } from '@/components/money';
 import type { Goal, GoalStatus } from '@/lib/api/goals';
 
-import { COMPLETED_LABEL, formatEstimatedMonth, NO_PACE_LABEL, TOO_FAR_LABEL } from './goal-labels';
+import {
+  COMPLETED_LABEL,
+  formatEstimatedMonth,
+  LINKED_NO_PACE_LABEL,
+  NO_PACE_LABEL,
+  TOO_FAR_LABEL,
+} from './goal-labels';
 
 interface StatusDisplay {
   readonly icon: LucideIcon;
@@ -11,8 +17,9 @@ interface StatusDisplay {
   readonly iconClass: string;
 }
 
-/** Só o que a situação precisa: serve tanto à meta completa quanto ao resumo do Início. */
-type StatusGoal = Pick<Goal, 'status' | 'estimatedDate' | 'requiredMonthlyCents'>;
+/** Só o que a situação precisa: serve tanto à meta completa quanto ao resumo do Início (sem `isLinked`). */
+type StatusGoal = Pick<Goal, 'status' | 'estimatedDate' | 'requiredMonthlyCents'> &
+  Partial<Pick<Goal, 'isLinked'>>;
 
 const STATUS_DISPLAY: Readonly<Record<GoalStatus, StatusDisplay>> = {
   completed: { icon: CircleCheck, iconClass: 'text-status-ok' },
@@ -29,7 +36,7 @@ function OnTrackText({ goal }: { goal: StatusGoal }) {
 /** O texto da situação: "No ritmo — chega em mar/2027", "Atrasada — precisa guardar R$ 500/mês"... */
 export function GoalStatusText({ goal }: { goal: StatusGoal }) {
   if (goal.status === 'completed') return <>{COMPLETED_LABEL}</>;
-  if (goal.status === 'no_pace') return <>{NO_PACE_LABEL}</>;
+  if (goal.status === 'no_pace') return <>{goal.isLinked ? LINKED_NO_PACE_LABEL : NO_PACE_LABEL}</>;
   if (goal.status === 'on_track') return <OnTrackText goal={goal} />;
   if (goal.requiredMonthlyCents === null) return <>Atrasada</>;
   return (

@@ -420,6 +420,8 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Barra de orçamento | `Progress` | Trilho, preenchimento na cor do status, ícone e texto do status |
 | Lista de categorias | — | Barras horizontais numa cor só (veja acima) |
 | Progresso de meta (v2) | `Progress` | Valor acumulado / desejado, percentual, prazo estimado |
+| Selo de meta vinculada | — | "Vinculada · N itens" em `secondary`, com ícone `link-2`, no cartão da meta. Metas manuais não têm selo |
+| Painel de meta vinculada | `Sheet` / `Dialog` | No lugar de "Registrar aporte", "Registrar retirada" e do histórico, a seção "Itens vinculados" com o saldo de cada item. Item de banco arquivado leva ícone `archive` e o texto "Banco removido do Valora: não conta". Traz as notas "O valor acompanha o saldo e muda na sincronização diária" e "O ritmo vem da variação dos saldos… e mistura aporte e rendimento", e, havendo aportes guardados, uma linha com o valor deles. No formulário, o controle segmentado "Eu informo" / "Vinculada" mostra a lista de contas e investimentos com caixas de seleção (até 10), a "Soma atual" e o aviso do item que já está em outra meta; o valor inicial some |
 | Filtro de período | `Popover` + `Calendar` | Atalhos: Este mês, Mês passado, Últimos 3 meses, Este ano, Personalizado |
 | Filtros | `Select`, `Combobox`, `Badge` | Numa linha acima da lista; filtros ativos viram chips removíveis |
 | Pesquisa | `Input` | Busca na descrição, com espera de 300 ms |

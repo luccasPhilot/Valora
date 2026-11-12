@@ -64,6 +64,13 @@
       "when": 1794336344318,
       "tag": "0008_add_investment_subtype",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794432045362,
+      "tag": "0009_add_goal_links",
+      "breakpoints": true
     }
   ]
 }

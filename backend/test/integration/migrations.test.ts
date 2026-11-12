@@ -21,6 +21,7 @@ const TABLES = [
   'connections',
   'credit_card_bills',
   'goal_contributions',
+  'goal_links',
   'goals',
   'investment_snapshots',
   'investments',
