@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
 import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
@@ -17,7 +18,6 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import type { DailyBalance, Projection } from '@/lib/api/projection';
 import { formatCompactCurrency, formatDate, formatIsoDayMonth } from '@/lib/format';
 
-import { ChartTooltipCard } from '../../dashboard/chart-tooltip';
 import { projectionEndDate } from './projection-labels';
 
 const PHONE_QUERY = '(max-width: 767px)';

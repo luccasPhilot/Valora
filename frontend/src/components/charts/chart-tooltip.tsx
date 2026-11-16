@@ -3,8 +3,12 @@ import { Money } from '@/components/money';
 export interface TooltipRow {
   readonly label: string;
   readonly cents: number;
-  /** Cor da marca da série (variável CSS do token `chart-*`); o texto nunca usa a cor da série. */
-  readonly color: string;
+  /** Cor da marca da série (variável CSS do token `chart-*`); o texto nunca usa a cor da série. Sem cor, a linha não leva marca (ex.: o resultado). */
+  readonly color?: string;
+  /** Mostra o valor com sinal (`+`/`−`), como no resultado do mês. */
+  readonly isSigned?: boolean;
+  /** Texto pronto no lugar do valor em R$ (um percentual, ou "—" sem dado); `cents` é ignorado. */
+  readonly valueText?: string;
 }
 
 interface ChartTooltipCardProps {
@@ -20,15 +24,17 @@ export function ChartTooltipCard({ title, rows }: ChartTooltipCardProps) {
       {rows.map((row) => (
         <p key={row.label} className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span
-              className="size-2 shrink-0 rounded-[2px]"
-              style={{ backgroundColor: row.color }}
-              aria-hidden="true"
-            />
+            {row.color ? (
+              <span
+                className="size-2 shrink-0 rounded-[2px]"
+                style={{ backgroundColor: row.color }}
+                aria-hidden="true"
+              />
+            ) : null}
             {row.label}
           </span>
           <span className="font-semibold tabular-nums whitespace-nowrap">
-            <Money cents={row.cents} />
+            {row.valueText ?? <Money cents={row.cents} isSigned={row.isSigned} />}
           </span>
         </p>
       ))}
