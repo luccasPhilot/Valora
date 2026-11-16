@@ -47,15 +47,10 @@ function CategoryRow({ series, barPercent }: { series: CategorySeries; barPercen
 
 /** Ranking do período: barras numa cor só (`primary`; "Outros" em cinza). Categorias não têm cor própria. */
 export function CategoryRankingList({ series }: { series: readonly CategorySeries[] }) {
-  const largestCents = Math.max(...series.map((item) => item.totalCents), 1);
   return (
     <ul className="space-y-1">
       {series.map((item) => (
-        <CategoryRow
-          key={item.categoryId ?? item.kind}
-          series={item}
-          barPercent={(item.totalCents / largestCents) * FULL_PERCENT}
-        />
+        <CategoryRow key={item.categoryId ?? item.kind} series={item} barPercent={item.percent} />
       ))}
     </ul>
   );

@@ -18,7 +18,6 @@ interface TopPositionsProps {
 /** Nível 2: o ranking das maiores posições, em barras finas de uma cor só (parte de um total). */
 export function TopPositions({ groups }: TopPositionsProps) {
   const positions = topPositions(groups, TOP_COUNT);
-  const largestCents = Math.max(...positions.map(({ balanceCents }) => balanceCents), 1);
   return (
     <DataCard title="Maiores posições" icon={ChartBarBig}>
       <ol className="space-y-4">
@@ -50,9 +49,7 @@ export function TopPositions({ groups }: TopPositionsProps) {
               >
                 <span
                   className="block h-full rounded-full bg-primary"
-                  style={{
-                    width: `${Math.max(0, (position.balanceCents / largestCents) * FULL_PERCENT)}%`,
-                  }}
+                  style={{ width: `${Math.max(0, position.percent)}%` }}
                 />
               </span>
               <span className="block truncate text-xs text-muted-foreground">
