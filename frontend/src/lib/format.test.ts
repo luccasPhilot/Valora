@@ -12,8 +12,10 @@ import {
   formatMoment,
   formatMonth,
   formatMonthName,
+  formatMonthYear,
   formatPercent,
   formatSignedCurrency,
+  formatSignedPercent,
 } from './format';
 
 describe('formatCurrency', () => {
@@ -151,6 +153,17 @@ describe('formatMonthName', () => {
     const text = formatMonthName(month);
     // Assert
     expect(text).toBe('jun.');
+  });
+});
+
+describe('formatMonthYear', () => {
+  it('should_abbreviate_the_month_and_add_the_year_when_a_year_month_is_given', () => {
+    // Arrange
+    const month = '2026-11';
+    // Act
+    const text = formatMonthYear(month);
+    // Assert
+    expect(text).toBe('nov. 2026');
   });
 });
 
@@ -316,5 +329,34 @@ describe('formatDayMonthAtTime', () => {
     const text = formatDayMonthAtTime(instant);
     // Assert
     expect(text).toBe('05/11 às 08:12');
+  });
+});
+
+describe('formatSignedPercent', () => {
+  it('should_put_a_plus_sign_when_ratio_is_positive', () => {
+    // Arrange
+    const ratio = 0.3;
+    // Act
+    const text = formatSignedPercent(ratio);
+    // Assert
+    expect(text).toBe('+ 30%');
+  });
+
+  it('should_put_a_typographic_minus_when_ratio_is_negative', () => {
+    // Arrange
+    const ratio = -0.125;
+    // Act
+    const text = formatSignedPercent(ratio);
+    // Assert
+    expect(text).toBe('− 12,5%');
+  });
+
+  it('should_have_no_sign_when_ratio_is_zero', () => {
+    // Arrange
+    const ratio = 0;
+    // Act
+    const text = formatSignedPercent(ratio);
+    // Assert
+    expect(text).toBe('0%');
   });
 });

@@ -111,6 +111,13 @@ export function formatPercent(ratio: number): string {
   return normalize(percentFormat.format(ratio));
 }
 
+/** Com sinal: `+ 30%` e `− 12,5%` (hífen tipográfico), como `formatSignedCurrency`. */
+export function formatSignedPercent(ratio: number): string {
+  if (ratio === 0) return formatPercent(0);
+  const sign = ratio > 0 ? '+' : MINUS_SIGN;
+  return `${sign} ${formatPercent(Math.abs(ratio))}`;
+}
+
 export function formatDate(isoDate: string): string {
   return fullDateFormat.format(isoDateToInstant(isoDate));
 }
@@ -122,6 +129,11 @@ export function formatMonth(isoDate: string): string {
 /** Nome abreviado do mês de um `AAAA-MM`, como "jun.": cabe nos rótulos do eixo dos gráficos. */
 export function formatMonthName(month: string): string {
   return shortMonthFormat.format(isoDateToInstant(`${month}-01`));
+}
+
+/** Mês abreviado com o ano de um `AAAA-MM`, como "nov. 2026": cabe na primeira coluna das tabelas. */
+export function formatMonthYear(month: string): string {
+  return `${formatMonthName(month)} ${month.slice(0, 4)}`;
 }
 
 export function formatDayHeader(isoDate: string, now: Date = new Date()): string {

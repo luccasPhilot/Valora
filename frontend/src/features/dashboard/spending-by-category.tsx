@@ -23,7 +23,7 @@ function iconFor(item: SpendingItem): string {
 
 interface CategoryBarRowProps {
   item: SpendingItem;
-  /** Largura da barra em relação à maior categoria, como na lista do Design System. */
+  /** Largura da barra: a fatia do total, igual ao percentual escrito ao lado. */
   barPercent: number;
 }
 
@@ -78,7 +78,6 @@ interface SpendingByCategoryProps {
 
 /** Lista de barras numa cor só (`primary`), "Outros" em cinza. Categorias não têm cor própria. */
 export function SpendingByCategory({ items, month }: SpendingByCategoryProps) {
-  const largestAmount = Math.max(...items.map((item) => item.amountCents), 1);
   return (
     <DashboardSection title="Gastos por categoria" icon={ChartBarBig}>
       {items.length === 0 ? (
@@ -91,10 +90,7 @@ export function SpendingByCategory({ items, month }: SpendingByCategoryProps) {
               <RowShell
                 to={item.kind === 'category' ? transactionsLinkFor(item.categoryId, month) : null}
               >
-                <CategoryBarRow
-                  item={item}
-                  barPercent={(item.amountCents / largestAmount) * FULL_PERCENT}
-                />
+                <CategoryBarRow item={item} barPercent={item.percent} />
               </RowShell>
             </li>
           ))}

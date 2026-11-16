@@ -17,8 +17,14 @@ function signedPercent(percent: number): string {
   return percent > 0 ? `+${text}` : text;
 }
 
-/** Variação no mês de um valor: ícone e texto (nunca só a cor), verde só quando subiu. */
-export function ValueChange({ change }: { change: ValueChangeData }) {
+interface ValueChangeProps {
+  change: ValueChangeData;
+  /** Período da variação; por padrão "no mês". */
+  label?: string;
+}
+
+/** Variação de um valor: ícone e texto (nunca só a cor), verde só quando subiu. */
+export function ValueChange({ change, label = 'no mês' }: ValueChangeProps) {
   const Icon = change.cents < 0 ? TrendingDown : TrendingUp;
   return (
     <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium">
@@ -30,7 +36,7 @@ export function ValueChange({ change }: { change: ValueChangeData }) {
         <Money cents={change.cents} isSigned />
         {change.percent === null ? null : ` (${signedPercent(change.percent)})`}
       </span>
-      <span className="text-muted-foreground">no mês</span>
+      <span className="text-muted-foreground">{label}</span>
     </p>
   );
 }

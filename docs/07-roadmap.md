@@ -157,12 +157,12 @@ Regras em [produto](01-produto.md#lançamento-manual).
 
 - [x] **Investimentos:** posição de cada um, agrupada por tipo, e o total. Os dados já existem desde a Fase 1.
 - [x] **Evolução do patrimônio:** contas + investimentos − fatura em aberto, mês a mês, a partir das fotos diárias.
-- [ ] **Metas vinculadas** a um investimento ou conta, que se atualizam sozinhas.
-- [ ] **Relatórios**, todos com a opção "Ver em tabela":
-  - [ ] evolução financeira;
-  - [ ] histórico de receitas e despesas;
-  - [ ] análise por categoria ao longo dos meses;
-  - [ ] evolução do patrimônio.
+- [x] **Metas vinculadas** a um investimento ou conta, que se atualizam sozinhas.
+- [x] **Relatórios**, todos com a opção "Ver em tabela":
+  - [x] evolução financeira;
+  - [x] histórico de receitas e despesas;
+  - [x] análise por categoria ao longo dos meses;
+  - [x] evolução do patrimônio.
 - [x] Variação do patrimônio no card de saldo do Início.
 
 **Pronto quando:**

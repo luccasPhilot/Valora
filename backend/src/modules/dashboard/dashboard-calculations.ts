@@ -1,4 +1,4 @@
-import type { CategorySpending, MonthTotals } from './dashboard.repository.js';
+import type { CategorySpending } from '../transactions/transaction-totals.repository.js';
 
 export const INCOME_VS_EXPENSE_MONTHS = 6;
 export const MAX_LISTED_CATEGORIES = 5;
@@ -21,18 +21,6 @@ export type SpendingItem =
       readonly amountCents: number;
       readonly percent: number;
     };
-
-/** Um item por mês pedido, com zero nos meses sem transações. */
-export function fillMonthTotals(
-  months: readonly string[],
-  found: readonly MonthTotals[],
-): MonthTotals[] {
-  const foundByMonth = new Map(found.map((totals) => [totals.month, totals]));
-  return months.map((firstDay) => {
-    const month = firstDay.slice(0, 7);
-    return foundByMonth.get(month) ?? { month, incomeCents: 0, expenseCents: 0 };
-  });
-}
 
 function percentOf(amountCents: number, totalCents: number): number {
   return Math.round((amountCents * PERCENT_SCALE) / totalCents);

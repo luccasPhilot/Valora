@@ -1,25 +1,47 @@
 import { subtractDays, todayInSaoPaulo, toSaoPauloDate } from '../../shared/dates.js';
-import { ConflictError, NotFoundError, ValidationError } from '../../shared/errors.js';
-import { estimateGoalPace, PACE_WINDOW_DAYS, type PaceContribution } from './goal-pace.js';
+import {
+  ConflictError,
+  GoalIsLinkedError,
+  NotFoundError,
+  ValidationError,
+} from '../../shared/errors.js';
+import { estimateLinkedPace, type LinkedPaceItem, linkedSavedCents } from './goal-linked-pace.js';
+import {
+  estimateGoalPace,
+  type GoalPaceEstimate,
+  PACE_WINDOW_DAYS,
+  type PaceContribution,
+} from './goal-pace.js';
 import { goalProgress } from './goal-progress.js';
 import { type GoalStatus, goalStatus } from './goal-status.js';
 import type {
   ContributionPage,
   ContributionRecord,
   GoalFields,
+  GoalLinkRecord,
   GoalRecord,
   GoalsRepository,
+  LinkCandidateRecord,
+  LinkedItemRecord,
+  LinkRef,
+  LinkSnapshotRecord,
   PageRequest,
 } from './goals.repository.js';
 
 const RECENT_CONTRIBUTIONS_LIMIT = 10;
+const LINKABLE_ACCOUNT_TYPES: ReadonlySet<string> = new Set(['checking', 'savings']);
 
 export interface GoalItem {
   readonly id: string;
   readonly name: string;
   readonly icon: string;
   readonly targetCents: number;
+  /** Numa meta vinculada, a soma dos saldos dos itens; senão, a soma dos aportes. */
   readonly savedCents: number;
+  /** A soma dos aportes guardada na meta (vale de novo se ela for desvinculada). */
+  readonly manualSavedCents: number;
+  readonly isLinked: boolean;
+  readonly links: readonly LinkedItemRecord[];
   readonly targetDate: string | null;
   readonly progressPercent: number;
   readonly status: GoalStatus;
@@ -33,6 +55,12 @@ export interface GoalItem {
 
 export interface CreateGoalInput extends GoalFields {
   readonly initialCents: number;
+  readonly links: readonly LinkRef[];
+}
+
+export interface UpdateGoalInput extends GoalFields {
+  /** Ausente mantém os vínculos; lista vazia desvincula. */
+  readonly links?: readonly LinkRef[];
 }
 
 export interface ContributionInput {
@@ -52,6 +80,11 @@ interface GoalContributions {
   readonly pace: readonly PaceContribution[];
 }
 
+interface GoalLinkedData {
+  readonly links: readonly LinkedItemRecord[];
+  readonly paceItems: readonly LinkedPaceItem[];
+}
+
 function groupByGoal(
   contributions: readonly ContributionRecord[],
 ): Map<string, ContributionRecord[]> {
@@ -62,25 +95,95 @@ function groupByGoal(
   return grouped;
 }
 
-function toItem(record: GoalRecord, contributions: GoalContributions, today: string): GoalItem {
-  const pace = estimateGoalPace(
-    {
-      savedCents: record.savedCents,
-      targetCents: record.targetCents,
-      createdDate: toSaoPauloDate(record.createdAt),
-    },
-    contributions.pace,
-    today,
+function linkKey({ type, id }: LinkRef): string {
+  return `${type}:${id}`;
+}
+
+function linksValidationError(message: string): ValidationError {
+  return new ValidationError(message, { details: [{ field: 'links', message }] });
+}
+
+function linkRejection(candidate: LinkCandidateRecord | undefined): string | null {
+  if (!candidate) return 'Um dos itens vinculados não existe';
+  if (candidate.isArchived) return `"${candidate.name}" é de um banco arquivado`;
+  if (candidate.type === 'account' && !LINKABLE_ACCOUNT_TYPES.has(candidate.accountType ?? '')) {
+    return `"${candidate.name}" não é conta corrente nem poupança`;
+  }
+  return null;
+}
+
+function groupLinkedData(
+  links: readonly GoalLinkRecord[],
+  snapshots: readonly LinkSnapshotRecord[],
+): Map<string, GoalLinkedData> {
+  const snapshotsByItem = new Map<string, LinkSnapshotRecord[]>();
+  for (const snapshot of snapshots) {
+    const key = linkKey(snapshot);
+    snapshotsByItem.set(key, [...(snapshotsByItem.get(key) ?? []), snapshot]);
+  }
+  const byGoal = new Map<string, GoalLinkedData>();
+  for (const { goalId, ...link } of links) {
+    const current = byGoal.get(goalId) ?? { links: [], paceItems: [] };
+    const paceItems = link.isArchived
+      ? current.paceItems
+      : [
+          ...current.paceItems,
+          { balanceCents: link.balanceCents, snapshots: snapshotsByItem.get(linkKey(link)) ?? [] },
+        ];
+    byGoal.set(goalId, { links: [...current.links, link], paceItems });
+  }
+  return byGoal;
+}
+
+function sortLinks(links: readonly LinkedItemRecord[]): LinkedItemRecord[] {
+  return [...links].sort(
+    (first, second) =>
+      first.name.localeCompare(second.name, 'pt-BR') || first.id.localeCompare(second.id),
   );
-  const situation = goalStatus(record, pace, today);
+}
+
+function resolveSaving(
+  record: GoalRecord,
+  linked: GoalLinkedData | undefined,
+  contributions: GoalContributions,
+  today: string,
+): { readonly savedCents: number; readonly pace: GoalPaceEstimate } {
+  if (linked === undefined) {
+    const pace = estimateGoalPace(
+      {
+        savedCents: record.savedCents,
+        targetCents: record.targetCents,
+        createdDate: toSaoPauloDate(record.createdAt),
+      },
+      contributions.pace,
+      today,
+    );
+    return { savedCents: record.savedCents, pace };
+  }
+  const savedCents = linkedSavedCents(linked.links);
+  const remainingCents = Math.max(0, record.targetCents - savedCents);
+  return { savedCents, pace: estimateLinkedPace(linked.paceItems, remainingCents, today) };
+}
+
+function toItem(
+  record: GoalRecord,
+  contributions: GoalContributions,
+  linked: GoalLinkedData | undefined,
+  today: string,
+): GoalItem {
+  const { savedCents, pace } = resolveSaving(record, linked, contributions, today);
+  const situation = goalStatus({ ...record, savedCents }, pace, today);
   return {
     id: record.id,
     name: record.name,
     icon: record.icon,
     targetCents: record.targetCents,
-    savedCents: record.savedCents,
+    savedCents,
+    manualSavedCents: record.savedCents,
+    isLinked: linked !== undefined,
+    links: linked === undefined ? [] : sortLinks(linked.links),
     targetDate: record.targetDate,
-    progressPercent: goalProgress(record.savedCents, record.targetCents),
+    progressPercent: goalProgress(savedCents, record.targetCents),
     status: situation.status,
     remainingCents: situation.remainingCents,
     monthlyRateCents: pace.monthlyRateCents,
@@ -117,17 +220,20 @@ export class GoalsService {
   }
 
   async create(input: CreateGoalInput): Promise<GoalItem> {
-    const { initialCents, ...fields } = input;
-    const record = await this.deps.goals.insert(fields, {
-      initialCents,
-      initialDate: this.today(),
-      createdAt: this.deps.now(),
-    });
+    const { initialCents, links, ...fields } = input;
+    await this.validateLinks(links);
+    const record = await this.deps.goals.insert(
+      fields,
+      { initialCents, initialDate: this.today(), createdAt: this.deps.now() },
+      links,
+    );
     return this.presentOne(record);
   }
 
-  async update(id: string, fields: GoalFields): Promise<GoalItem> {
-    const record = await this.deps.goals.update(id, fields);
+  async update(id: string, input: UpdateGoalInput): Promise<GoalItem> {
+    const { links, ...fields } = input;
+    if (links !== undefined) await this.validateLinks(links);
+    const record = await this.deps.goals.update(id, fields, links);
     if (!record) throw new NotFoundError(`Meta ${id} não encontrada`);
     return this.presentOne(record);
   }
@@ -144,6 +250,7 @@ export class GoalsService {
       });
     }
     const goal = await this.requireGoal(goalId);
+    await this.assertNotLinked(goal);
     const isWithdrawal = input.type === 'withdrawal';
     const updated = await this.deps.goals.addContribution(goalId, {
       date: input.date,
@@ -159,7 +266,7 @@ export class GoalsService {
   }
 
   async removeContribution(goalId: string, contributionId: string): Promise<GoalItem> {
-    await this.requireGoal(goalId);
+    await this.assertNotLinked(await this.requireGoal(goalId));
     const removal = await this.deps.goals.removeContribution(goalId, contributionId);
     if (removal === 'not_found') {
       throw new NotFoundError(`Aporte ${contributionId} não encontrado na meta ${goalId}`);
@@ -187,26 +294,54 @@ export class GoalsService {
     return record;
   }
 
+  private async assertNotLinked(goal: GoalRecord): Promise<void> {
+    if (!(await this.deps.goals.hasLinks(goal.id))) return;
+    throw new GoalIsLinkedError(
+      `A meta "${goal.name}" é vinculada: o valor acompanha o saldo dos itens e não aceita aporte nem retirada`,
+    );
+  }
+
+  private async validateLinks(links: readonly LinkRef[]): Promise<void> {
+    if (links.length === 0) return;
+    if (new Set(links.map(linkKey)).size !== links.length) {
+      throw linksValidationError('Há itens repetidos nos vínculos');
+    }
+    const candidates = await this.deps.goals.findLinkCandidates(links);
+    const candidatesByKey = new Map(candidates.map((candidate) => [linkKey(candidate), candidate]));
+    for (const link of links) {
+      const rejection = linkRejection(candidatesByKey.get(linkKey(link)));
+      if (rejection !== null) throw linksValidationError(rejection);
+    }
+  }
+
   private async presentOne(record: GoalRecord): Promise<GoalItem> {
     const [item] = await this.present([record]);
     if (!item) throw new Error(`A meta ${record.id} não foi montada`);
     return item;
   }
 
-  // Duas consultas para todas as metas (sem N+1): os aportes recentes e os da janela do ritmo.
+  // Poucas consultas para todas as metas (sem N+1): aportes recentes, aportes da janela do ritmo,
+  // vínculos com o saldo atual e as fotos diárias dos itens vinculados.
   private async present(records: readonly GoalRecord[]): Promise<GoalItem[]> {
     const today = this.today();
     const goalIds = records.map((record) => record.id);
-    const [recent, pace] = await Promise.all([
+    const [recent, pace, links] = await Promise.all([
       this.deps.goals.findRecentContributions(goalIds, RECENT_CONTRIBUTIONS_LIMIT),
       this.deps.goals.findPaceContributions(goalIds, subtractDays(today, PACE_WINDOW_DAYS)),
+      this.deps.goals.findLinks(goalIds),
     ]);
+    const snapshots = await this.deps.goals.findLinkSnapshots(links, {
+      fromDate: subtractDays(today, PACE_WINDOW_DAYS),
+      beforeDate: today,
+    });
     const recentByGoal = groupByGoal(recent);
     const paceByGoal = groupByGoal(pace);
+    const linkedByGoal = groupLinkedData(links, snapshots);
     return records.map((record) =>
       toItem(
         record,
         { recent: recentByGoal.get(record.id) ?? [], pace: paceByGoal.get(record.id) ?? [] },
+        linkedByGoal.get(record.id),
         today,
       ),
     );

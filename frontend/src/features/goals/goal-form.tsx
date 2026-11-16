@@ -1,9 +1,13 @@
-import { type FormEvent, useId, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
+import { type FormEvent, type ReactNode, useId, useState } from 'react';
 
+import { Money } from '@/components/money';
 import { MoneyInput } from '@/components/money-input';
+import { SegmentedControl, type SegmentedOption } from '@/components/segmented-control';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { Goal } from '@/lib/api/goals';
 import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { IconPicker } from '../categories/icon-picker';
@@ -11,14 +15,23 @@ import {
   type GoalFieldErrors,
   type GoalFormField,
   type GoalFormValues,
+  type GoalMode,
   MAX_GOAL_NAME_LENGTH,
   validateGoalValues,
 } from './goal-form-values';
+import { LinkPicker } from './link-picker';
+
+const MODE_OPTIONS: readonly SegmentedOption<GoalMode>[] = [
+  { value: 'manual', label: 'Eu informo' },
+  { value: 'linked', label: 'Vinculada' },
+];
 
 interface GoalFormProps {
   initialValues: GoalFormValues;
   /** Só a meta nova pergunta quanto você já tinha guardado. */
   asksInitialValue: boolean;
+  /** A meta que está sendo editada; nula na meta nova. */
+  goal: Goal | null;
   isPending: boolean;
   hasError: boolean;
   submitLabel: string;
@@ -34,10 +47,43 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
   );
 }
 
-/** Nome, ícone, valor desejado, prazo opcional e (na meta nova) o valor que você já tem. */
+function ModeNotice({ children }: { children: ReactNode }) {
+  return (
+    <p role="status" className="flex items-start gap-2 text-sm">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-status-warning" aria-hidden="true" />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/** Avisos ao trocar entre "Eu informo" e "Vinculada" numa meta que já tem aportes ou vínculos. */
+function ModeChangeNotice({ goal, mode }: { goal: Goal | null; mode: GoalMode }) {
+  if (goal === null || goal.manualSavedCents === 0) return null;
+  if (mode === 'linked' && !goal.isLinked) {
+    return (
+      <ModeNotice>
+        Os aportes (<Money cents={goal.manualSavedCents} />) deixam de contar enquanto a meta
+        estiver vinculada. Eles continuam guardados no histórico.
+      </ModeNotice>
+    );
+  }
+  if (mode === 'manual' && goal.isLinked) {
+    return (
+      <ModeNotice>
+        Ao desvincular, o valor da meta volta a ser o dos aportes (
+        <Money cents={goal.manualSavedCents} />
+        ).
+      </ModeNotice>
+    );
+  }
+  return null;
+}
+
+/** Nome, ícone, valor desejado, prazo opcional, de onde vem o valor guardado e (na meta nova) o que você já tem. */
 export function GoalForm({
   initialValues,
   asksInitialValue,
+  goal,
   isPending,
   hasError,
   submitLabel,
@@ -97,7 +143,24 @@ export function GoalForm({
           onChange={(event) => change({ targetDate: event.target.value })}
         />
       </div>
-      {asksInitialValue ? (
+      <SegmentedControl
+        label="Valor guardado"
+        options={MODE_OPTIONS}
+        value={values.mode}
+        onChange={(mode) => change({ mode }, 'links')}
+      />
+      <ModeChangeNotice goal={goal} mode={values.mode} />
+      {values.mode === 'linked' ? (
+        <LinkPicker
+          selected={values.links}
+          onChange={(links) => change({ links }, 'links')}
+          currentGoalId={goal?.id ?? null}
+          currentLinks={goal?.links ?? []}
+          errorId={`${fieldId}-links-error`}
+          errorMessage={errors.links}
+        />
+      ) : null}
+      {asksInitialValue && values.mode === 'manual' ? (
         <div className="space-y-2">
           <Label htmlFor={`${fieldId}-initial`}>Já guardado (opcional)</Label>
           <MoneyInput

@@ -1,23 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildSpendingBreakdown,
-  fillMonthTotals,
-} from '../../../src/modules/dashboard/dashboard-calculations.js';
-
-describe('fillMonthTotals', () => {
-  it('should_fill_missing_months_with_zero', () => {
-    // Arrange
-    const found = [{ month: '2026-10', incomeCents: 500, expenseCents: 200 }];
-    // Act
-    const totals = fillMonthTotals(['2026-10-01', '2026-11-01'], found);
-    // Assert
-    expect(totals).toEqual([
-      { month: '2026-10', incomeCents: 500, expenseCents: 200 },
-      { month: '2026-11', incomeCents: 0, expenseCents: 0 },
-    ]);
-  });
-});
+import { buildSpendingBreakdown } from '../../../src/modules/dashboard/dashboard-calculations.js';
 
 describe('buildSpendingBreakdown', () => {
   const spending = (name: string, spentCents: number) => ({

@@ -59,3 +59,8 @@ export class SyncInProgressError extends AppError {
   readonly code = 'SYNC_IN_PROGRESS';
   readonly statusCode = 409;
 }
+
+export class GoalIsLinkedError extends AppError {
+  readonly code = 'GOAL_IS_LINKED';
+  readonly statusCode = 409;
+}

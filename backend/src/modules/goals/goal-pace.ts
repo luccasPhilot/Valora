@@ -59,11 +59,25 @@ export function estimateGoalPace(
   const windowDays = paceWindowDays(goal.createdDate, today);
   const rateCents = monthlyRateCents(contributions, windowDays, today);
   const remainingCents = Math.max(0, goal.targetCents - goal.savedCents);
-  const base = { monthlyRateCents: rateCents, windowDays };
-  if (remainingCents === 0 || rateCents === 0) {
+  return estimateFromRate(remainingCents, { monthlyRateCents: rateCents, windowDays }, today);
+}
+
+export interface PaceRate {
+  readonly monthlyRateCents: number;
+  readonly windowDays: number;
+}
+
+/** Prazo e data para guardar `remainingCents` no ritmo dado, com o teto de {@link MAX_ESTIMATE_MONTHS} meses. */
+export function estimateFromRate(
+  remainingCents: number,
+  rate: PaceRate,
+  today: string,
+): GoalPaceEstimate {
+  const base = { monthlyRateCents: rate.monthlyRateCents, windowDays: rate.windowDays };
+  if (remainingCents === 0 || rate.monthlyRateCents === 0) {
     return { ...base, monthsToGo: null, estimatedDate: null, isEstimateTooFar: false };
   }
-  const monthsToGo = Math.ceil(remainingCents / rateCents);
+  const monthsToGo = Math.ceil(remainingCents / rate.monthlyRateCents);
   if (monthsToGo > MAX_ESTIMATE_MONTHS) {
     return { ...base, monthsToGo: null, estimatedDate: null, isEstimateTooFar: true };
   }

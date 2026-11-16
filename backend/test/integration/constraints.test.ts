@@ -1,8 +1,22 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { accounts, balanceSnapshots, budgets, transactions } from '../../src/db/schema.js';
-import { insertAccount, insertCategory, transactionValues } from './fixtures.js';
+import {
+  accounts,
+  balanceSnapshots,
+  budgets,
+  goalLinks,
+  goals,
+  investments,
+  transactions,
+} from '../../src/db/schema.js';
+import {
+  insertAccount,
+  insertCategory,
+  insertConnection,
+  insertInvestmentWith,
+  transactionValues,
+} from './fixtures.js';
 import { connectTestDatabase, truncateAllTables } from './test-database.js';
 
 const UNIQUE_VIOLATION = '23505';
@@ -173,6 +187,102 @@ describe('database constraints', () => {
       const secondInsert = db.insert(budgets).values(budget);
       // Assert
       await expect(secondInsert).rejects.toMatchObject({ cause: { code: UNIQUE_VIOLATION } });
+    });
+  });
+
+  describe('goal links', () => {
+    async function insertGoal(): Promise<string> {
+      const [goal] = await db
+        .insert(goals)
+        .values({ name: 'Reserva', icon: 'piggy-bank', targetCents: 10_000_00 })
+        .returning({ id: goals.id });
+      if (!goal) throw new Error('Fixture: meta não foi criada');
+      return goal.id;
+    }
+
+    async function insertInvestment(): Promise<string> {
+      const connectionId = await insertConnection(db);
+      return insertInvestmentWith(db, connectionId, 5_000_00);
+    }
+
+    it('should_reject_the_link_when_account_and_investment_are_both_filled', async () => {
+      // Arrange
+      const goalId = await insertGoal();
+      const accountId = await insertAccount(db);
+      const investmentId = await insertInvestment();
+      // Act
+      const insert = db.insert(goalLinks).values({ goalId, accountId, investmentId });
+      // Assert
+      await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+
+    it('should_reject_the_link_when_account_and_investment_are_both_null', async () => {
+      // Arrange
+      const goalId = await insertGoal();
+      // Act
+      const insert = db.insert(goalLinks).values({ goalId });
+      // Assert
+      await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+
+    it('should_reject_the_second_link_when_the_same_account_repeats_in_the_goal', async () => {
+      // Arrange
+      const goalId = await insertGoal();
+      const accountId = await insertAccount(db);
+      await db.insert(goalLinks).values({ goalId, accountId });
+      // Act
+      const secondInsert = db.insert(goalLinks).values({ goalId, accountId });
+      // Assert
+      await expect(secondInsert).rejects.toMatchObject({ cause: { code: UNIQUE_VIOLATION } });
+    });
+
+    it('should_reject_the_second_link_when_the_same_investment_repeats_in_the_goal', async () => {
+      // Arrange
+      const goalId = await insertGoal();
+      const investmentId = await insertInvestment();
+      await db.insert(goalLinks).values({ goalId, investmentId });
+      // Act
+      const secondInsert = db.insert(goalLinks).values({ goalId, investmentId });
+      // Assert
+      await expect(secondInsert).rejects.toMatchObject({ cause: { code: UNIQUE_VIOLATION } });
+    });
+
+    it('should_accept_the_same_investment_when_it_is_linked_to_two_goals', async () => {
+      // Arrange
+      const firstGoalId = await insertGoal();
+      const secondGoalId = await insertGoal();
+      const investmentId = await insertInvestment();
+      // Act
+      await db.insert(goalLinks).values([
+        { goalId: firstGoalId, investmentId },
+        { goalId: secondGoalId, investmentId },
+      ]);
+      // Assert
+      expect(await db.select().from(goalLinks)).toHaveLength(2);
+    });
+
+    it('should_delete_only_the_links_when_the_goal_is_deleted', async () => {
+      // Arrange
+      const goalId = await insertGoal();
+      const accountId = await insertAccount(db);
+      const investmentId = await insertInvestment();
+      await db.insert(goalLinks).values([
+        { goalId, accountId },
+        { goalId, investmentId },
+      ]);
+      // Act
+      await db.delete(goals).where(eq(goals.id, goalId));
+      // Assert
+      const remaining = {
+        links: await db.select().from(goalLinks),
+        accounts: await db.select().from(accounts),
+        investments: await db.select().from(investments),
+      };
+      expect(remaining).toMatchObject({
+        links: [],
+        accounts: [expect.anything()],
+        investments: [expect.anything()],
+      });
     });
   });
 });

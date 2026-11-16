@@ -46,6 +46,7 @@ function CreateView({ onSaved }: CreateViewProps) {
     <GoalForm
       initialValues={newGoalValues()}
       asksInitialValue
+      goal={null}
       isPending={createGoal.isPending}
       hasError={createGoal.isError}
       submitLabel="Criar meta"
@@ -65,6 +66,7 @@ function EditView({ goal, onSaved }: EditViewProps) {
     <GoalForm
       initialValues={goalValuesFrom(goal)}
       asksInitialValue={false}
+      goal={goal}
       isPending={updateGoal.isPending}
       hasError={updateGoal.isError}
       submitLabel="Salvar meta"

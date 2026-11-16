@@ -4,6 +4,7 @@ import type { Goal } from '@/lib/api/goals';
 import { formatDate } from '@/lib/format';
 
 import { CategoryBadgeIcon } from '../categories/category-icons';
+import { LinkedBadge } from './goal-linked-items';
 import { GoalStatusLine } from './goal-status-line';
 
 interface GoalCardProps {
@@ -27,6 +28,11 @@ export function GoalCard({ goal, onSelect }: GoalCardProps) {
             {goal.targetDate ? (
               <span className="block text-sm text-muted-foreground">
                 Prazo: {formatDate(goal.targetDate)}
+              </span>
+            ) : null}
+            {goal.isLinked ? (
+              <span className="mt-1 block">
+                <LinkedBadge itemCount={goal.links.length} />
               </span>
             ) : null}
           </span>

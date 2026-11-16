@@ -29,6 +29,7 @@ import { ACCOUNTS_QUERY_KEY } from '../accounts/accounts-queries';
 import { ALERTS_QUERY_KEY } from '../alerts/alerts-queries';
 import { BUDGETS_QUERY_KEY } from '../budgets/budgets-queries';
 import { DASHBOARD_QUERY_KEY } from '../dashboard/dashboard-query-key';
+import { REPORTS_QUERY_KEY } from '../reports/reports-query-key';
 
 export const TRANSACTIONS_QUERY_KEY = ['transactions'] as const;
 // Fora de `TRANSACTIONS_QUERY_KEY` de propósito: as atualizações otimistas da lista trocam os dados
@@ -127,6 +128,8 @@ export function useChangeCategory() {
       // Mudar a categoria move o gasto de um orçamento para outro, e o Início soma por categoria.
       void queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+      // Passar uma transação para (ou de) uma categoria de transferência muda receitas e despesas.
+      void queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
       if (!request.applyAlways) return;
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
@@ -164,6 +167,7 @@ function useRefreshTransactions() {
         DUPLICATE_COUNT_KEY,
         BUDGETS_QUERY_KEY,
         DASHBOARD_QUERY_KEY,
+        REPORTS_QUERY_KEY,
         ALERTS_QUERY_KEY,
       ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     );

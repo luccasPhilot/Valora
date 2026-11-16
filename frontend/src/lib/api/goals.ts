@@ -16,12 +16,28 @@ export const goalContributionSchema = z.object({
   kind: z.enum(['initial', 'deposit', 'withdrawal']),
 });
 
+export const goalLinkSchema = z.object({
+  type: z.enum(['account', 'investment']),
+  id: z.uuid(),
+  name: z.string(),
+  institutionName: z.string().nullable(),
+  /** Saldo de agora; muda a cada sincronização. */
+  balanceCents: z.int(),
+  /** O banco saiu do Valora: o item continua listado, mas não conta no valor da meta. */
+  isArchived: z.boolean(),
+});
+
 export const goalSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   icon: z.string(),
   targetCents: z.int(),
+  /** Meta vinculada: a soma dos saldos dos itens de bancos ativos. Senão, a soma dos aportes. */
   savedCents: z.int(),
+  /** A soma dos aportes guardada; volta a valer se a meta for desvinculada. */
+  manualSavedCents: z.int(),
+  isLinked: z.boolean(),
+  links: z.array(goalLinkSchema),
   /** AAAA-MM-DD. */
   targetDate: z.string().nullable(),
   /** Já arredondado para baixo e limitado a 100. */
@@ -45,9 +61,16 @@ const contributionsPageSchema = z.object({
 });
 
 export type Goal = z.infer<typeof goalSchema>;
+export type GoalLink = z.infer<typeof goalLinkSchema>;
+export type GoalLinkType = GoalLink['type'];
 export type GoalStatus = Goal['status'];
 export type GoalContribution = z.infer<typeof goalContributionSchema>;
 export type ContributionsPage = z.infer<typeof contributionsPageSchema>;
+
+export interface GoalLinkRef {
+  readonly type: GoalLinkType;
+  readonly id: string;
+}
 
 export interface GoalInput {
   readonly name: string;
@@ -55,10 +78,12 @@ export interface GoalInput {
   readonly targetCents: number;
   /** AAAA-MM-DD, ou nulo sem prazo. */
   readonly targetDate: string | null;
+  /** Até 10 itens; lista vazia deixa a meta manual (e desvincula uma vinculada). */
+  readonly links: readonly GoalLinkRef[];
 }
 
 export interface NewGoalInput extends GoalInput {
-  /** O que você já tinha guardado antes de usar o app; zero se nada. */
+  /** O que você já tinha guardado antes de usar o app; zero se nada (e sempre zero com `links`). */
   readonly initialCents: number;
 }
 

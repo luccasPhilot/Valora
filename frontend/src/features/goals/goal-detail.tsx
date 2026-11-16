@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/format';
 import { ContributionForm } from './contribution-form';
 import type { ContributionType } from './contribution-form-values';
 import { GoalHistory } from './goal-history';
+import { GoalLinkedItems } from './goal-linked-items';
 import { GoalStatusLine } from './goal-status-line';
 import { useAddContribution, useDeleteGoal, useRemoveContribution } from './goals-queries';
 
@@ -169,19 +170,25 @@ export function GoalDetail({ goal, onEdit, onDeleted, onNotice }: GoalDetailProp
   return (
     <div className="space-y-6">
       <GoalSummary goal={goal} />
-      <EntryActions
-        goal={goal}
-        onAdded={(input) =>
-          onNotice(input.type === 'deposit' ? 'Aporte registrado' : 'Retirada registrada')
-        }
-      />
-      <GoalHistory
-        goalId={goal.id}
-        onRemove={(contribution) => {
-          removeContribution.reset();
-          setContributionToRemove(contribution);
-        }}
-      />
+      {goal.isLinked ? (
+        <GoalLinkedItems goal={goal} />
+      ) : (
+        <>
+          <EntryActions
+            goal={goal}
+            onAdded={(input) =>
+              onNotice(input.type === 'deposit' ? 'Aporte registrado' : 'Retirada registrada')
+            }
+          />
+          <GoalHistory
+            goalId={goal.id}
+            onRemove={(contribution) => {
+              removeContribution.reset();
+              setContributionToRemove(contribution);
+            }}
+          />
+        </>
+      )}
       <div className="space-y-2 border-t pt-5">
         <Button type="button" variant="outline" className="w-full" onClick={onEdit}>
           <Pencil aria-hidden="true" />

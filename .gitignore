@@ -16,3 +16,5 @@ Thumbs.db
 
 # Configuração local do Claude Code
 .claude/settings.local.json
+.github/prompts/
+.github/skills/

@@ -34,7 +34,11 @@ const netWorthSchema = z.object({
 export type NetWorthPoint = z.infer<typeof netWorthPointSchema>;
 export type NetWorth = z.infer<typeof netWorthSchema>;
 
-/** `from` é o primeiro mês do gráfico (`AAAA-MM`); o último é sempre o mês atual. */
-export function getNetWorth(from: string): Promise<NetWorth> {
-  return apiGet(`/net-worth?from=${from}`, netWorthSchema);
+/**
+ * `from` é o primeiro mês do gráfico (`AAAA-MM`). `to` (`AAAA-MM`) é opcional: sem ele, o último é o
+ * mês atual.
+ */
+export function getNetWorth(from: string, to?: string): Promise<NetWorth> {
+  const query = to === undefined ? `from=${from}` : `from=${from}&to=${to}`;
+  return apiGet(`/net-worth?${query}`, netWorthSchema);
 }

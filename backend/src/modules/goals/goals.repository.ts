@@ -1,8 +1,17 @@
-import { and, count, desc, eq, gt, inArray, lte, ne, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, gte, inArray, lt, lte, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
-import { goalContributions, goals } from '../../db/schema.js';
+import {
+  accounts,
+  balanceSnapshots,
+  connections,
+  goalContributions,
+  goalLinks,
+  goals,
+  investments,
+  investmentSnapshots,
+} from '../../db/schema.js';
 import type { ContributionKind } from './goal-pace.js';
 
 const contributionKindSchema = z.enum([
@@ -10,6 +19,35 @@ const contributionKindSchema = z.enum([
   'deposit',
   'withdrawal',
 ] satisfies ContributionKind[]);
+
+export type LinkType = 'account' | 'investment';
+
+export interface LinkRef {
+  readonly type: LinkType;
+  readonly id: string;
+}
+
+/** Conta ou investimento que uma meta acompanha, com o saldo de agora. */
+export interface LinkedItemRecord extends LinkRef {
+  readonly name: string;
+  readonly institutionName: string | null;
+  readonly balanceCents: number;
+  readonly isArchived: boolean;
+}
+
+/** Item que pode ser candidato a vínculo; `accountType` é nulo para investimentos. */
+export interface LinkCandidateRecord extends LinkedItemRecord {
+  readonly accountType: string | null;
+}
+
+export interface GoalLinkRecord extends LinkedItemRecord {
+  readonly goalId: string;
+}
+
+export interface LinkSnapshotRecord extends LinkRef {
+  readonly date: string;
+  readonly balanceCents: number;
+}
 
 export interface GoalFields {
   readonly name: string;
@@ -80,6 +118,83 @@ function toContributionRecord(row: Omit<ContributionRecord, 'kind'> & { kind: st
   return { ...row, kind: contributionKindSchema.parse(row.kind) };
 }
 
+async function insertLinks(
+  executor: DbExecutor,
+  goalId: string,
+  links: readonly LinkRef[],
+): Promise<void> {
+  if (links.length === 0) return;
+  await executor
+    .insert(goalLinks)
+    .values(
+      links.map(({ type, id }) =>
+        type === 'account' ? { goalId, accountId: id } : { goalId, investmentId: id },
+      ),
+    );
+}
+
+interface AccountItemRow {
+  readonly id: string;
+  readonly name: string;
+  readonly accountType: string;
+  readonly balanceCents: number | null;
+  readonly institutionName: string | null;
+  readonly archivedAt: Date | null;
+}
+
+interface InvestmentItemRow {
+  readonly id: string;
+  readonly name: string;
+  readonly balanceCents: number;
+  readonly institutionName: string;
+  readonly archivedAt: Date | null;
+}
+
+function toAccountCandidate(row: AccountItemRow): LinkCandidateRecord {
+  return {
+    type: 'account',
+    id: row.id,
+    name: row.name,
+    accountType: row.accountType,
+    institutionName: row.institutionName,
+    balanceCents: row.balanceCents ?? 0,
+    isArchived: row.archivedAt !== null,
+  };
+}
+
+function toInvestmentCandidate(row: InvestmentItemRow): LinkCandidateRecord {
+  return {
+    type: 'investment',
+    id: row.id,
+    name: row.name,
+    accountType: null,
+    institutionName: row.institutionName,
+    balanceCents: row.balanceCents,
+    isArchived: row.archivedAt !== null,
+  };
+}
+
+const accountItemColumns = {
+  id: accounts.id,
+  name: accounts.name,
+  accountType: accounts.type,
+  balanceCents: accounts.balanceCents,
+  institutionName: connections.institutionName,
+  archivedAt: connections.archivedAt,
+};
+
+const investmentItemColumns = {
+  id: investments.id,
+  name: investments.name,
+  balanceCents: investments.balanceCents,
+  institutionName: connections.institutionName,
+  archivedAt: connections.archivedAt,
+};
+
+function idsOfType(refs: readonly LinkRef[], type: LinkType): string[] {
+  return refs.filter((ref) => ref.type === type).map(({ id }) => id);
+}
+
 // Mais recente primeiro; o desempate mantém a ordem estável entre aportes do mesmo dia.
 const newestFirst = [
   desc(goalContributions.date),
@@ -99,8 +214,12 @@ export class GoalsRepository {
     return row ?? null;
   }
 
-  /** Cria a meta e, se houver valor inicial, o aporte `initial` dele, numa transação só. */
-  async insert(fields: GoalFields, creation: GoalCreation): Promise<GoalRecord> {
+  /** Cria a meta, o aporte `initial` (se houver valor inicial) e os vínculos, numa transação só. */
+  async insert(
+    fields: GoalFields,
+    creation: GoalCreation,
+    links: readonly LinkRef[],
+  ): Promise<GoalRecord> {
     return this.db.transaction(async (tx) => {
       const [created] = await tx
         .insert(goals)
@@ -115,20 +234,32 @@ export class GoalsRepository {
           kind: 'initial',
         });
       }
+      await insertLinks(tx, created.id, links);
       return created;
     });
   }
 
-  async update(id: string, fields: GoalFields): Promise<GoalRecord | null> {
-    const [row] = await this.db
-      .update(goals)
-      .set(fields)
-      .where(eq(goals.id, id))
-      .returning(goalColumns);
-    return row ?? null;
+  /** `links` ausente mantém os vínculos; uma lista (mesmo vazia) substitui o conjunto inteiro. */
+  async update(
+    id: string,
+    fields: GoalFields,
+    links: readonly LinkRef[] | undefined,
+  ): Promise<GoalRecord | null> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(goals)
+        .set(fields)
+        .where(eq(goals.id, id))
+        .returning(goalColumns);
+      if (!row) return null;
+      if (links === undefined) return row;
+      await tx.delete(goalLinks).where(eq(goalLinks.goalId, id));
+      await insertLinks(tx, id, links);
+      return row;
+    });
   }
 
-  /** Os aportes saem junto (`ON DELETE CASCADE`). Devolve `false` quando a meta não existia. */
+  /** Os aportes e os vínculos saem junto (`ON DELETE CASCADE`). Devolve `false` quando a meta não existia. */
   async delete(id: string): Promise<boolean> {
     const rows = await this.db.delete(goals).where(eq(goals.id, id)).returning({ id: goals.id });
     return rows.length > 0;
@@ -239,5 +370,108 @@ export class GoalsRepository {
         ),
       );
     return rows.map(toContributionRecord);
+  }
+
+  async hasLinks(goalId: string): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: goalLinks.id })
+      .from(goalLinks)
+      .where(eq(goalLinks.goalId, goalId))
+      .limit(1);
+    return row !== undefined;
+  }
+
+  /** Vínculos das metas pedidas com o saldo atual de cada item: uma query por tipo, sem N+1. */
+  async findLinks(goalIds: readonly string[]): Promise<GoalLinkRecord[]> {
+    if (goalIds.length === 0) return [];
+    const ids = [...goalIds];
+    const [accountRows, investmentRows] = await Promise.all([
+      this.db
+        .select({ goalId: goalLinks.goalId, ...accountItemColumns })
+        .from(goalLinks)
+        .innerJoin(accounts, eq(goalLinks.accountId, accounts.id))
+        .leftJoin(connections, eq(accounts.connectionId, connections.id))
+        .where(inArray(goalLinks.goalId, ids)),
+      this.db
+        .select({ goalId: goalLinks.goalId, ...investmentItemColumns })
+        .from(goalLinks)
+        .innerJoin(investments, eq(goalLinks.investmentId, investments.id))
+        .innerJoin(connections, eq(investments.connectionId, connections.id))
+        .where(inArray(goalLinks.goalId, ids)),
+    ]);
+    return [
+      ...accountRows.map((row) => ({ goalId: row.goalId, ...toAccountCandidate(row) })),
+      ...investmentRows.map((row) => ({ goalId: row.goalId, ...toInvestmentCandidate(row) })),
+    ];
+  }
+
+  /** Os itens pedidos que existem, com o tipo da conta e se o banco está arquivado. */
+  async findLinkCandidates(refs: readonly LinkRef[]): Promise<LinkCandidateRecord[]> {
+    const accountIds = idsOfType(refs, 'account');
+    const investmentIds = idsOfType(refs, 'investment');
+    const [accountRows, investmentRows] = await Promise.all([
+      accountIds.length === 0
+        ? []
+        : this.db
+            .select(accountItemColumns)
+            .from(accounts)
+            .leftJoin(connections, eq(accounts.connectionId, connections.id))
+            .where(inArray(accounts.id, accountIds)),
+      investmentIds.length === 0
+        ? []
+        : this.db
+            .select(investmentItemColumns)
+            .from(investments)
+            .innerJoin(connections, eq(investments.connectionId, connections.id))
+            .where(inArray(investments.id, investmentIds)),
+    ]);
+    return [...accountRows.map(toAccountCandidate), ...investmentRows.map(toInvestmentCandidate)];
+  }
+
+  /** Fotos diárias dos itens de `fromDate` (inclusive) até `beforeDate` (exclusive). */
+  async findLinkSnapshots(
+    refs: readonly LinkRef[],
+    window: { readonly fromDate: string; readonly beforeDate: string },
+  ): Promise<LinkSnapshotRecord[]> {
+    const accountIds = idsOfType(refs, 'account');
+    const investmentIds = idsOfType(refs, 'investment');
+    const [accountRows, investmentRows] = await Promise.all([
+      accountIds.length === 0
+        ? []
+        : this.db
+            .select({
+              id: balanceSnapshots.accountId,
+              date: balanceSnapshots.date,
+              balanceCents: balanceSnapshots.balanceCents,
+            })
+            .from(balanceSnapshots)
+            .where(
+              and(
+                inArray(balanceSnapshots.accountId, accountIds),
+                gte(balanceSnapshots.date, window.fromDate),
+                lt(balanceSnapshots.date, window.beforeDate),
+              ),
+            ),
+      investmentIds.length === 0
+        ? []
+        : this.db
+            .select({
+              id: investmentSnapshots.investmentId,
+              date: investmentSnapshots.date,
+              balanceCents: investmentSnapshots.balanceCents,
+            })
+            .from(investmentSnapshots)
+            .where(
+              and(
+                inArray(investmentSnapshots.investmentId, investmentIds),
+                gte(investmentSnapshots.date, window.fromDate),
+                lt(investmentSnapshots.date, window.beforeDate),
+              ),
+            ),
+    ]);
+    return [
+      ...accountRows.map((row) => ({ type: 'account' as const, ...row })),
+      ...investmentRows.map((row) => ({ type: 'investment' as const, ...row })),
+    ];
   }
 }

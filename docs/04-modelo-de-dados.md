@@ -253,11 +253,11 @@ A previsão não grava uma linha por mês: as **ocorrências são calculadas** a
 | `name` | text | 1 a 80 caracteres |
 | `icon` | text | ícone Lucide |
 | `target_cents` | bigint | valor desejado; maior que zero |
-| `saved_cents` | bigint | valor acumulado: a **soma de `goal_contributions`**, mantida na mesma transação de cada aporte ou retirada; nunca abaixo de zero |
+| `saved_cents` | bigint | valor acumulado: a **soma de `goal_contributions`**, mantida na mesma transação de cada aporte ou retirada; nunca abaixo de zero. Numa meta vinculada ele **não é tocado** (continua sendo a soma dos aportes) e o valor que vale é calculado na leitura a partir de `goal_links` |
 | `target_date` | date | prazo; pode ser nulo |
 | `created_at` | timestamptz | |
 
-As colunas `linked_account_id` e `linked_investment_id` (meta vinculada a uma conta ou investimento, com valor automático) são da v3 e só entram na migration dessa fase.
+O vínculo com contas e investimentos não é coluna de `goals`: como uma meta pode acompanhar vários itens, ele fica na tabela `goal_links`, abaixo.
 
 **`goal_contributions`**: o histórico de aportes e retiradas de uma meta. É a fonte da verdade do valor acumulado e a base do ritmo.
 
@@ -271,6 +271,18 @@ As colunas `linked_account_id` e `linked_investment_id` (meta vinculada a uma co
 | `created_at` | timestamptz | |
 
 Índice em (`goal_id`, `date`). Criar a meta com um valor já guardado grava um aporte `initial`, que **não entra no ritmo**: é o que existia antes de você usar o app. O ritmo e o prazo estimado são calculados, não guardados ([regras](01-produto.md#metas)).
+
+**`goal_links`**: os itens que uma [meta vinculada](01-produto.md#metas) acompanha. Uma meta é vinculada quando tem pelo menos uma linha aqui; não há coluna de modo em `goals`.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | uuid | |
+| `goal_id` | uuid | → `goals`; `ON DELETE CASCADE` |
+| `account_id` | uuid | → `accounts`; `ON DELETE CASCADE`; só conta corrente ou poupança de banco ativo (validado na API) |
+| `investment_id` | uuid | → `investments`; `ON DELETE CASCADE` |
+| `created_at` | timestamptz | |
+
+Exatamente uma entre `account_id` e `investment_id` é preenchida (`CHECK`). Índices únicos parciais por (`goal_id`, `account_id`) e (`goal_id`, `investment_id`): o mesmo item não entra duas vezes na mesma meta, mas pode estar em metas diferentes. Índice em `goal_id`. Excluir a meta apaga só os vínculos; as contas e os investimentos continuam.
 
 **`alerts`**
 

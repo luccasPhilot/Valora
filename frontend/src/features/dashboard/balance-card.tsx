@@ -5,12 +5,12 @@ import { Area, AreaChart, Tooltip, type TooltipContentProps, XAxis, YAxis } from
 import { DataCard } from '@/components/cards/data-card';
 import { Metric } from '@/components/cards/metric';
 import { ValueChange } from '@/components/cards/value-change';
+import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { BalancePoint, Dashboard } from '@/lib/api/dashboard';
 import { formatDate } from '@/lib/format';
 
-import { ChartTooltipCard } from './chart-tooltip';
 import { hasNetWorthToShow, NetWorthLine } from './net-worth-line';
 
 const SERIES_COLOR = 'var(--color-chart-1)';

@@ -3,10 +3,11 @@ import { z } from 'zod';
 
 import { iconNameSchema } from '../../shared/icon-schema.js';
 import { centsSchema } from '../../shared/money.js';
-import type { ContributionRecord } from './goals.repository.js';
+import type { ContributionRecord, LinkedItemRecord } from './goals.repository.js';
 import type { GoalItem, GoalsService } from './goals.service.js';
 
 const MAX_NAME_LENGTH = 80;
+const MAX_LINKS = 10;
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 
@@ -18,6 +19,12 @@ const contributionsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 
+const linkTypeSchema = z.enum(['account', 'investment']);
+
+const linksBodySchema = z
+  .array(z.object({ type: linkTypeSchema, id: z.uuid() }))
+  .max(MAX_LINKS, { error: `Vincule no máximo ${MAX_LINKS} itens` });
+
 const goalBodySchema = z.object({
   name: z.string().trim().min(1).max(MAX_NAME_LENGTH),
   icon: iconNameSchema,
@@ -25,11 +32,20 @@ const goalBodySchema = z.object({
   targetDate: z.iso.date().nullable().default(null),
 });
 
-const createGoalBodySchema = goalBodySchema.extend({
-  initialCents: centsSchema
-    .nonnegative({ error: 'O valor inicial não pode ser negativo' })
-    .default(0),
-});
+const createGoalBodySchema = goalBodySchema
+  .extend({
+    initialCents: centsSchema
+      .nonnegative({ error: 'O valor inicial não pode ser negativo' })
+      .default(0),
+    links: linksBodySchema.default([]),
+  })
+  .refine(({ links, initialCents }) => links.length === 0 || initialCents === 0, {
+    path: ['initialCents'],
+    error: 'Uma meta vinculada não tem valor inicial: o valor vem do saldo dos itens',
+  });
+
+// `links` ausente mantém os vínculos; `[]` desvincula.
+const updateGoalBodySchema = goalBodySchema.extend({ links: linksBodySchema.optional() });
 
 const contributionBodySchema = z.object({
   type: z.enum(['deposit', 'withdrawal']),
@@ -45,12 +61,25 @@ const contributionResponseSchema = z.object({
   kind: z.enum(['initial', 'deposit', 'withdrawal']),
 });
 
+const linkResponseSchema = z.object({
+  type: linkTypeSchema,
+  id: z.uuid(),
+  name: z.string(),
+  institutionName: z.string().nullable(),
+  balanceCents: centsSchema,
+  isArchived: z.boolean(),
+});
+
 const goalResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   icon: z.string(),
   targetCents: centsSchema,
   savedCents: centsSchema,
+  /** A soma dos aportes guardada na meta; só vale de fato enquanto ela não é vinculada. */
+  manualSavedCents: centsSchema,
+  isLinked: z.boolean(),
+  links: z.array(linkResponseSchema),
   targetDate: z.iso.date().nullable(),
   progressPercent: z.int(),
   status: z.enum(['completed', 'no_pace', 'on_track', 'behind']),
@@ -81,6 +110,17 @@ function toContributionResponse(
   };
 }
 
+function toLinkResponse(link: LinkedItemRecord): z.infer<typeof linkResponseSchema> {
+  return {
+    type: link.type,
+    id: link.id,
+    name: link.name,
+    institutionName: link.institutionName,
+    balanceCents: link.balanceCents,
+    isArchived: link.isArchived,
+  };
+}
+
 function toGoalResponse(goal: GoalItem): z.infer<typeof goalResponseSchema> {
   return {
     id: goal.id,
@@ -88,6 +128,9 @@ function toGoalResponse(goal: GoalItem): z.infer<typeof goalResponseSchema> {
     icon: goal.icon,
     targetCents: goal.targetCents,
     savedCents: goal.savedCents,
+    manualSavedCents: goal.manualSavedCents,
+    isLinked: goal.isLinked,
+    links: goal.links.map(toLinkResponse),
     targetDate: goal.targetDate,
     progressPercent: goal.progressPercent,
     status: goal.status,
@@ -119,7 +162,7 @@ export function goalsRoutes(service: GoalsService): FastifyPluginAsyncZod {
       {
         schema: {
           params: goalParamsSchema,
-          body: goalBodySchema,
+          body: updateGoalBodySchema,
           response: { 200: goalResponseSchema },
         },
       },
