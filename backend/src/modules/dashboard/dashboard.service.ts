@@ -1,5 +1,5 @@
 import { firstDayOfMonth, lastDayOfMonth, todayInSaoPaulo } from '../../shared/dates.js';
-import { monthsEndingAt } from '../../shared/months.js';
+import { fillMonthTotals, monthsEndingAt, type MonthTotals } from '../../shared/months.js';
 import { buildValueChange, type ValueChange } from '../../shared/value-change.js';
 import { isIncludedInTotalBalance } from '../accounts/account-totals.js';
 import type { AccountsService } from '../accounts/accounts.service.js';
@@ -7,12 +7,12 @@ import type { BudgetItem, BudgetsService } from '../budgets/budgets.service.js';
 import type { GoalsService } from '../goals/goals.service.js';
 import type { NetWorthService } from '../net-worth/net-worth.service.js';
 import type { ProjectionService } from '../projection/projection.service.js';
+import type { TransactionTotalsRepository } from '../transactions/transaction-totals.repository.js';
 import type { TransactionRecord } from '../transactions/transactions.repository.js';
 import type { TransactionsService } from '../transactions/transactions.service.js';
-import type { BalancePoint, DashboardRepository, MonthTotals } from './dashboard.repository.js';
+import type { BalancePoint, DashboardRepository } from './dashboard.repository.js';
 import {
   buildSpendingBreakdown,
-  fillMonthTotals,
   INCOME_VS_EXPENSE_MONTHS,
   type SpendingItem,
 } from './dashboard-calculations.js';
@@ -49,6 +49,7 @@ export interface DashboardOverview {
 
 export interface DashboardServiceDependencies {
   readonly dashboard: DashboardRepository;
+  readonly totals: Pick<TransactionTotalsRepository, 'findMonthTotals' | 'findCategorySpending'>;
   readonly accounts: Pick<AccountsService, 'overview'>;
   readonly budgets: Pick<BudgetsService, 'overview'>;
   readonly transactions: Pick<TransactionsService, 'latest'>;
@@ -84,7 +85,7 @@ export class DashboardService {
         lastDayOfMonth(month),
       ),
       this.findIncomeVsExpense(month),
-      this.deps.dashboard.findCategorySpending(month, lastDayOfMonth(month)),
+      this.deps.totals.findCategorySpending(month, lastDayOfMonth(month)),
       this.deps.budgets.overview(month),
       this.deps.transactions.latest(LATEST_TRANSACTIONS_COUNT),
       this.findProjection(month),
@@ -126,10 +127,7 @@ export class DashboardService {
 
   private async findIncomeVsExpense(month: string): Promise<MonthTotals[]> {
     const months = monthsEndingAt(month, INCOME_VS_EXPENSE_MONTHS);
-    const found = await this.deps.dashboard.findMonthTotals(
-      months[0] ?? month,
-      lastDayOfMonth(month),
-    );
+    const found = await this.deps.totals.findMonthTotals(months[0] ?? month, lastDayOfMonth(month));
     return fillMonthTotals(months, found);
   }
 

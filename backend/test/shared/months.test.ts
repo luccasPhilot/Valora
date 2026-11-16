@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
-import { countMonthsBetween, monthsBetween, monthsEndingAt } from '../../src/shared/months.js';
+import {
+  countMonthsBetween,
+  fillMonthTotals,
+  monthsBetween,
+  monthsEndingAt,
+} from '../../src/shared/months.js';
+
+describe('fillMonthTotals', () => {
+  it('should_fill_missing_months_with_zero', () => {
+    // Arrange
+    const found = [{ month: '2026-10', incomeCents: 500, expenseCents: 200 }];
+    // Act
+    const totals = fillMonthTotals(['2026-10-01', '2026-11-01'], found);
+    // Assert
+    expect(totals).toEqual([
+      { month: '2026-10', incomeCents: 500, expenseCents: 200 },
+      { month: '2026-11', incomeCents: 0, expenseCents: 0 },
+    ]);
+  });
+});
 
 describe('monthsBetween', () => {
   it('should_return_every_month_in_order_when_the_range_crosses_the_year', () => {

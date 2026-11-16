@@ -43,10 +43,13 @@ import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.
 import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
 import { projectionRoutes } from './modules/projection/projection.routes.js';
 import { ProjectionService } from './modules/projection/projection.service.js';
+import { reportsRoutes } from './modules/reports/reports.routes.js';
+import { ReportsService } from './modules/reports/reports.service.js';
 import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
 import type { SyncService } from './modules/sync/sync.service.js';
+import { TransactionTotalsRepository } from './modules/transactions/transaction-totals.repository.js';
 import { createTransactionsModule } from './modules/transactions/transactions.module.js';
 import { transactionsRoutes } from './modules/transactions/transactions.routes.js';
 import type { Config } from './shared/config.js';
@@ -168,8 +171,10 @@ function registerModules(
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
+  const transactionTotals = new TransactionTotalsRepository(database.db);
   const dashboardService = new DashboardService({
     dashboard: new DashboardRepository(database.db),
+    totals: transactionTotals,
     accounts: accountsService,
     budgets: budgetsService,
     transactions: transactions.transactionsService,
@@ -179,5 +184,8 @@ function registerModules(
     now,
   });
   app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });
+  app.register(reportsRoutes(new ReportsService({ totals: transactionTotals, now })), {
+    prefix: API_PREFIX,
+  });
   return { syncService, categorySeedService: categories.categorySeedService, accountsService };
 }
