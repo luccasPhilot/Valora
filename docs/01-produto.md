@@ -57,7 +57,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |
 | **Investimentos** | Posição de cada investimento e o total | v3 |
 | | Patrimônio no topo da tela: contas + investimentos − faturas em aberto, a variação no mês e a evolução mês a mês ([regras](#patrimônio)) | v3 |
-| **Relatórios** | Evolução financeira, histórico de receitas e despesas, análise por categoria, evolução do patrimônio | v3 |
+| **Relatórios** | Evolução financeira, histórico de receitas e despesas, análise por categoria, evolução do patrimônio, todos com período e "Ver em tabela" ([regras](#relatórios)) | v3 |
 
 ## Lançamento manual
 
@@ -143,7 +143,7 @@ A tela **Investimentos** mostra a posição de cada investimento dos seus bancos
 
 ## Patrimônio
 
-O **patrimônio** é quanto você tem de fato: `contas + investimentos − faturas em aberto`. Aparece no topo da tela **Investimentos**, com o total, a variação no mês, as três partes e um gráfico de área mês a mês (6 ou 12 meses).
+O **patrimônio** é quanto você tem de fato: `contas + investimentos − faturas em aberto`. Aparece no topo da tela **Investimentos**, com o total, a variação no mês, as três partes e um gráfico de área mês a mês (6 ou 12 meses) e o link "Ver relatório completo", que abre a [evolução do patrimônio](#evolução-do-patrimônio) nos relatórios.
 
 - **O que entra:**
   - contas corrente e poupança não ocultas (o mesmo [saldo total](#saldo-total));
@@ -157,6 +157,56 @@ O **patrimônio** é quanto você tem de fato: `contas + investimentos − fatur
 - **Histórico só desde a primeira foto.** O Valora não reconstrói o passado a partir das transações. Com menos de dois meses de dados a tela diz "O histórico começa em…" e não desenha o gráfico.
 - **Banco arquivado:** o passado dele continua na curva, que tem um degrau no mês em que ele saiu, como a curva do saldo ([regras](#remover-um-banco-do-valora)). A variação do mês só usa bancos ativos, para não mostrar uma queda que não aconteceu.
 - **Variação no mês:** o patrimônio de hoje menos o da primeira foto do mês, com o percentual sobre o valor inicial. Sem foto de um dia anterior a hoje no mês, não aparece.
+
+## Relatórios
+
+A área **Relatórios** (`/relatorios`) reúne as telas para olhar o passado com mais fôlego do que o Início. Cada relatório tem o próprio endereço (`/relatorios/receitas-e-despesas`, `/relatorios/categorias`, `/relatorios/evolucao-financeira` e `/relatorios/patrimonio`); `/relatorios` abre o primeiro. A navegação entre relatórios só aparece quando existem dois ou mais.
+
+- **Período:** "6 meses", "12 meses" (padrão), "24 meses" ou "Este ano" (de janeiro ao mês atual), sempre terminando no mês atual. Fica na URL (`?periodo=`), vale para todos os relatórios e se mantém ao trocar de um para outro. Um valor inválido na URL volta ao padrão. Não há calendário livre, comparação entre períodos nem exportação.
+- **Ver em tabela:** todo relatório tem "Gráfico" / "Tabela" (`?visao=tabela`). A tabela traz os mesmos números do gráfico, com a linha de total, e nunca aparece junto com ele.
+- **Mês em andamento:** o mês atual é marcado como parcial (hachura nos gráficos de barras agrupadas, e o texto "em andamento" na tabela, na legenda, no tooltip e, no gráfico por categoria, numa linha abaixo da legenda), porque ele ainda não terminou e parece uma queda. O total do período inclui o que já aconteceu nele.
+- **Só o que aconteceu:** sem meses futuros e sem previsão.
+
+### Receitas e despesas
+
+Receitas, despesas e resultado (receitas − despesas) mês a mês, e os três números do período.
+
+- **A mesma regra do Início:** sem transferências internas, com lançamentos manuais e transações pendentes, e uma despesa sem categoria conta como despesa. O mês do relatório mostra exatamente o número do Início.
+- **Começa na primeira transação:** meses anteriores à primeira transação guardada não aparecem (um período de 24 meses não vem com 12 meses vazios de antes de o app existir). Mês sem movimento no meio do período aparece com zero.
+- **Sem transações:** a tela diz "Ainda não há transações neste período" e leva ao filtro de período.
+
+### Por categoria
+
+O gasto de cada categoria mês a mês (`/relatorios/categorias`), para ver se um gasto sobe ou qual categoria pesou mais no ano. É um relatório de **despesas**: receitas por categoria não entram.
+
+- **Gasto líquido por mês:** a mesma conta dos orçamentos e do Início. Em cada mês e categoria vale o gasto menos os estornos, com mínimo de zero; sem transferências internas; lançamentos manuais e transações pendentes entram; uma saída sem categoria conta em "Sem categoria". O total de cada mês bate com o gasto do Início para aquele mês.
+- **O total do período é a soma dos meses**, não o líquido do período inteiro: um estorno em março não apaga um gasto de janeiro, e cada mês continua batendo com o Início e com os orçamentos.
+- **5 maiores + "Outros":** as 5 categorias de maior total no período (empate pelo nome), com "Sem categoria" disputando vaga como qualquer outra, e "Outros" somando o resto mês a mês. A cor no gráfico é a da posição no ranking do período, então uma categoria pode mudar de cor quando o período muda; a legenda e a lista dizem sempre o nome.
+- **Na tela:** colunas empilhadas por mês, a lista ranqueada do período (ícone, nome, total e percentual) e, em "Tabela", um mês por linha com uma coluna por categoria e o total. Sem rosca e sem cor fixa por categoria.
+- **Sem gastos:** a tela diz "Nenhum gasto neste período" e leva ao filtro de período.
+
+### Evolução financeira
+
+Responde "estou guardando dinheiro?" (`/relatorios/evolucao-financeira`): quanto sobrou em cada mês, que fatia da renda isso representa e quanto já sobrou no total. Usa os mesmos totais mensais do Início e do histórico de receitas e despesas (sem transferências internas, com manuais e pendentes), então os números de receitas, despesas e resultado de um mês batem com os dois.
+
+- **Resultado do mês:** receitas − despesas. Negativo quando se gastou mais do que entrou.
+- **Taxa de poupança:** resultado ÷ receitas, com uma casa decimal, podendo ser negativa. Mês sem receita não tem taxa ("—"). A taxa do **período** é a soma dos resultados ÷ a soma das receitas, não a média das taxas mensais: um mês de renda baixa não pode pesar como um de renda alta.
+- **Sobra acumulada:** a soma dos resultados desde o primeiro mês do período. **Não é saldo nem patrimônio** (investimentos e saldo das contas não entram); só soma o que sobrou ou faltou. Para o patrimônio ao longo do tempo, veja "Evolução do patrimônio".
+- **Meses com sobra:** quantos meses **fechados** tiveram resultado maior que zero ("7 de 10 meses fechados"). O mês em andamento fica de fora para não parecer um mês ruim por estar incompleto.
+- **Na tela:** três números do período (resultado, taxa e meses com sobra) e três gráficos, cada um com a sua escala: barras do resultado do mês, linha da taxa de poupança e área da sobra acumulada. Em "Tabela": receitas, despesas, resultado, taxa e sobra acumulada de cada mês, com o total do período.
+- **Resultado negativo não é vermelho nos gráficos:** a barra desce da linha do zero e o sinal `−` e o texto dizem o resto. O vermelho só aparece no número do período quando o resultado é negativo.
+- **Começa na primeira transação**, como o histórico de receitas e despesas. Sem previsão, sem meta de poupança e sem comparação com o planejado.
+- **Sem transações:** a tela diz "Ainda não há transações neste período" e leva ao filtro de período.
+
+### Evolução do patrimônio
+
+De que o patrimônio é feito e como ele andou (`/relatorios/patrimonio`), no período dos relatórios. **Não há regra nova**: usa o mesmo cálculo do [patrimônio](#patrimônio) da tela Investimentos (`contas + investimentos − faturas em aberto`, dos bancos ativos, a partir das fotos diárias), então o mês atual mostra o mesmo número nas duas telas.
+
+- **Três números:** "Patrimônio hoje" (vermelho só se negativo); "Variação no período", do primeiro ao último ponto, em reais e em percentual sobre o valor do primeiro ponto, com "desde" e a data dele ("—" com menos de 2 pontos, e sem percentual quando o primeiro ponto é zero); "Em investimentos", a fatia dos investimentos na soma de contas e investimentos ("—" quando essa soma não é positiva). A variação mistura rendimento e aportes: a tela diz "variação do patrimônio", sem prometer rentabilidade.
+- **Gráficos** (só com 2 ou mais pontos): o patrimônio total em área e a composição mês a mês em colunas, com Contas, Investimentos e as faturas em aberto abaixo do zero. Cada mês mostra só os dias que têm foto; um período maior que o histórico mostra só o que existe.
+- **Histórico curto:** com um ponto só, no lugar dos gráficos a tela diz "O histórico começa em 04/11. Os gráficos aparecem quando houver dois meses de dados", e a tabela mostra o ponto. A tabela não tem linha de total: o patrimônio não se soma entre meses; a última linha é o mês atual.
+- **O que não entra:** gastos no cartão ainda fora de fatura fechada; um banco removido do Valora sai do patrimônio a partir do dia do arquivamento (a curva do passado não muda); bens que não vêm do Open Finance; patrimônio por tipo de investimento ao longo do tempo; projeção, meta de patrimônio e comparação com inflação.
+- **Sem nenhuma foto:** a tela diz "O patrimônio aparece depois da primeira sincronização" e leva a "Ver contas".
 
 ## Fora do escopo
 

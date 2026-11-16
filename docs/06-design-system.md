@@ -295,7 +295,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 
 **Regras gerais:**
 - **Celular primeiro:** os estilos base são para o celular; `md:`, `lg:` e `xl:` só ampliam.
-- **Nunca rolagem horizontal da página**, em nenhuma largura. Uma tabela larga rola dentro do próprio card, com a primeira coluna fixa.
+- **Nunca rolagem horizontal da página**, em nenhuma largura. No celular a tabela vira blocos por linha; uma tabela larga em tela maior rola dentro do próprio card, com a primeira coluna fixa.
 - **Nada depende de hover.** Tooltip, menu e ações abrem com toque. A área de toque mínima é 44 × 44 px.
 - **Funciona em retrato e paisagem**, e com o zoom do navegador em 200% sem quebrar o layout.
 - **Áreas seguras do celular:** o menu, os rodapés fixos (como o botão "Salvar") e os painéis respeitam `env(safe-area-inset-*)`, para não ficarem embaixo do indicador do iPhone ou da barra do Android.
@@ -383,7 +383,7 @@ Regras:
 
 Ordem da tela, em todas as larguras (coluna única no celular; no computador, herói em 7 colunas e ranking em 5):
 
-0. **Patrimônio** (`DataCard tier="hero"`, largura toda): total em `display` (vermelho só se negativo), variação no mês (ícone e texto, igual à do saldo), as linhas "Contas", "Investimentos" e "Faturas em aberto" (com `−`), o controle "6 meses" / "12 meses" (padrão 12), o gráfico de área mensal e a nota "Patrimônio = contas + investimentos − faturas em aberto. Gastos no cartão ainda fora de fatura fechada não entram." Vem de outra consulta (`GET /net-worth`) e tem os próprios estados: se falhar, mostra "Tentar de novo" dentro do cartão e o resto da tela continua.
+0. **Patrimônio** (`DataCard tier="hero"`, largura toda; no canto do cabeçalho, o link "Ver relatório completo" para `/relatorios/patrimonio`): total em `display` (vermelho só se negativo), variação no mês (ícone e texto, igual à do saldo), as linhas "Contas", "Investimentos" e "Faturas em aberto" (com `−`), o controle "6 meses" / "12 meses" (padrão 12), o gráfico de área mensal e a nota "Patrimônio = contas + investimentos − faturas em aberto. Gastos no cartão ainda fora de fatura fechada não entram." Vem de outra consulta (`GET /net-worth`) e tem os próprios estados: se falhar, mostra "Tentar de novo" dentro do cartão e o resto da tela continua.
 1. **Herói** (nível 1): total em `display`, "N posições em M instituições", a **barra de composição por tipo** e a legenda (cor, tipo, valor, percentual).
 2. **Maiores posições** (nível 2): ranking numerado das 5 maiores, em barras finas de `primary`.
 3. **Posições por tipo**: um cartão por tipo (título pequeno, total em `type-value-lg`, "% do total" e as linhas, com "Mostrar mais").
@@ -405,6 +405,50 @@ Ordem da tela, em todas as larguras (coluna única no celular; no computador, he
 - Abaixo de 400 px, nome e valor do ranking e do total ficam em linhas separadas, para o nome nunca ser cortado.
 - Os nomes das posições são truncados; o saldo nunca é.
 - Vazio: "Nenhum investimento encontrado" com o botão "Ver contas". "Ocultar valores" mascara os saldos e mantém os percentuais.
+
+### Relatórios
+
+Uma área com um relatório por endereço (`/relatorios/receitas-e-despesas`, `/relatorios/categorias`, `/relatorios/evolucao-financeira` e `/relatorios/patrimonio`). Ordem da tela, em todas as larguras:
+
+0. **Navegação entre relatórios:** pílula com borda e um link por relatório (o aberto em `secondary`, com `aria-current="page"`). **Só aparece com 2 ou mais relatórios** e leva o `?periodo=` atual no link.
+1. **Filtros** (`SegmentedControl`): "Período" (6 meses, 12 meses, 24 meses, Este ano; padrão 12 meses) e "Visualização" (Gráfico, Tabela). Os dois ficam na URL (`?periodo=`, `?visao=tabela`). No celular um embaixo do outro; a partir de 640 px lado a lado.
+2. **Os números do período** em cartões de apoio (`DataCard`, valor em `text-xl` e sem quebra): Receitas com `+` em `positive`, Despesas com `−` na cor normal e Resultado com sinal (`positive` se sobrou, `destructive` só se for negativo). Um por linha abaixo de 640 px; três lado a lado a partir daí.
+3. **Gráfico ou tabela**, nunca os dois, num cartão de apoio. O gráfico tem altura de 240 px (288 px a partir de 1024 px).
+
+**Mês em andamento (parcial):** o mês atual nunca é marcado só por cor ou hachura.
+- *Gráfico:* as barras do mês levam hachura diagonal (a cor da série a 35% com traços da cor cheia), o item "Mês em andamento" entra na legenda e o tooltip escreve "(em andamento)" depois do mês.
+- *Tabela:* a linha do mês traz o texto "em andamento" abaixo do mês (`text-xs`, `muted-foreground`).
+
+**Gráfico de receitas e despesas:** o mesmo do Início (barras agrupadas, slots 1 e 2, topo de 4 px, 2 px entre barras), agora num componente compartilhado (`components/charts/income-expense-bars.tsx`). O tooltip dos relatórios acrescenta a linha "Resultado" com sinal. Com mais de 12 meses o eixo X deixa de mostrar todos: o Recharts esconde os rótulos que se sobrepõem e o ano entra no rótulo ("nov. 25"), para separar meses repetidos.
+
+**Tabela dos relatórios (`ReportTable`):**
+- `<table>` com `<caption>` (só para leitor de tela: descreve o relatório e o período), cabeçalhos de coluna (`type-label`) e de linha (o mês, "nov. 2026"), valores alinhados à direita com `tabular-nums` e `−` tipográfico, e uma **linha de total** no fim ("Total do período", em negrito, com filete duplo acima).
+- **Responsividade:** abaixo de 640 px cada mês vira um **bloco** (mês em cima, depois uma linha por coluna com o nome à esquerda e o valor à direita), sem rolagem lateral. O nome da coluna pode quebrar em várias linhas (categorias têm nomes longos); o valor nunca quebra. A partir de 640 px, se faltar largura, a tabela rola **só dentro do próprio bloco** (`overflow-x-auto`, borda e raio no bloco), com a **coluna do mês fixa** (`sticky`, fundo `card`). A página nunca ganha rolagem horizontal, nem com 24 meses em 320 px.
+
+**Gráfico de gasto por categoria** (`features/reports/category-spending/`): **colunas empilhadas**, uma coluna por mês e um segmento por série, da maior categoria do período (embaixo) para a menor, com "Outros" por último.
+- **Cor pela posição, não pela categoria:** a série na posição N usa o slot N da paleta, sem pular (as 5 maiores ocupam os slots 1 a 5), e "Outros" usa o cinza. O empilhamento é exatamente a vizinhança na ordem para a qual a paleta foi validada. A cor de uma categoria pode mudar quando o período muda; por isso a legenda sempre traz o nome e a lista abaixo identifica cada categoria pelo nome, nunca só pela cor.
+- Segmentos separados por um traço de 1 px na cor do cartão; sem raio no topo (a coluna é uma pilha). Legenda com os nomes (truncados, `title` com o nome inteiro) e tooltip com o total do mês seguido de cada categoria com valor maior que zero.
+- **Mês em andamento:** sem hachura (os segmentos já são separados por cor e traço); o mês é marcado em texto, "nov. 2026 em andamento" abaixo da legenda e "(em andamento)" no tooltip.
+- **Lista ranqueada** logo abaixo, no cartão "Ranking do período": as barras horizontais numa cor só de "Gastos por categoria" (`primary`, "Outros" cinza), com ícone, nome, total e percentual, e o total do período no cabeçalho do cartão. Não abre transações. Com "Ocultar valores", os totais são mascarados e os percentuais continuam visíveis.
+- **Tabela:** `ReportTable` com uma coluna por série e a coluna "Total"; o nome da coluna é truncado (`title` com o nome inteiro).
+
+**Gráficos de evolução financeira** (`features/reports/savings-evolution/`): três gráficos, cada um no seu cartão e com a **sua escala**, nunca dois eixos no mesmo gráfico. Todos de uma série só, então sempre o slot 1.
+- **Resultado do mês:** barras com topo de 4 px; os meses negativos descem da **linha do zero**, que fica sempre visível (`muted-foreground`). **Resultado negativo não usa vermelho nas barras** (o vermelho é de estouro, erro e saldo negativo): o sinal `−` no tooltip e na tabela e o texto dizem o que a forma já mostra. Largura cheia (240 px de altura, 288 px a partir de 1024 px).
+- **Taxa de poupança:** linha de 2 px com pontos pequenos e eixo em `%`, referência em 0%. Meses sem receita **interrompem** a linha (não viram zero); o ponto mostra um mês isolado entre dois sem receita.
+- **Sobra acumulada:** área (cor da série a 15%, sumindo para 0) com a linha do zero; pode descer abaixo dela. Uma frase abaixo diz que **não é saldo nem patrimônio**.
+- Os dois últimos ficam lado a lado a partir de 1024 px e empilhados abaixo disso. O eixo sempre inclui o zero. Tooltip do resultado: receitas, despesas, resultado com sinal e taxa; os outros, o valor do mês. Mês em andamento marcado em texto ("nov. 2026 em andamento" abaixo do título e "(em andamento)" no tooltip), sem hachura.
+- **Números do período** (três `DataCard` no padrão dos relatórios, cada um com uma linha de explicação em `text-xs`): "Resultado do período" com sinal (`positive` se sobrou, `destructive` só se for negativo), "Taxa de poupança" com sinal e "—" sem receita (cor normal), e "Meses com sobra" ("7 de 10 meses fechados").
+- **Ocultar valores:** os eixos em reais somem e a taxa continua visível, inclusive o eixo em `%`.
+
+**Gráficos de evolução do patrimônio** (`features/reports/net-worth/`): três números no padrão dos relatórios e dois gráficos, cada um no seu cartão, em largura cheia (240 px de altura, 288 px a partir de 1024 px).
+- **Patrimônio total:** o mesmo gráfico de área do cartão de Investimentos (`NetWorthChart`, série 1, 2 px, 15% sumindo para 0). Com mais de 12 meses o ano entra no rótulo do eixo X ("nov. 25").
+- **Composição:** **colunas empilhadas** com Contas (slot 1), Investimentos (slot 2) e Faturas em aberto (slot 3), sempre nessa ordem. A fatura é um valor **negativo**: o gráfico usa `stackOffset="sign"`, que empilha os positivos para cima do zero e os negativos para baixo dele (sem isso o negativo entra na pilha positiva e a coluna fica errada). Linha do zero sempre visível, segmentos separados por um traço de 1 px na cor do cartão e legenda sempre, com os nomes. O tooltip traz as três cifras (a fatura com `−`) e o patrimônio do mês.
+- Os dois só são desenhados com 2 ou mais pontos; com um só, o texto "O histórico começa em …" ocupa o lugar. Mês em andamento marcado em texto, sem hachura; "Ocultar valores" remove os eixos em reais.
+- **Números do topo:** "Patrimônio hoje" (vermelho só se negativo), "Variação no período" (`ValueChange`: ícone, `+`/`−`, percentual e "desde dd/mm") e "Em investimentos" (percentual em `text-xl`, que continua visível com "Ocultar valores", e o valor em reais abaixo).
+- **Tabela:** `ReportTable` **sem linha de total** (patrimônio não se soma entre meses), com Contas, Investimentos, Faturas em aberto (com `−`) e Patrimônio. A nota da fórmula, do arquivamento de bancos e das faturas fica abaixo de tudo, em `text-xs`.
+- **Estados:** vazio (sem nenhuma foto) leva a "Ver contas".
+
+**Estados:** carregando (skeleton no formato: três cartões e o gráfico), vazio ("Ainda não há transações neste período" e o botão "Mudar período", que leva o foco ao filtro de período) e erro ("Não foi possível carregar o relatório." e "Tentar de novo"). "Ocultar valores" mascara os números, a tabela e o tooltip, e o eixo vertical do gráfico some. Com um período novo carregando, o relatório anterior continua na tela.
 
 ## Componentes
 
@@ -492,6 +536,8 @@ Erros aparecem embaixo do campo, em `destructive`, em linguagem simples ("Inform
   - evolução no tempo → linha ou área;
   - comparar meses → barras agrupadas;
   - partes de um total → lista de barras horizontais;
+  - evolução de uma medida que passa por zero (resultado, sobra acumulada) → barras, linha ou área com a **linha do zero** visível, sem vermelho só porque é negativa;
+  - partes de um total mês a mês → colunas empilhadas, com a cor pela posição no ranking (nunca uma cor fixa por categoria);
   - um número só → card de resumo, sem gráfico.
 - **Nunca dois eixos verticais** no mesmo gráfico. Medidas de escala diferente vão em gráficos separados.
 - **Traço:**
