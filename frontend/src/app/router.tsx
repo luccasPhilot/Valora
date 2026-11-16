@@ -1,14 +1,14 @@
 import { createBrowserRouter, redirect, type RouteObject } from 'react-router';
 
 import { AppShell } from '@/components/layout/app-shell';
-import { ScreenSkeleton } from '@/components/states/skeletons';
+import { AppLoadingSkeleton } from '@/components/states/skeletons';
 import { REPORT_DEFINITIONS, REPORTS_BASE_PATH } from '@/features/reports/report-definitions';
 
 // Cada área é carregada sob demanda; o AppShell mostra o skeleton enquanto o arquivo chega.
 export const appRoutes: RouteObject[] = [
   {
     element: <AppShell />,
-    hydrateFallbackElement: <ScreenSkeleton />,
+    hydrateFallbackElement: <AppLoadingSkeleton />,
     children: [
       { index: true, lazy: () => import('@/features/dashboard/dashboard-page') },
       { path: 'transacoes', lazy: () => import('@/features/transactions/transactions-page') },
