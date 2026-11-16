@@ -121,6 +121,17 @@ describe('GET /api/v1/transactions', () => {
     expect(descriptions).toEqual(['mercado']);
   });
 
+  it('should_list_only_transactions_without_category_when_category_id_is_none', async () => {
+    // Arrange
+    const groceries = await categoryIdOf('groceries');
+    await insertTransaction({ description: 'mercado', categoryId: groceries });
+    await insertTransaction({ description: 'sem categoria', categoryId: null });
+    // Act
+    const descriptions = await listDescriptions('?categoryId=none');
+    // Assert
+    expect(descriptions).toEqual(['sem categoria']);
+  });
+
   it('should_filter_by_account_when_account_id_is_sent', async () => {
     // Arrange
     const otherAccountId = await insertAccount(database.db);

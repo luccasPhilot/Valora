@@ -1,10 +1,18 @@
 import type { SQL } from 'drizzle-orm';
-import { and, between, eq, min, sql } from 'drizzle-orm';
+import { and, between, count, eq, min, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/database.js';
 import { categories, transactions } from '../../db/schema.js';
 import type { MonthTotals } from '../../shared/months.js';
+import { buildConditions, type TransactionFilters } from './transaction-filter-conditions.js';
 import { transactionTypeCondition } from './transaction-type-filter.js';
+
+export interface TransactionSummary {
+  readonly incomeCents: number;
+  /** Positivo, como no Início. */
+  readonly expenseCents: number;
+  readonly count: number;
+}
 
 export interface CategorySpending {
   /** Nulo nas despesas sem categoria. */
@@ -58,6 +66,23 @@ export class TransactionTotalsRepository {
       .where(between(transactions.date, from, to))
       .groupBy(month)
       .orderBy(month);
+  }
+
+  /**
+   * Receitas, despesas (positivas) e quantidade das transações de um filtro. As transferências
+   * ficam fora de receita e despesa, mas entram na quantidade, igual a `pagination.total` da lista.
+   */
+  async summarize(filters: TransactionFilters): Promise<TransactionSummary> {
+    const [row] = await this.db
+      .select({
+        incomeCents: sumCentsWhere(transactionTypeCondition('income')),
+        expenseCents: sql`-${sumCentsWhere(transactionTypeCondition('expense'))}`.mapWith(Number),
+        count: count(),
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(categories.id, transactions.categoryId))
+      .where(and(...buildConditions(filters)));
+    return row ?? { incomeCents: 0, expenseCents: 0, count: 0 };
   }
 
   /** Gasto líquido por categoria no período; a categoria nula agrupa as despesas sem categoria. */

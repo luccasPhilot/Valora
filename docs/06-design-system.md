@@ -285,7 +285,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 - 24 px, no mínimo, entre o grupo "Dia a dia" e o rodapé, e uma linha divisória (`border`) acima de Categorias e regras e Ajustes;
 - cabeçalho de 72 px, sem borda abaixo; só o item ativo tem fundo (`secondary`), e o resto do menu fica sem fundo e sem borda.
 
-**Topo de cada tela:** altura de 56 px (72 px a partir de 1024 px, alinhado com o cabeçalho do menu), botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**.
+**Topo de cada tela:** altura de 56 px (72 px a partir de 1024 px, alinhado com o cabeçalho do menu), botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora; a área de toque tem 44 px de altura em qualquer largura, mesmo com o texto pequeno do celular), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**.
 
 **Breakpoints** (os do Tailwind): `sm` 640, `md` 768, `lg` 1024, `xl` 1280.
 
@@ -309,7 +309,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 | Início | 1 coluna | 2 colunas | Grade de 12 colunas, até 1200 px |
 | Lista de transações | Item em 2 linhas (descrição em cima; categoria e conta embaixo) | Igual ao celular, com mais espaço | Linha única com colunas: data, descrição, categoria, conta, valor |
 | Formulários e detalhes | `Sheet` vindo de baixo, em tela quase cheia | `Sheet` lateral | `Dialog` centralizado |
-| Filtros | Botão "Filtros" que abre um `Sheet` | Linha de filtros acima da lista | Linha de filtros acima da lista |
+| Filtros | Busca e botão "Filtros", que abre um `Sheet` de baixo com período, categoria, tipo, origem e conta | Busca, período e botão "Filtros", que abre um `Popover` com categoria, tipo, origem e conta | Igual ao tablet |
 | Gráficos | Largura do card; menos marcações no eixo (meses abreviados: "jun.") | Largura do card | Largura do card |
 | Saldo (`display`) | 36 px | 36 px | 48 px |
 
@@ -467,7 +467,8 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Selo de meta vinculada | — | "Vinculada · N itens" em `secondary`, com ícone `link-2`, no cartão da meta. Metas manuais não têm selo |
 | Painel de meta vinculada | `Sheet` / `Dialog` | No lugar de "Registrar aporte", "Registrar retirada" e do histórico, a seção "Itens vinculados" com o saldo de cada item. Item de banco arquivado leva ícone `archive` e o texto "Banco removido do Valora: não conta". Traz as notas "O valor acompanha o saldo e muda na sincronização diária" e "O ritmo vem da variação dos saldos… e mistura aporte e rendimento", e, havendo aportes guardados, uma linha com o valor deles. No formulário, o controle segmentado "Eu informo" / "Vinculada" mostra a lista de contas e investimentos com caixas de seleção (até 10), a "Soma atual" e o aviso do item que já está em outra meta; o valor inicial some |
 | Filtro de período | `Popover` + `Calendar` | Atalhos: Este mês, Mês passado, Últimos 3 meses, Este ano, Personalizado |
-| Filtros | `Select`, `Combobox`, `Badge` | Numa linha acima da lista; filtros ativos viram chips removíveis |
+| Filtros | `Select`, `Popover`, `Badge` | À vista só a busca, o período e o botão "Filtros", que mostra quantos dos quatro filtros do painel (categoria, tipo, origem e conta) estão ativos ("Filtros (2)"). A partir de 768 px o painel é um `Popover` ancorado no botão, que devolve o foco a ele ao fechar; abaixo disso é o `Sheet` de baixo, com o período também. Filtros ativos continuam como chips removíveis abaixo da barra. Nenhum seletor mostra o texto cortado |
+| Resumo do filtro | texto (`p`) | Uma linha entre os chips e a lista, não um cartão: "N transações", receitas com `+` em `positive` e despesas com `−` na cor normal, sem transferências internas (valor zero não aparece). Valores ocultos viram `R$ ••••` e a contagem continua. Carregando: skeleton de uma linha. Erro: "Tentar de novo", sem derrubar a lista. Sem transações: some. Com o filtro "Transferências": só a contagem e a nota de que transferências não entram nos totais |
 | Pesquisa | `Input` | Busca na descrição, com espera de 300 ms |
 | Detalhe de transação | `Sheet` (celular), `Dialog` (computador) | Mostra dados completos e permite trocar a categoria. Numa transação manual, também editar e excluir (exclusão pede confirmação) |
 | Nova transação | `Sheet` (celular), `Dialog` (computador) + `Form` | Veja [Nova transação](#nova-transação) |

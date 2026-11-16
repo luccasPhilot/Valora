@@ -5,6 +5,7 @@ import { CategoriesRepository } from '../categories/categories.repository.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
 import { DuplicatesService } from './duplicates.service.js';
 import { PossibleDuplicatesRepository } from './possible-duplicates.repository.js';
+import { TransactionTotalsRepository } from './transaction-totals.repository.js';
 import { TransactionWritesService } from './transaction-writes.service.js';
 import { TransactionsQueryRepository } from './transactions.repository.js';
 import { TransactionsService } from './transactions.service.js';
@@ -28,6 +29,7 @@ export function createTransactionsModule(deps: TransactionsModuleDependencies): 
   const categories = new CategoriesRepository(db);
   const transactionsService = new TransactionsService({
     transactions: new TransactionsQueryRepository(db),
+    totals: new TransactionTotalsRepository(db),
     categories,
     rules: deps.categoryRulesService,
     budgetAlerts: deps.budgetAlerts,

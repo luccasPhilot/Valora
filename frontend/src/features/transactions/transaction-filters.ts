@@ -5,6 +5,7 @@ import {
   type TransactionQuery,
   type TransactionSource,
   type TransactionType,
+  UNCATEGORIZED_FILTER,
 } from '@/lib/api/transactions';
 import { firstDayOfMonth, lastDayOfMonth } from '@/lib/dates';
 import { formatDate } from '@/lib/format';
@@ -43,6 +44,7 @@ export const SOURCE_LABELS: Readonly<Record<TransactionSource, string>> = {
 };
 
 const POSSIBLE_DUPLICATES_LABEL = 'Possíveis duplicatas';
+export const UNCATEGORIZED_LABEL = 'Sem categoria';
 const POSSIBLE_DUPLICATES_PARAM_VALUE = '1';
 
 export interface TransactionFilters {
@@ -169,6 +171,12 @@ export function hasFiltersBesidesPeriod(filters: TransactionFilters): boolean {
   );
 }
 
+/** Quantos dos filtros do botão "Filtros" (categoria, tipo, origem e conta) estão ativos. */
+export function countPanelFilters(filters: TransactionFilters): number {
+  return [filters.categoryId, filters.type, filters.source, filters.accountId].filter(Boolean)
+    .length;
+}
+
 export interface FilterChip {
   readonly key: string;
   readonly label: string;
@@ -210,9 +218,11 @@ export function describeActiveFilters(
   }
   if (filters.categoryId) {
     const category = lookups.categories.find((candidate) => candidate.id === filters.categoryId);
+    const label =
+      filters.categoryId === UNCATEGORIZED_FILTER ? UNCATEGORIZED_LABEL : category?.name;
     chips.push({
       key: 'category',
-      label: category?.name ?? 'Categoria',
+      label: label ?? 'Categoria',
       filtersWithoutIt: { ...filters, categoryId: null },
     });
   }

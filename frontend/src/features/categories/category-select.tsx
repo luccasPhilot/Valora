@@ -11,6 +11,8 @@ interface CategorySelectProps extends Omit<ComponentProps<'select'>, 'value' | '
   value: string;
   /** Texto da opção vazia; sem ele, não há opção vazia. */
   emptyLabel?: string;
+  /** Opção extra logo após a vazia, como "Sem categoria" nos filtros. */
+  extraOption?: { readonly value: string; readonly label: string };
   onValueChange: (categoryId: string) => void;
 }
 
@@ -22,6 +24,7 @@ export function CategorySelect({
   categories,
   value,
   emptyLabel,
+  extraOption,
   onValueChange,
   ...props
 }: CategorySelectProps) {
@@ -29,6 +32,7 @@ export function CategorySelect({
   return (
     <Select value={value} onChange={(event) => onValueChange(event.target.value)} {...props}>
       {emptyLabel === undefined ? null : <option value="">{emptyLabel}</option>}
+      {extraOption ? <option value={extraOption.value}>{extraOption.label}</option> : null}
       {KIND_ORDER.map((kind) => {
         const kindOptions = options.filter((category) => category.kind === kind);
         if (kindOptions.length === 0) return null;

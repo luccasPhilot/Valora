@@ -47,6 +47,19 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe('SyncStatus touch target', () => {
+  // 16 px de altura do texto + 14 px de área extra em cima e embaixo = 44 px no celular.
+  it('should_extend_the_touch_area_to_44px_when_on_a_phone', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/sync-runs/latest': () => Response.json(syncRun()) });
+    // Act
+    renderStatus();
+    // Assert
+    const button = await screen.findByRole('button', { name: /^Atualizado hoje/ });
+    expect(button.className).toContain('after:-inset-y-3.5');
+  });
+});
+
 describe('SyncStatus text', () => {
   it('should_say_updated_today_with_the_time_when_the_last_run_finished_today', async () => {
     // Arrange

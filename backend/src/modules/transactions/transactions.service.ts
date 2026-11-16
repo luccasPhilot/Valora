@@ -5,9 +5,14 @@ import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import type { CategoriesRepository } from '../categories/categories.repository.js';
 import { assertCategoryIsSelectable } from '../categories/category-availability.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
+import type {
+  TransactionSummary,
+  TransactionTotalsRepository,
+} from './transaction-totals.repository.js';
 import type { TransactionType } from './transaction-type-filter.js';
 import type {
   PageRequest,
+  TransactionFilters,
   TransactionPage,
   TransactionRecord,
   TransactionSource,
@@ -33,6 +38,7 @@ export interface CategoryChange {
 
 export interface TransactionsServiceDependencies {
   readonly transactions: TransactionsQueryRepository;
+  readonly totals: Pick<TransactionTotalsRepository, 'summarize'>;
   readonly categories: CategoriesRepository;
   readonly rules: Pick<CategoryRulesService, 'learnFromCorrection'>;
   readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
@@ -43,12 +49,12 @@ export class TransactionsService {
   constructor(private readonly deps: TransactionsServiceDependencies) {}
 
   list(filters: TransactionListFilters, page: PageRequest): Promise<TransactionPage> {
-    const { search, ...otherFilters } = filters;
-    const normalizedSearch = search ? normalizeDescription(search) : undefined;
-    return this.deps.transactions.findPage(
-      { ...this.withDefaultPeriod(otherFilters), normalizedSearch },
-      page,
-    );
+    return this.deps.transactions.findPage(this.toRepositoryFilters(filters), page);
+  }
+
+  /** Mesmos filtros da lista: receita, despesa e quantidade de todo o filtro, não só da página. */
+  summarize(filters: TransactionListFilters): Promise<TransactionSummary> {
+    return this.deps.totals.summarize(this.toRepositoryFilters(filters));
   }
 
   /** As mais recentes de qualquer período, tipo e origem (o Início usa as 5 últimas). */
@@ -77,6 +83,12 @@ export class TransactionsService {
     // Trocar a categoria (e o "Aplicar sempre", que recategoriza o histórico) muda o gasto dos orçamentos.
     await this.deps.budgetAlerts.refresh();
     return this.get(transactionId);
+  }
+
+  private toRepositoryFilters(filters: TransactionListFilters): TransactionFilters {
+    const { search, ...otherFilters } = filters;
+    const normalizedSearch = search ? normalizeDescription(search) : undefined;
+    return { ...this.withDefaultPeriod(otherFilters), normalizedSearch };
   }
 
   /** Sem nenhuma das duas datas, a lista é do mês atual (fuso de São Paulo). */

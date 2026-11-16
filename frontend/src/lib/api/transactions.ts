@@ -45,6 +45,15 @@ const transactionPageSchema = z.object({
   pagination: z.object({ page: z.int(), limit: z.int(), total: z.int() }),
 });
 
+const transactionSummarySchema = z.object({
+  incomeCents: z.int(),
+  /** Positivo, como no Início. */
+  expenseCents: z.int(),
+  count: z.int(),
+});
+
+export type TransactionSummary = z.infer<typeof transactionSummarySchema>;
+
 /** Conta como opção de filtro e de formulário; vem de `/accounts` (lib/api/accounts.ts). */
 export interface AccountOption {
   readonly id: string;
@@ -57,9 +66,12 @@ export type Transaction = z.infer<typeof transactionSchema>;
 export type TransactionSource = Transaction['source'];
 export type TransactionPage = z.infer<typeof transactionPageSchema>;
 
+export const UNCATEGORIZED_FILTER = 'none';
+
 export interface TransactionQuery {
   readonly from?: string;
   readonly to?: string;
+  /** Id da categoria, ou `UNCATEGORIZED_FILTER` para as sem categoria. */
   readonly categoryId?: string;
   readonly type?: TransactionType;
   readonly accountId?: string;
@@ -85,8 +97,7 @@ export interface CategoryChange {
   readonly applyAlways: boolean;
 }
 
-function toQueryString(query: TransactionQuery, page: number): string {
-  const params = new URLSearchParams({ page: String(page), limit: String(TRANSACTION_PAGE_SIZE) });
+function toQueryString(query: TransactionQuery, params = new URLSearchParams()): string {
   for (const [name, value] of Object.entries(query)) {
     if (value) params.set(name, String(value));
   }
@@ -94,7 +105,16 @@ function toQueryString(query: TransactionQuery, page: number): string {
 }
 
 export function listTransactions(query: TransactionQuery, page: number): Promise<TransactionPage> {
-  return apiGet(`/transactions?${toQueryString(query, page)}`, transactionPageSchema);
+  const pagination = new URLSearchParams({
+    page: String(page),
+    limit: String(TRANSACTION_PAGE_SIZE),
+  });
+  return apiGet(`/transactions?${toQueryString(query, pagination)}`, transactionPageSchema);
+}
+
+/** Receita e despesa (sem transferências) e quantidade de todo o filtro, não só da página carregada. */
+export function getTransactionSummary(query: TransactionQuery): Promise<TransactionSummary> {
+  return apiGet(`/transactions/summary?${toQueryString(query)}`, transactionSummarySchema);
 }
 
 export function changeTransactionCategory(
