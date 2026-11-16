@@ -35,7 +35,7 @@ O Início calcula receitas e despesas por mês em `DashboardRepository.findMonth
 
 **5. "Ver em tabela".**
 - Controle segmentado "Gráfico" / "Tabela" (`?visao=tabela`; padrão gráfico), do `SegmentedControl` existente. A tabela mostra os mesmos dados do gráfico: um `<table>` com `<caption>` (que o leitor de tela lê), cabeçalhos de coluna e de linha, valores com `tabular-nums`, `−` tipográfico e linha de total no fim.
-- Em telas estreitas a tabela rola **dentro do próprio bloco**, com a coluna do mês fixa (`sticky`); a página nunca ganha rolagem horizontal. Um componente `ReportTable` serve aos quatro relatórios.
+- No celular (abaixo de 640 px) cada mês vira um **bloco** com o nome da coluna ao lado de cada valor, sem rolagem lateral; a partir de 640 px a tabela rola **dentro do próprio bloco**, com a coluna do mês fixa (`sticky`), se faltar largura. A página nunca ganha rolagem horizontal. Um componente `ReportTable` serve aos quatro relatórios.
 - Com a tabela aberta o gráfico some (não aparecem os dois), e o gráfico continua com um resumo em texto para leitor de tela.
 
 **6. Mês em andamento.**
@@ -52,7 +52,7 @@ O Início calcula receitas e despesas por mês em `DashboardRepository.findMonth
 
 - [Mover a consulta do Início] → Pode quebrar o Início em silêncio; os testes de integração do dashboard rodam antes e depois, e há um teste que compara o mês do relatório com o do Início.
 - [Mês em andamento parece uma queda] → Marcado como parcial em texto e visual; o resultado do período inclui o mês atual (o total reflete o que já aconteceu).
-- [Tabela larga no celular] → Rolagem só dentro do bloco, com a coluna do mês fixa; conferida em 320 px.
+- [Tabela larga no celular] → No celular a tabela vira blocos por mês, sem rolagem; conferida em 320 e 390 px.
 
 ## Open Questions
 

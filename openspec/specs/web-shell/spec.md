@@ -234,7 +234,7 @@ A página MUST declarar no `index.html` um ícone com o símbolo do Valora, em S
 Para qualquer endereço do app que não tenha rota, o sistema MUST mostrar a página "404 Página não encontrada" em tela cheia, **sem** o menu lateral nem o topo, com a mensagem "Esta página não existe" e um único botão "Ir para o Início". A página MUST funcionar de 320 px a 1440 px nos dois temas sem rolagem horizontal, MUST respeitar as áreas seguras do celular, MUST NOT mostrar o endereço digitado nem detalhes técnicos. As rotas que já existem MUST continuar abrindo as mesmas telas.
 
 #### Scenario: Endereço que não existe
-- **WHEN** o usuário abre `/investimentos`
+- **WHEN** o usuário abre `/patrimonio`
 - **THEN** a página mostra "404 Página não encontrada" e "Esta página não existe", sem o menu lateral
 
 #### Scenario: Só um caminho de volta

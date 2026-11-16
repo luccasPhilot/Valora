@@ -43,7 +43,7 @@ Os relatórios MUST oferecer os períodos "6 meses", "12 meses" (padrão), "24 m
 - **THEN** o período é "12 meses"
 
 ### Requirement: Ver em tabela
-Todo relatório MUST ter o controle "Gráfico" / "Tabela" (`?visao=tabela`; padrão "Gráfico"). A tabela MUST mostrar os mesmos números do gráfico, com legenda (`caption`), cabeçalhos, valores com `−` tipográfico e linha de total, e o gráfico MUST NOT aparecer ao mesmo tempo. Em telas estreitas a tabela MUST rolar só dentro do próprio bloco, com a coluna do mês fixa, sem rolagem horizontal da página. O gráfico MUST ter um resumo em texto para leitor de tela.
+Todo relatório MUST ter o controle "Gráfico" / "Tabela" (`?visao=tabela`; padrão "Gráfico"). A tabela MUST mostrar os mesmos números do gráfico, com legenda (`caption`), cabeçalhos, valores com `−` tipográfico e linha de total, e o gráfico MUST NOT aparecer ao mesmo tempo. No celular (abaixo de 640 px) cada mês MUST virar um bloco com o nome da coluna ao lado de cada valor, sem rolagem horizontal; a partir daí, se faltar largura, a tabela MUST rolar só dentro do próprio bloco, com a coluna do mês fixa, sem rolagem horizontal da página. O gráfico MUST ter um resumo em texto para leitor de tela.
 
 #### Scenario: Alternar para a tabela
 - **WHEN** o usuário escolhe "Tabela"
@@ -55,7 +55,7 @@ Todo relatório MUST ter o controle "Gráfico" / "Tabela" (`?visao=tabela`; padr
 
 #### Scenario: Celular estreito
 - **WHEN** a largura é 320 px e a tabela tem 4 colunas
-- **THEN** a página não tem rolagem horizontal e a tabela rola dentro do bloco com a coluna do mês fixa
+- **THEN** a página e a tabela não têm rolagem horizontal, e cada mês aparece como um bloco com receitas, despesas e resultado
 
 ### Requirement: Mês em andamento
 O mês atual MUST ser marcado como parcial em todo relatório mensal: na tabela com o texto "em andamento" ao lado do mês, e no gráfico com marca visual e o texto "em andamento" na legenda ou no tooltip, nunca só pela cor.
