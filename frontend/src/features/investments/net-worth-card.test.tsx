@@ -18,8 +18,10 @@ function renderCard() {
   return render(
     <QueryClientProvider client={queryClient}>
       <HideValuesProvider>
-        <HideValuesButton />
-        <NetWorthCard />
+        <MemoryRouter>
+          <HideValuesButton />
+          <NetWorthCard />
+        </MemoryRouter>
       </HideValuesProvider>
     </QueryClientProvider>,
   );
@@ -66,6 +68,17 @@ describe('NetWorthCard — valores', () => {
       'InvestimentosR$ 12.000,00',
       'Faturas em aberto− R$ 1.500,00',
     ]);
+  });
+
+  it('should_link_to_the_full_net_worth_report', async () => {
+    // Arrange
+    stubNetWorth();
+    // Act
+    renderCard();
+    // Assert
+    expect(
+      within(await findCard()).getByRole('link', { name: 'Ver relatório completo' }),
+    ).toHaveAttribute('href', '/relatorios/patrimonio');
   });
 
   it('should_show_the_month_change_with_text_when_there_is_one', async () => {

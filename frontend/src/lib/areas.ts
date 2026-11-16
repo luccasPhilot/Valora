@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   CalendarClock,
+  ChartColumn,
   Flag,
   Home,
   Landmark,
@@ -31,6 +32,7 @@ export const APP_AREAS: readonly AppArea[] = [
   { path: '/metas', title: 'Metas', icon: Flag, group: 'daily', phase: 2 },
   { path: '/contas', title: 'Contas', icon: Landmark, group: 'daily', phase: 1 },
   { path: '/investimentos', title: 'Investimentos', icon: TrendingUp, group: 'daily', phase: 3 },
+  { path: '/relatorios', title: 'Relatórios', icon: ChartColumn, group: 'daily', phase: 3 },
   { path: '/categorias', title: 'Categorias e regras', icon: Tags, group: 'footer', phase: 1 },
   { path: '/ajustes', title: 'Ajustes', icon: Settings, group: 'footer', phase: 1 },
 ];
@@ -43,14 +45,23 @@ export function findAreaByPath(pathname: string): AppArea | undefined {
 const BILLS_PATH_PATTERN = /^\/contas\/[^/]+\/faturas$/;
 const BILLS_TITLE = 'Faturas';
 
-/** Título do topo: o da área, ou o da tela que abre dentro dela (faturas de um cartão). */
+// Áreas que têm uma tela por endereço (um relatório por endereço): o item e o título valem em `/relatorios/*`.
+const REPORTS_PATH = '/relatorios';
+
+function isInsideReports(pathname: string): boolean {
+  return pathname.startsWith(`${REPORTS_PATH}/`);
+}
+
+/** Título do topo: o da área, ou o da tela que abre dentro dela (faturas de um cartão, um relatório). */
 export function findScreenTitle(pathname: string): string | undefined {
   if (BILLS_PATH_PATTERN.test(pathname)) return BILLS_TITLE;
+  if (isInsideReports(pathname)) return findAreaByPath(REPORTS_PATH)?.title;
   return findAreaByPath(pathname)?.title;
 }
 
 export function isAreaActive(area: AppArea, pathname: string): boolean {
   if (pathname === area.path) return true;
+  if (area.path === REPORTS_PATH) return isInsideReports(pathname);
   return area.path === '/contas' && BILLS_PATH_PATTERN.test(pathname);
 }
 

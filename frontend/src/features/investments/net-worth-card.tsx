@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { NetWorth } from '@/lib/api/net-worth';
 
+import { SectionLink } from '../dashboard/dashboard-section';
 import { NetWorthChart } from './net-worth-chart';
 import { useNetWorth } from './net-worth-queries';
 import {
@@ -21,6 +22,8 @@ import {
   NET_WORTH_PERIOD_OPTIONS,
   type NetWorthPeriod,
 } from './net-worth-view';
+
+const NET_WORTH_REPORT_PATH = '/relatorios/patrimonio';
 
 function NetWorthSkeleton() {
   return (
@@ -125,7 +128,17 @@ export function NetWorthCard() {
   const [period, setPeriod] = useState<NetWorthPeriod>(DEFAULT_NET_WORTH_PERIOD);
   const netWorthQuery = useNetWorth(period);
   return (
-    <DataCard title="Patrimônio" tier="hero" icon={Landmark} className="gap-5">
+    <DataCard
+      title="Patrimônio"
+      tier="hero"
+      icon={Landmark}
+      className="gap-5"
+      action={
+        netWorthQuery.isSuccess ? (
+          <SectionLink to={NET_WORTH_REPORT_PATH}>Ver relatório completo</SectionLink>
+        ) : undefined
+      }
+    >
       {netWorthQuery.isPending ? <NetWorthSkeleton /> : null}
       {netWorthQuery.isError ? (
         <NetWorthError onRetry={() => void netWorthQuery.refetch()} />
