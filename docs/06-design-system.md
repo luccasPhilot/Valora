@@ -357,7 +357,7 @@ No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas tra
 - Os meses do eixo do gráfico são sempre abreviados ("jun."): os nomes inteiros se sobrepõem na coluna de 7/12 do computador.
 - Com os valores ocultos, o eixo vertical do gráfico some junto, porque mostraria os mesmos números.
 - Cada gráfico tem um resumo para leitor de tela (a tabela dos 6 meses; o saldo no primeiro e no último dia do gráfico de área).
-- A barra de cada categoria é proporcional à maior categoria da lista; o percentual é sobre o gasto líquido total do mês. "Sem categoria" e "Outros" não abrem Transações.
+- A barra de cada categoria tem o tamanho do percentual escrito ao lado (a fatia do gasto líquido total do mês): uma categoria com 11% preenche 11% do trilho, e só 100% enche a barra. "Sem categoria" e "Outros" não abrem Transações.
 - O gráfico de área do saldo só aparece com 2 ou mais dias de foto de saldo.
 
 ### Hierarquia dos cartões
@@ -385,7 +385,7 @@ Ordem da tela, em todas as larguras (coluna única no celular; no computador, he
 
 0. **Patrimônio** (`DataCard tier="hero"`, largura toda; no canto do cabeçalho, o link "Ver relatório completo" para `/relatorios/patrimonio`): total em `display` (vermelho só se negativo), variação no mês (ícone e texto, igual à do saldo), as linhas "Contas", "Investimentos" e "Faturas em aberto" (com `−`), o controle "6 meses" / "12 meses" (padrão 12), o gráfico de área mensal e a nota "Patrimônio = contas + investimentos − faturas em aberto. Gastos no cartão ainda fora de fatura fechada não entram." Vem de outra consulta (`GET /net-worth`) e tem os próprios estados: se falhar, mostra "Tentar de novo" dentro do cartão e o resto da tela continua.
 1. **Herói** (nível 1): total em `display`, "N posições em M instituições", a **barra de composição por tipo** e a legenda (cor, tipo, valor, percentual).
-2. **Maiores posições** (nível 2): ranking numerado das 5 maiores, em barras finas de `primary`.
+2. **Maiores posições** (nível 2): ranking numerado das 5 maiores, em barras finas de `primary`, cada uma com o tamanho do percentual da posição no total investido.
 3. **Posições por tipo**: um cartão por tipo (título pequeno, total em `type-value-lg`, "% do total" e as linhas, com "Mostrar mais").
 4. Rodapé "N posições zeradas não aparecem na lista", só quando houver.
 
@@ -478,7 +478,7 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Status de conexão | `Badge` | OK, Sincronizando, Erro, Consentimento expirado, Removido do Meu Pluggy |
 | Aviso de conexão | `Alert` | Faixa no topo quando um banco não sincroniza |
 | Notificação rápida | `Sonner` (toast) | "Sincronização concluída: 12 transações novas" |
-| Carregando | `Skeleton` | No formato do conteúdo que vai aparecer, não um spinner |
+| Carregando | `Skeleton` | No formato do conteúdo que vai aparecer, não um spinner. No claro usa `muted-foreground` a 25% (contraste 1,42:1 sobre `card`; `muted` e `accent` davam 1,14:1 e 1,10:1, quase invisíveis); no escuro usa `accent` |
 | Abas | `Tabs` | Alternar mês, tipo de gráfico |
 | Controle segmentado | `Button` (`role="radio"`) | Pílula com borda; a opção escolhida fica em `secondary` com ícone de check (nunca só a cor). Usado na escolha de tema em Ajustes |
 | Menu | `Sidebar` (abaixo de 1024 px, no modo que abre por cima) | Grupos de áreas, item ativo, rodapé com Categorias e regras e Ajustes |
