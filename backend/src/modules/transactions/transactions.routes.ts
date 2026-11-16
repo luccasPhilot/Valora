@@ -11,23 +11,42 @@ const MAX_PAGE_SIZE = 100;
 const MAX_SEARCH_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 120;
 
+// Os filtros da lista e do resumo são os mesmos: o resumo cobre o filtro inteiro, não uma página.
+const filterShape = {
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  categoryId: z.uuid().optional(),
+  type: z.enum(TRANSACTION_TYPES).optional(),
+  accountId: z.uuid().optional(),
+  source: z.enum(['open_finance', 'manual']).optional(),
+  possibleDuplicate: z.stringbool().optional(),
+  search: z.string().trim().max(MAX_SEARCH_LENGTH).optional(),
+};
+
+function isPeriodInOrder({ from, to }: { from?: string; to?: string }): boolean {
+  return !from || !to || from <= to;
+}
+
+const PERIOD_ORDER_ISSUE = {
+  message: 'A data inicial não pode ser depois da final',
+  path: ['from'],
+};
+
 const listQuerySchema = z
   .object({
-    from: z.iso.date().optional(),
-    to: z.iso.date().optional(),
-    categoryId: z.uuid().optional(),
-    type: z.enum(TRANSACTION_TYPES).optional(),
-    accountId: z.uuid().optional(),
-    source: z.enum(['open_finance', 'manual']).optional(),
-    possibleDuplicate: z.stringbool().optional(),
-    search: z.string().trim().max(MAX_SEARCH_LENGTH).optional(),
+    ...filterShape,
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   })
-  .refine(({ from, to }) => !from || !to || from <= to, {
-    message: 'A data inicial não pode ser depois da final',
-    path: ['from'],
-  });
+  .refine(isPeriodInOrder, PERIOD_ORDER_ISSUE);
+
+const summaryQuerySchema = z.object(filterShape).refine(isPeriodInOrder, PERIOD_ORDER_ISSUE);
+
+const summaryResponseSchema = z.object({
+  incomeCents: z.int(),
+  expenseCents: z.int(),
+  count: z.int(),
+});
 
 const transactionParamsSchema = z.object({ id: z.uuid() });
 
@@ -130,6 +149,17 @@ export function transactionsRoutes({
           items: result.items.map(toTransactionResponse),
           pagination: { page, limit, total: result.total },
         };
+      },
+    );
+
+    app.get(
+      '/transactions/summary',
+      { schema: { querystring: summaryQuerySchema, response: { 200: summaryResponseSchema } } },
+      async (request) => {
+        const { incomeCents, expenseCents, count } = await transactionsService.summarize(
+          request.query,
+        );
+        return { incomeCents, expenseCents, count };
       },
     );
 

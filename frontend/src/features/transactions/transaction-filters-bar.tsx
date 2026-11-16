@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import {
   type ReactNode,
@@ -13,6 +14,7 @@ import { FormPanel } from '@/components/form-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select } from '@/components/ui/select';
 import type { Category } from '@/lib/api/categories';
 import {
@@ -25,6 +27,7 @@ import {
 import { CategorySelect } from '../categories/category-select';
 import {
   accountOptionLabel,
+  countPanelFilters,
   describeActiveFilters,
   NO_FILTERS,
   PERIOD_LABELS,
@@ -37,6 +40,8 @@ import {
 } from './transaction-filters';
 
 const SEARCH_DEBOUNCE_MS = 300;
+// Larga o bastante para "Últimos 3 meses" e as datas aparecerem inteiros.
+const DESKTOP_FIELD_WIDTH = 'w-48';
 
 export interface FiltersBarHandle {
   /** Leva o foco ao filtro de período (no celular, abre o painel "Filtros"). */
@@ -66,13 +71,14 @@ function findSource(value: string): TransactionSource | null {
 
 interface FieldProps {
   label: string;
+  className?: string;
   children: (fieldId: string) => ReactNode;
 }
 
-function Field({ label, children }: FieldProps) {
+function Field({ label, className, children }: FieldProps) {
   const fieldId = useId();
   return (
-    <div className="min-w-0 space-y-1.5">
+    <div className={cn('min-w-0 space-y-1.5', className)}>
       <Label htmlFor={fieldId}>{label}</Label>
       {children(fieldId)}
     </div>
@@ -130,14 +136,18 @@ function SearchField({ value, onCommit }: SearchFieldProps) {
   );
 }
 
-interface FilterFieldsProps extends Omit<TransactionFiltersBarProps, 'isPhone' | 'handleRef'> {
+interface PeriodFieldsProps {
+  filters: TransactionFilters;
+  onChange: (filters: TransactionFilters) => void;
   periodRef?: Ref<HTMLSelectElement>;
+  /** Largura dos campos na barra do computador; no painel do celular ocupam a linha toda. */
+  fieldClassName?: string;
 }
 
-function FilterFields({ filters, categories, accounts, onChange, periodRef }: FilterFieldsProps) {
+function PeriodFields({ filters, onChange, periodRef, fieldClassName }: PeriodFieldsProps) {
   return (
     <>
-      <Field label="Período">
+      <Field label="Período" className={fieldClassName}>
         {(fieldId) => (
           <Select
             id={fieldId}
@@ -158,7 +168,7 @@ function FilterFields({ filters, categories, accounts, onChange, periodRef }: Fi
       </Field>
       {filters.period === 'custom' ? (
         <>
-          <Field label="De">
+          <Field label="De" className={fieldClassName}>
             {(fieldId) => (
               <Input
                 id={fieldId}
@@ -169,7 +179,7 @@ function FilterFields({ filters, categories, accounts, onChange, periodRef }: Fi
               />
             )}
           </Field>
-          <Field label="Até">
+          <Field label="Até" className={fieldClassName}>
             {(fieldId) => (
               <Input
                 id={fieldId}
@@ -182,6 +192,21 @@ function FilterFields({ filters, categories, accounts, onChange, periodRef }: Fi
           </Field>
         </>
       ) : null}
+    </>
+  );
+}
+
+interface PanelFieldsProps {
+  filters: TransactionFilters;
+  categories: readonly Category[];
+  accounts: readonly AccountOption[];
+  onChange: (filters: TransactionFilters) => void;
+}
+
+/** Os filtros que abrem sob demanda: categoria, tipo, origem e conta. */
+function PanelFields({ filters, categories, accounts, onChange }: PanelFieldsProps) {
+  return (
+    <>
       <Field label="Categoria">
         {(fieldId) => (
           <CategorySelect
@@ -295,9 +320,8 @@ export function TransactionFiltersBar({
     focusPeriod: () => (isPhone ? setIsPanelOpen(true) : periodRef.current?.focus()),
   }));
   const fieldProps = { filters, categories, accounts, onChange };
-  const activeCount = describeActiveFilters(filters, { categories, accounts }).filter(
-    (chip) => chip.key !== 'search',
-  ).length;
+  const activeCount = countPanelFilters(filters);
+  const filtersLabel = `Filtros${activeCount > 0 ? ` (${activeCount})` : ''}`;
 
   return (
     <div className="space-y-3">
@@ -311,7 +335,7 @@ export function TransactionFiltersBar({
           </div>
           <Button variant="outline" onClick={() => setIsPanelOpen(true)}>
             <SlidersHorizontal aria-hidden="true" />
-            Filtros{activeCount > 0 ? ` (${activeCount})` : ''}
+            {filtersLabel}
           </Button>
           <FormPanel
             open={isPanelOpen}
@@ -320,7 +344,8 @@ export function TransactionFiltersBar({
             description="Período, categoria, tipo, origem e conta."
           >
             <div className="space-y-4">
-              <FilterFields {...fieldProps} />
+              <PeriodFields filters={filters} onChange={onChange} />
+              <PanelFields {...fieldProps} />
               <Button className="w-full" onClick={() => setIsPanelOpen(false)}>
                 Ver resultados
               </Button>
@@ -328,12 +353,32 @@ export function TransactionFiltersBar({
           </FormPanel>
         </div>
       ) : (
-        <div className="grid items-end gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(12rem,1.4fr)_repeat(5,minmax(0,1fr))]">
-          <SearchField
-            value={filters.search}
-            onCommit={(search) => onChange({ ...filters, search })}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-56 flex-1">
+            <SearchField
+              value={filters.search}
+              onCommit={(search) => onChange({ ...filters, search })}
+            />
+          </div>
+          <PeriodFields
+            filters={filters}
+            onChange={onChange}
+            periodRef={periodRef}
+            fieldClassName={DESKTOP_FIELD_WIDTH}
           />
-          <FilterFields {...fieldProps} periodRef={periodRef} />
+          <Popover open={isPanelOpen} onOpenChange={setIsPanelOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                <SlidersHorizontal aria-hidden="true" />
+                {filtersLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent aria-label="Filtros" className="w-[min(22rem,calc(100vw-2rem))] p-4">
+              <div className="space-y-4">
+                <PanelFields {...fieldProps} />
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
       <FilterChips {...fieldProps} />

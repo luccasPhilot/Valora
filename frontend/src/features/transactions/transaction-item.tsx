@@ -66,10 +66,12 @@ function StackedRow({ transaction, onOpen }: Omit<TransactionItemProps, 'layout'
       <CategoryBadgeIcon name={iconName(transaction)} />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-base font-medium">{transaction.description}</span>
+          <span className="line-clamp-2 text-base font-medium break-words">
+            {transaction.description}
+          </span>
           <InstallmentBadge transaction={transaction} />
         </span>
-        <span className="block truncate text-sm text-muted-foreground">
+        <span className="line-clamp-2 block text-sm text-muted-foreground">
           {categoryLabel(transaction)} · {transaction.account.name}
         </span>
         {hasOriginBadges(transaction) ? (

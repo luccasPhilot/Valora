@@ -28,6 +28,7 @@ import {
 } from './transaction-filters';
 import { type FiltersBarHandle, TransactionFiltersBar } from './transaction-filters-bar';
 import { TransactionList } from './transaction-list';
+import { TransactionSummaryLine } from './transaction-summary';
 import {
   useAccountOptions,
   useChangeCategory,
@@ -35,6 +36,7 @@ import {
   useDuplicateCount,
   useResolveDuplicate,
   useTransactionList,
+  useTransactionSummary,
 } from './transactions-queries';
 
 // Faixas do Design System: celular < 768, tablet < 1024, computador a partir de 1024.
@@ -51,7 +53,9 @@ export function Component() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
   const today = todayInSaoPaulo();
-  const list = useTransactionList(toTransactionQuery(filters, today));
+  const transactionQuery = useMemo(() => toTransactionQuery(filters, today), [filters, today]);
+  const list = useTransactionList(transactionQuery);
+  const summary = useTransactionSummary(transactionQuery);
   const categoriesQuery = useCategories();
   const accountsQuery = useAccountOptions();
   const changeCategory = useChangeCategory();
@@ -147,6 +151,9 @@ export function Component() {
         isPhone={isPhone}
         onChange={updateFilters}
       />
+      {list.isPending || transactions.length > 0 ? (
+        <TransactionSummaryLine summary={summary} isTransferFilter={filters.type === 'transfer'} />
+      ) : null}
       <TransactionsContent
         list={list}
         transactions={transactions}

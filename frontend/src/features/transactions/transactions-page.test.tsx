@@ -255,7 +255,7 @@ describe('filtros', () => {
     });
   });
 
-  it('should_open_the_filters_panel_with_the_fields_when_on_a_phone', async () => {
+  it('should_open_the_filters_panel_with_period_and_the_four_filters_when_on_a_phone', async () => {
     // Arrange
     stubViewport({ viewportWidth: 390 });
     stubApi();
@@ -265,7 +265,97 @@ describe('filtros', () => {
     await userEvent.click(screen.getByRole('button', { name: /Filtros/ }));
     // Assert
     const panel = await screen.findByRole('dialog', { name: 'Filtros' });
-    expect(within(panel).getByLabelText('Período')).toBeInTheDocument();
+    expect(
+      ['Período', 'Categoria', 'Tipo', 'Origem', 'Conta'].map(
+        (label) => within(panel).queryByLabelText(label) !== null,
+      ),
+    ).toEqual([true, true, true, true, true]);
+  });
+
+  it('should_show_only_search_period_and_filters_button_when_on_a_desktop', async () => {
+    // Arrange
+    stubApi();
+    // Act
+    renderPage();
+    await screen.findByText('FARMÁCIA SÃO JOÃO');
+    // Assert
+    expect({
+      search: screen.queryByLabelText('Buscar') !== null,
+      period: screen.queryByLabelText('Período') !== null,
+      filtersButton: screen.queryByRole('button', { name: 'Filtros' }) !== null,
+      hiddenFields: ['Categoria', 'Tipo', 'Origem', 'Conta'].filter(
+        (label) => screen.queryByLabelText(label) !== null,
+      ),
+    }).toEqual({ search: true, period: true, filtersButton: true, hiddenFields: [] });
+  });
+
+  it('should_open_a_popover_with_the_four_filters_when_the_filters_button_is_clicked_on_a_desktop', async () => {
+    // Arrange
+    stubApi();
+    renderPage();
+    await screen.findByText('FARMÁCIA SÃO JOÃO');
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    // Assert
+    const popover = await screen.findByRole('dialog', { name: 'Filtros' });
+    expect(
+      ['Categoria', 'Tipo', 'Origem', 'Conta'].map(
+        (label) => within(popover).queryByLabelText(label) !== null,
+      ),
+    ).toEqual([true, true, true, true]);
+  });
+
+  it('should_filter_and_count_active_filters_when_category_and_type_are_chosen', async () => {
+    // Arrange
+    const fetchMock = stubApi();
+    renderPage();
+    await screen.findByText('FARMÁCIA SÃO JOÃO');
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    const popover = await screen.findByRole('dialog', { name: 'Filtros' });
+    // Act
+    await userEvent.selectOptions(within(popover).getByLabelText('Categoria'), TRANSPORT.id);
+    await userEvent.selectOptions(within(popover).getByLabelText('Tipo'), 'expense');
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Filtros (2)' })).toBeInTheDocument();
+    expect(listQueries(fetchMock).at(-1)?.get('categoryId')).toBe(TRANSPORT.id);
+    expect(listQueries(fetchMock).at(-1)?.get('type')).toBe('expense');
+  });
+
+  it('should_keep_chips_visible_and_not_count_the_period_when_the_popover_is_closed', async () => {
+    // Arrange
+    stubApi();
+    // Act
+    renderPage(`/transacoes?period=last-month&category=${TRANSPORT.id}&type=expense`);
+    // Assert
+    const chips = await screen.findByRole('list', { name: 'Filtros ativos' });
+    expect(within(chips).getAllByRole('button', { name: /Remover filtro/ })).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Filtros (2)' })).toBeInTheDocument();
+  });
+
+  it('should_return_the_focus_to_the_filters_button_when_the_popover_is_closed_with_escape', async () => {
+    // Arrange
+    stubApi();
+    renderPage();
+    await screen.findByText('FARMÁCIA SÃO JOÃO');
+    const filtersButton = screen.getByRole('button', { name: 'Filtros' });
+    await userEvent.click(filtersButton);
+    await screen.findByRole('dialog', { name: 'Filtros' });
+    // Act
+    await userEvent.keyboard('{Escape}');
+    // Assert
+    await waitFor(() => expect(filtersButton).toHaveFocus());
+  });
+
+  it('should_clear_every_filter_and_the_count_when_clear_filters_is_clicked_in_the_chips', async () => {
+    // Arrange
+    stubApi();
+    renderPage(`/transacoes?category=${TRANSPORT.id}&type=expense`);
+    const chips = await screen.findByRole('list', { name: 'Filtros ativos' });
+    // Act
+    await userEvent.click(within(chips).getByRole('button', { name: 'Limpar filtros' }));
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Filtros' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Filtros ativos' })).not.toBeInTheDocument();
   });
 });
 

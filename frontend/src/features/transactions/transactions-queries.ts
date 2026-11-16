@@ -16,6 +16,7 @@ import {
   deleteTransaction,
   type DuplicateResolution,
   getTransaction,
+  getTransactionSummary,
   listTransactions,
   resolveDuplicate,
   type Transaction,
@@ -36,6 +37,7 @@ export const TRANSACTIONS_QUERY_KEY = ['transactions'] as const;
 // de toda consulta que começa por essa chave, e estas duas não têm o formato da lista paginada.
 const TRANSACTION_DETAIL_KEY = ['transaction-detail'] as const;
 const DUPLICATE_COUNT_KEY = ['possible-duplicate-count'] as const;
+const TRANSACTION_SUMMARY_KEY = ['transaction-summary'] as const;
 const CATEGORY_RULES_QUERY_KEY = ['category-rules'] as const;
 const FIRST_PAGE = 1;
 
@@ -49,6 +51,14 @@ export function useTransactionList(query: TransactionQuery) {
     initialPageParam: FIRST_PAGE,
     getNextPageParam: ({ pagination }) =>
       pagination.page * pagination.limit < pagination.total ? pagination.page + 1 : undefined,
+  });
+}
+
+/** Resumo do filtro inteiro (não só das páginas carregadas); usa os mesmos parâmetros da lista. */
+export function useTransactionSummary(query: TransactionQuery) {
+  return useQuery({
+    queryKey: [...TRANSACTION_SUMMARY_KEY, query],
+    queryFn: () => getTransactionSummary(query),
   });
 }
 
@@ -131,6 +141,7 @@ export function useChangeCategory() {
       // Passar uma transação para (ou de) uma categoria de transferência muda receitas e despesas.
       void queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: TRANSACTION_SUMMARY_KEY });
       if (!request.applyAlways) return;
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: CATEGORY_RULES_QUERY_KEY });
@@ -155,7 +166,7 @@ export function useDuplicateCount(today: string) {
   });
 }
 
-// Lançar, editar, excluir e resolver duplicatas mudam a lista, os detalhes abertos, a contagem, o
+// Lançar, editar, excluir e resolver duplicatas mudam a lista, o resumo, os detalhes abertos, a contagem, o
 // gasto dos orçamentos (e os alertas deles) e os números do Início.
 function useRefreshTransactions() {
   const queryClient = useQueryClient();
@@ -163,6 +174,7 @@ function useRefreshTransactions() {
     Promise.all(
       [
         TRANSACTIONS_QUERY_KEY,
+        TRANSACTION_SUMMARY_KEY,
         TRANSACTION_DETAIL_KEY,
         DUPLICATE_COUNT_KEY,
         BUDGETS_QUERY_KEY,

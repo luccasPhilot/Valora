@@ -1,29 +1,20 @@
-import { and, count, desc, eq, gte, ilike, isNotNull, lte, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
 import { accounts, categories, transactions } from '../../db/schema.js';
-import { type TransactionType, transactionTypeCondition } from './transaction-type-filter.js';
+import {
+  buildConditions,
+  type TransactionFilters,
+  transactionSourceSchema,
+} from './transaction-filter-conditions.js';
+
+export type { TransactionFilters, TransactionSource } from './transaction-filter-conditions.js';
 
 const transactionStatusSchema = z.enum(['pending', 'posted']);
-const transactionSourceSchema = z.enum(['open_finance', 'manual']);
-export type TransactionSource = z.infer<typeof transactionSourceSchema>;
 const categorySourceSchema = z.enum(['user', 'rule', 'pluggy', 'none']);
 const categoryKindSchema = z.enum(['expense', 'income', 'transfer']);
 const accountTypeSchema = z.enum(['checking', 'savings', 'credit_card', 'cash']);
-
-export interface TransactionFilters {
-  readonly from?: string;
-  readonly to?: string;
-  readonly categoryId?: string;
-  readonly type?: TransactionType;
-  readonly accountId?: string;
-  readonly source?: TransactionSource;
-  /** `true` lista só as transações do banco com possível duplicata pendente. */
-  readonly possibleDuplicate?: boolean;
-  /** Já normalizado (sem acento, maiúsculo), como `description_normalized`. */
-  readonly normalizedSearch?: string;
-}
 
 export interface PageRequest {
   readonly page: number;
@@ -115,27 +106,6 @@ function toRecord(row: TransactionRow): TransactionRecord {
     installmentTotal: row.installmentTotal,
     possibleDuplicateOfId: row.possibleDuplicateOfId,
   };
-}
-
-/** `%` e `_` do termo digitado valem como texto, não como curinga do LIKE. */
-function escapeLikePattern(term: string): string {
-  return term.replace(/[\\%_]/g, (character) => `\\${character}`);
-}
-
-function buildConditions(filters: TransactionFilters): SQL[] {
-  const conditions: SQL[] = [];
-  if (filters.from) conditions.push(gte(transactions.date, filters.from));
-  if (filters.to) conditions.push(lte(transactions.date, filters.to));
-  if (filters.categoryId) conditions.push(eq(transactions.categoryId, filters.categoryId));
-  if (filters.accountId) conditions.push(eq(transactions.accountId, filters.accountId));
-  if (filters.type) conditions.push(transactionTypeCondition(filters.type));
-  if (filters.source) conditions.push(eq(transactions.source, filters.source));
-  if (filters.possibleDuplicate) conditions.push(isNotNull(transactions.possibleDuplicateOfId));
-  if (filters.normalizedSearch) {
-    const pattern = `%${escapeLikePattern(filters.normalizedSearch)}%`;
-    conditions.push(ilike(transactions.descriptionNormalized, pattern));
-  }
-  return conditions;
 }
 
 export class TransactionsQueryRepository {

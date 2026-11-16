@@ -169,6 +169,12 @@ export function hasFiltersBesidesPeriod(filters: TransactionFilters): boolean {
   );
 }
 
+/** Quantos dos filtros do botão "Filtros" (categoria, tipo, origem e conta) estão ativos. */
+export function countPanelFilters(filters: TransactionFilters): number {
+  return [filters.categoryId, filters.type, filters.source, filters.accountId].filter(Boolean)
+    .length;
+}
+
 export interface FilterChip {
   readonly key: string;
   readonly label: string;

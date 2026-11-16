@@ -137,6 +137,17 @@ export function pageResponse(items: unknown[], page = 1, total = items.length): 
   return Response.json({ items, pagination: { page, limit: PAGE_LIMIT, total } });
 }
 
+/** A resposta de `GET /transactions/summary`; o padrão bate com `DEFAULT_PAGE` (salário e duas compras). */
+export function summaryResponse(
+  summary: { incomeCents: number; expenseCents: number; count: number } = {
+    incomeCents: 500000,
+    expenseCents: 43990,
+    count: 4,
+  },
+): Response {
+  return Response.json(summary);
+}
+
 /** Chave para sobrescrever a contagem de duplicatas (a lista com `possibleDuplicate=true&limit=1`). */
 export const DUPLICATE_COUNT_ROUTE = 'COUNT /api/v1/transactions';
 
@@ -154,6 +165,7 @@ export function stubApi(overrides: Record<string, Handler> = {}) {
     'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
     'GET /api/v1/accounts': () => accountsResponse([CASH_ACCOUNT, ACCOUNT]),
     'GET /api/v1/transactions': () => pageResponse(DEFAULT_PAGE),
+    'GET /api/v1/transactions/summary': () => summaryResponse(),
     [DUPLICATE_COUNT_ROUTE]: () => pageResponse([], 1, 0),
     ...overrides,
   };

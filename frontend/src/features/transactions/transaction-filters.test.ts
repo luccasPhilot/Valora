@@ -4,6 +4,7 @@ import type { Category } from '@/lib/api/categories';
 import type { AccountOption } from '@/lib/api/transactions';
 
 import {
+  countPanelFilters,
   describeActiveFilters,
   NO_FILTERS,
   parseFilters,
@@ -160,6 +161,47 @@ describe('filtros de origem e de duplicatas', () => {
     const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
     // Assert
     expect(chips.map((chip) => chip.label)).toEqual(['Lançamento manual', 'Possíveis duplicatas']);
+  });
+});
+
+describe('countPanelFilters', () => {
+  it('should_count_only_category_type_source_and_account_when_filters_are_active', () => {
+    // Arrange
+    const filters = {
+      ...NO_FILTERS,
+      period: 'last-month' as const,
+      categoryId: TRANSPORT.id,
+      type: 'expense' as const,
+      possibleDuplicate: true,
+      search: 'farmácia',
+    };
+    // Act
+    const count = countPanelFilters(filters);
+    // Assert
+    expect(count).toBe(2);
+  });
+
+  it('should_return_zero_when_no_panel_filter_is_active', () => {
+    // Arrange
+    // Act
+    const count = countPanelFilters(NO_FILTERS);
+    // Assert
+    expect(count).toBe(0);
+  });
+
+  it('should_count_all_four_when_every_panel_filter_is_active', () => {
+    // Arrange
+    const filters = {
+      ...NO_FILTERS,
+      categoryId: TRANSPORT.id,
+      type: 'income' as const,
+      source: 'manual' as const,
+      accountId: CHECKING.id,
+    };
+    // Act
+    const count = countPanelFilters(filters);
+    // Assert
+    expect(count).toBe(4);
   });
 });
 

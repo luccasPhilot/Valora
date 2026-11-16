@@ -745,7 +745,8 @@ describe('filtro de origem', () => {
     renderApp();
     await screen.findByText('FARMÁCIA SÃO JOÃO');
     // Act
-    await userEvent.selectOptions(screen.getByLabelText('Origem'), 'manual');
+    await userEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    await userEvent.selectOptions(await screen.findByLabelText('Origem'), 'manual');
     // Assert
     await waitFor(() => {
       expect(listQueries(fetchMock).map((query) => query.get('source'))).toContain('manual');
@@ -769,7 +770,8 @@ describe('filtro de origem', () => {
     renderApp();
     await screen.findByText('FARMÁCIA SÃO JOÃO');
     // Act
-    const options = within(screen.getByLabelText('Origem')).getAllByRole('option');
+    await userEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const options = within(await screen.findByLabelText('Origem')).getAllByRole('option');
     // Assert
     expect(options.map((option) => option.textContent)).toEqual([
       'Todas as origens',
