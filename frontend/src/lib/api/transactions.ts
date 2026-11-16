@@ -66,9 +66,12 @@ export type Transaction = z.infer<typeof transactionSchema>;
 export type TransactionSource = Transaction['source'];
 export type TransactionPage = z.infer<typeof transactionPageSchema>;
 
+export const UNCATEGORIZED_FILTER = 'none';
+
 export interface TransactionQuery {
   readonly from?: string;
   readonly to?: string;
+  /** Id da categoria, ou `UNCATEGORIZED_FILTER` para as sem categoria. */
   readonly categoryId?: string;
   readonly type?: TransactionType;
   readonly accountId?: string;

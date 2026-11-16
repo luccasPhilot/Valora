@@ -1,4 +1,4 @@
-import { eq, gte, ilike, isNotNull, lte, type SQL } from 'drizzle-orm';
+import { eq, gte, ilike, isNotNull, isNull, lte, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { transactions } from '../../db/schema.js';
@@ -7,9 +7,13 @@ import { type TransactionType, transactionTypeCondition } from './transaction-ty
 export const transactionSourceSchema = z.enum(['open_finance', 'manual']);
 export type TransactionSource = z.infer<typeof transactionSourceSchema>;
 
+/** Valor de `categoryId` que lista só as transações sem categoria. */
+export const UNCATEGORIZED_FILTER = 'none';
+
 export interface TransactionFilters {
   readonly from?: string;
   readonly to?: string;
+  /** Id da categoria, ou `UNCATEGORIZED_FILTER` para as sem categoria. */
   readonly categoryId?: string;
   readonly type?: TransactionType;
   readonly accountId?: string;
@@ -33,7 +37,11 @@ export function buildConditions(filters: TransactionFilters): SQL[] {
   const conditions: SQL[] = [];
   if (filters.from) conditions.push(gte(transactions.date, filters.from));
   if (filters.to) conditions.push(lte(transactions.date, filters.to));
-  if (filters.categoryId) conditions.push(eq(transactions.categoryId, filters.categoryId));
+  if (filters.categoryId === UNCATEGORIZED_FILTER) {
+    conditions.push(isNull(transactions.categoryId));
+  } else if (filters.categoryId) {
+    conditions.push(eq(transactions.categoryId, filters.categoryId));
+  }
   if (filters.accountId) conditions.push(eq(transactions.accountId, filters.accountId));
   if (filters.type) conditions.push(transactionTypeCondition(filters.type));
   if (filters.source) conditions.push(eq(transactions.source, filters.source));

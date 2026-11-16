@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Category } from '@/lib/api/categories';
-import type { AccountOption } from '@/lib/api/transactions';
+import { type AccountOption, UNCATEGORIZED_FILTER } from '@/lib/api/transactions';
 
 import {
   countPanelFilters,
@@ -221,6 +221,15 @@ describe('describeActiveFilters', () => {
     const chips = describeActiveFilters(filters, { categories: [TRANSPORT], accounts: [CHECKING] });
     // Assert
     expect(chips.map((chip) => chip.label)).toEqual(['Transporte', 'Nubank · Conta corrente']);
+  });
+
+  it('should_label_the_chip_as_uncategorized_when_filtering_transactions_without_category', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, categoryId: UNCATEGORIZED_FILTER };
+    // Act
+    const chips = describeActiveFilters(filters, { categories: [TRANSPORT], accounts: [] });
+    // Assert
+    expect(chips.map((chip) => chip.label)).toEqual(['Sem categoria']);
   });
 
   it('should_drop_only_that_filter_when_removing_a_chip', () => {

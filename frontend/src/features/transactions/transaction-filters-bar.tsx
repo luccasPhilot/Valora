@@ -22,6 +22,7 @@ import {
   TRANSACTION_TYPES,
   type TransactionSource,
   type TransactionType,
+  UNCATEGORIZED_FILTER,
 } from '@/lib/api/transactions';
 
 import { CategorySelect } from '../categories/category-select';
@@ -37,6 +38,7 @@ import {
   TRANSACTION_SOURCES,
   type TransactionFilters,
   TYPE_LABELS,
+  UNCATEGORIZED_LABEL,
 } from './transaction-filters';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -214,6 +216,7 @@ function PanelFields({ filters, categories, accounts, onChange }: PanelFieldsPro
             categories={categories}
             value={filters.categoryId ?? ''}
             emptyLabel="Todas as categorias"
+            extraOption={{ value: UNCATEGORIZED_FILTER, label: UNCATEGORIZED_LABEL }}
             onValueChange={(categoryId) => onChange({ ...filters, categoryId: categoryId || null })}
           />
         )}

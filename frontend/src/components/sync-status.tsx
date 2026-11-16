@@ -27,7 +27,7 @@ export function SyncStatus() {
         className="relative flex max-w-full min-w-0 items-center gap-1.5 rounded-full text-xs leading-4 font-medium text-muted-foreground transition-colors outline-none after:absolute after:inset-x-0 after:-inset-y-3.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none sm:min-h-11 sm:px-3 sm:text-sm sm:leading-5 sm:after:hidden sm:hover:bg-accent"
       >
         <RefreshCw
-          className={`size-3.5 shrink-0 sm:size-4 ${isSyncing ? 'motion-safe:animate-spin' : 'max-sm:hidden'}`}
+          className={`size-3.5 shrink-0 sm:size-4 ${isSyncing ? 'motion-safe:animate-spin' : ''}`}
           aria-hidden="true"
         />
         <span className="truncate">{text}</span>

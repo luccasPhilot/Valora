@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
 import { centsSchema } from '../../shared/money.js';
+import { UNCATEGORIZED_FILTER } from './transaction-filter-conditions.js';
 import { TRANSACTION_TYPES } from './transaction-type-filter.js';
 import type { TransactionsModule } from './transactions.module.js';
 import type { TransactionRecord } from './transactions.repository.js';
@@ -15,7 +16,7 @@ const MAX_DESCRIPTION_LENGTH = 120;
 const filterShape = {
   from: z.iso.date().optional(),
   to: z.iso.date().optional(),
-  categoryId: z.uuid().optional(),
+  categoryId: z.union([z.uuid(), z.literal(UNCATEGORIZED_FILTER)]).optional(),
   type: z.enum(TRANSACTION_TYPES).optional(),
   accountId: z.uuid().optional(),
   source: z.enum(['open_finance', 'manual']).optional(),
