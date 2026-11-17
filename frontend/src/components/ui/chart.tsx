@@ -12,12 +12,15 @@ interface ChartContainerProps extends Omit<React.ComponentProps<'div'>, 'childre
 
 // Base do shadcn/ui para os gráficos do Recharts. As cores das séries vêm dos tokens `chart-*`
 // (variáveis CSS, que mudam com o tema), nunca de hex; eixos e grade usam `muted-foreground`.
+// Os gráficos ficam em `aria-hidden` (cada um tem um resumo em texto ou a tabela ao lado), então
+// quem monta o gráfico passa `accessibilityLayer={false}`: o padrão do Recharts deixa o `svg`
+// focável, e um foco dentro de `aria-hidden` não tem nome nem anel.
 function ChartContainer({ className, children, ...props }: ChartContainerProps) {
   return (
     <div
       data-slot="chart"
       className={cn(
-        'w-full text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-layer]:outline-hidden [&_.recharts-surface]:outline-hidden',
+        'w-full text-xs [&_.recharts-cartesian-axis-tick-value]:fill-muted-foreground [&_.recharts-layer]:outline-hidden [&_.recharts-surface]:outline-hidden',
         className,
       )}
       {...props}

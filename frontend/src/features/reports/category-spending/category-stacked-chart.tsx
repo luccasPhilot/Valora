@@ -8,20 +8,21 @@ import {
   YAxis,
 } from 'recharts';
 
+import { niceValueAxis, stackExtremes } from '@/components/charts/axis-scale';
 import { ChartTooltipCard, type TooltipRow } from '@/components/charts/chart-tooltip';
 import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CategorySpendingReport } from '@/lib/api/reports';
-import { formatCompactCurrency, formatMonth, formatMonthName, formatMonthYear } from '@/lib/format';
+import { formatAxisCurrency, formatMonth, formatMonthName, formatMonthYear } from '@/lib/format';
 
 import { seriesColor } from './series-color';
 
 const PHONE_QUERY = '(max-width: 767px)';
 const MAX_BAR_WIDTH_PX = 36;
 const AXIS_WIDTH_PX = 72;
-const PHONE_AXIS_WIDTH_PX = 60;
+const PHONE_AXIS_WIDTH_PX = 68;
 const MAX_POINTS_WITH_ALL_LABELS = 12;
 const PARTIAL_MONTH_LABEL = 'em andamento';
 const STACK_ID = 'category-spending';
@@ -108,6 +109,8 @@ export function CategoryStackedChart({
   const isPhone = useMediaQuery(PHONE_QUERY);
   const { areValuesHidden } = useHideValues();
   const isLongSeries = report.months.length > MAX_POINTS_WITH_ALL_LABELS;
+  const points = toPoints(report);
+  const scale = niceValueAxis(points.flatMap((point) => stackExtremes(point.values)));
   const hasPartialMonth = report.months.includes(partialMonth);
   return (
     <>
@@ -118,7 +121,11 @@ export function CategoryStackedChart({
         </p>
       ) : null}
       <ChartContainer className={className} aria-hidden="true">
-        <BarChart data={toPoints(report)} margin={{ top: 16, right: 0, bottom: 0, left: 0 }}>
+        <BarChart
+          accessibilityLayer={false}
+          data={points}
+          margin={{ top: 16, right: 12, bottom: 0, left: 0 }}
+        >
           <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
           <XAxis
             dataKey="month"
@@ -137,7 +144,9 @@ export function CategoryStackedChart({
             tickLine={false}
             axisLine={false}
             width={isPhone ? PHONE_AXIS_WIDTH_PX : AXIS_WIDTH_PX}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            domain={scale.domain}
+            ticks={scale.ticks}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           <Tooltip
             content={buildTooltip(report, partialMonth)}

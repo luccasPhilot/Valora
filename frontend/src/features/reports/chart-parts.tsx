@@ -11,11 +11,11 @@ export const PARTIAL_MONTH_LABEL = 'em andamento';
 
 const PHONE_QUERY = '(max-width: 767px)';
 const AXIS_WIDTH_PX = 72;
-const PHONE_AXIS_WIDTH_PX = 60;
+const PHONE_AXIS_WIDTH_PX = 68;
 const MAX_POINTS_WITH_ALL_LABELS = 12;
 
 // Folga no topo: o rótulo mais alto do eixo é centrado na linha de grade e não pode ser cortado.
-export const CHART_MARGIN = { top: 16, right: 4, bottom: 0, left: 0 } as const;
+export const CHART_MARGIN = { top: 16, right: 12, bottom: 0, left: 0 } as const;
 
 /** O eixo sempre inclui o zero: é a linha que separa o que sobrou do que faltou. */
 export const ZERO_INCLUSIVE_DOMAIN: [(min: number) => number, (max: number) => number] = [

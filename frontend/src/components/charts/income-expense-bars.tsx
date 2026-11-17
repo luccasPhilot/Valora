@@ -13,8 +13,9 @@ import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { formatCompactCurrency, formatMonth, formatMonthName } from '@/lib/format';
+import { formatAxisCurrency, formatMonth, formatMonthName } from '@/lib/format';
 
+import { niceValueAxis } from './axis-scale';
 import { ChartTooltipCard, type TooltipRow } from './chart-tooltip';
 
 const PHONE_QUERY = '(max-width: 767px)';
@@ -22,7 +23,7 @@ const BAR_RADIUS: [number, number, number, number] = [4, 4, 0, 0];
 const BAR_GAP_PX = 2;
 const MAX_BAR_WIDTH_PX = 28;
 const AXIS_WIDTH_PX = 72;
-const PHONE_AXIS_WIDTH_PX = 60;
+const PHONE_AXIS_WIDTH_PX = 68;
 const HATCH_SIZE_PX = 6;
 const HATCH_STROKE_PX = 2;
 const PARTIAL_MONTH_LABEL = 'em andamento';
@@ -193,16 +194,18 @@ export function IncomeExpenseBars({
   const { areValuesHidden } = useHideValues();
   const hasPartialMonth = points.some((point) => point.month === partialMonth);
   const isLongSeries = points.length > MAX_POINTS_WITH_ALL_LABELS;
+  const scale = niceValueAxis(points.flatMap((point) => [point.incomeCents, point.expenseCents]));
   return (
     <>
       <Legend hasPartialMonth={hasPartialMonth} />
       <ChartContainer className={className} aria-hidden="true">
         <BarChart
+          accessibilityLayer={false}
           data={[...points]}
           barGap={BAR_GAP_PX}
           // Folga no topo: o rótulo mais alto do eixo é centrado na linha de grade e, quebrado em duas
           // linhas no celular ("R$ 28" / "mil"), passa do desenho e era cortado.
-          margin={{ top: 16, right: 0, bottom: 0, left: 0 }}
+          margin={{ top: 16, right: 12, bottom: 0, left: 0 }}
         >
           <HatchPatterns />
           <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
@@ -225,7 +228,9 @@ export function IncomeExpenseBars({
             tickLine={false}
             axisLine={false}
             width={isPhone ? PHONE_AXIS_WIDTH_PX : AXIS_WIDTH_PX}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            domain={scale.domain}
+            ticks={scale.ticks}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           <Tooltip content={buildTooltip(partialMonth)} cursor={{ fill: 'var(--color-accent)' }} />
           {SERIES.map((series) => (

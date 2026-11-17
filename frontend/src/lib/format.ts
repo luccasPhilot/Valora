@@ -4,6 +4,7 @@ import { APP_TIMEZONE } from './timezone';
 const LOCALE = 'pt-BR';
 const CENTS_PER_REAL = 100;
 const MINUS_SIGN = '−';
+const NON_BREAKING_SPACE = String.fromCharCode(0xa0);
 const NON_BREAKING_SPACES = new RegExp('[\u00A0\u202F]', 'g');
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -105,6 +106,11 @@ export function formatSignedCurrency(cents: number): string {
 export function formatCompactCurrency(cents: number): string {
   assertCents(cents);
   return normalize(compactCurrencyFormat.format(cents / CENTS_PER_REAL));
+}
+
+/** Rótulo de eixo: o espaço não quebra, ou o Recharts parte "R$ 3,4 mil" em duas linhas. */
+export function formatAxisCurrency(cents: number): string {
+  return formatCompactCurrency(cents).replaceAll(' ', NON_BREAKING_SPACE);
 }
 
 export function formatPercent(ratio: number): string {
