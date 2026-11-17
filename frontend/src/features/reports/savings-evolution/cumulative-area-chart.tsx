@@ -10,12 +10,13 @@ import {
   YAxis,
 } from 'recharts';
 
+import { niceValueAxis } from '@/components/charts/axis-scale';
 import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
 import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { SavingsMonth } from '@/lib/api/reports';
-import { formatCompactCurrency, formatMonthYear } from '@/lib/format';
+import { formatAxisCurrency, formatMonthYear } from '@/lib/format';
 
 import {
   CHART_MARGIN,
@@ -24,7 +25,6 @@ import {
   PartialMonthNote,
   SERIES_COLOR,
   useValueAxisWidth,
-  ZERO_INCLUSIVE_DOMAIN,
   ZERO_LINE_STROKE,
 } from '../chart-parts';
 
@@ -62,13 +62,14 @@ export function CumulativeAreaChart({ months, partialMonth, className }: Cumulat
   const gradientId = `cumulative-fill-${useId().replace(/:/g, '')}`;
   const { areValuesHidden } = useHideValues();
   const axisWidth = useValueAxisWidth();
+  const scale = niceValueAxis(months.map((month) => month.cumulativeResultCents));
   const first = months[0];
   const last = months.at(-1);
   return (
     <>
       <PartialMonthNote months={months} partialMonth={partialMonth} />
       <ChartContainer className={className} aria-hidden="true">
-        <AreaChart data={[...months]} margin={CHART_MARGIN}>
+        <AreaChart accessibilityLayer={false} data={[...months]} margin={CHART_MARGIN}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={SERIES_COLOR} stopOpacity={AREA_FILL_OPACITY} />
@@ -82,9 +83,10 @@ export function CumulativeAreaChart({ months, partialMonth, className }: Cumulat
             hide={areValuesHidden}
             tickLine={false}
             axisLine={false}
-            domain={ZERO_INCLUSIVE_DOMAIN}
+            domain={scale.domain}
+            ticks={scale.ticks}
             width={axisWidth}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeOpacity={0.6} />
           <Tooltip content={buildTooltip(partialMonth)} />

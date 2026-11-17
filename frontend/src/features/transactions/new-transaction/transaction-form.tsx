@@ -201,7 +201,7 @@ export function TransactionForm({
         </div>
       </div>
       {/* O painel rola e o botão fica preso no rodapé (acima da área segura no celular). */}
-      <div className="sticky bottom-0 -mx-4 mt-5 space-y-2 border-t bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-mx-6 lg:-mb-6 lg:bg-popover lg:px-6 lg:pb-6">
+      <div className="sticky bottom-0 -mx-4 mt-5 space-y-2 border-t bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-bottom-6 lg:-mx-6 lg:-mb-6 lg:bg-popover lg:px-6 lg:pb-6">
         {submitMessage ? (
           <p role="alert" className="text-sm text-destructive">
             {submitMessage}

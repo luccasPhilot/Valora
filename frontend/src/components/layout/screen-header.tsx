@@ -15,7 +15,7 @@ export function ScreenHeader({ title, actions }: ScreenHeaderProps) {
   return (
     <header className="sticky top-0 z-10 border-b bg-background pt-[env(safe-area-inset-top)]">
       {/* Abaixo de 390 px os botões (44 px cada) comem o espaço do título: sem gap, margem menor e título em text-xl. */}
-      <div className="mx-auto flex h-14 w-full lg:h-[72px] max-w-[1200px] items-center gap-0 px-3 min-[390px]:gap-2 min-[390px]:px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 w-full lg:h-18 max-w-content items-center gap-0 px-3 min-[390px]:gap-2 min-[390px]:px-4 sm:px-6 lg:px-8">
         <SidebarTrigger className="-ml-2 size-11 rounded-full lg:hidden" aria-label="Abrir menu" />
         {/* Celular: o status fica embaixo do título, para o título nunca ser cortado. A partir de sm, à direita. */}
         <div className="flex min-w-0 flex-1 flex-col items-start sm:flex-row sm:items-center sm:justify-between sm:gap-2">

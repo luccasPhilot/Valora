@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router';
+import { useEffect, useRef } from 'react';
+import { NavLink, useLocation } from 'react-router';
 
 import { type ReportDefinition, REPORTS_BASE_PATH } from './report-definitions';
 
@@ -6,21 +7,46 @@ const MIN_REPORTS_FOR_NAV = 2;
 
 interface ReportsNavProps {
   reports: readonly ReportDefinition[];
-  /** O `?periodo=` atual (ou vazio): vai junto no link, para o período valer em qualquer relatório. */
-  periodSearch: string;
+  /** O `?periodo=` e o `?visao=` atuais (ou vazio): vão junto no link, para valerem em qualquer relatório. */
+  filtersSearch: string;
 }
 
-/** Links entre os relatórios; com um relatório só, não há para onde ir e a navegação some. */
-export function ReportsNav({ reports, periodSearch }: ReportsNavProps) {
+// No celular as abas não cabem numa linha: a linha rola, sem barra, e as bordas esmaecem para
+// mostrar que há mais. A margem à direita deixa a última aba sair de baixo do esmaecido.
+const SCROLL_CLASSES = [
+  '-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  'max-sm:pr-12 max-sm:[mask-image:linear-gradient(to_right,transparent,black_1rem,black_calc(100%-2rem),transparent)]',
+  'sm:mx-0 sm:px-0',
+].join(' ');
+
+const TAB_CLASSES = [
+  'inline-flex h-11 items-center border-b-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap text-muted-foreground outline-none',
+  'hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+  'aria-[current=page]:border-primary aria-[current=page]:text-foreground',
+].join(' ');
+
+/**
+ * Abas entre os relatórios; com um relatório só, não há para onde ir e a navegação some. A aba
+ * aberta sempre fica à vista, mesmo com a linha rolando.
+ */
+export function ReportsNav({ reports, filtersSearch }: ReportsNavProps) {
+  const navRef = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const nav = navRef.current;
+    const openTab = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !openTab) return;
+    nav.scrollLeft = openTab.offsetLeft - (nav.clientWidth - openTab.offsetWidth) / 2;
+  }, [pathname]);
   if (reports.length < MIN_REPORTS_FOR_NAV) return null;
   return (
-    <nav aria-label="Relatórios" className="-mx-1 overflow-x-auto px-1 pb-1">
-      <ul className="flex w-max gap-1 rounded-3xl border bg-card p-1">
+    <nav ref={navRef} aria-label="Relatórios" className={`relative ${SCROLL_CLASSES}`}>
+      <ul className="flex w-max min-w-full gap-1 border-b">
         {reports.map((report) => (
-          <li key={report.key}>
+          <li key={report.key} className="-mb-px">
             <NavLink
-              to={{ pathname: `${REPORTS_BASE_PATH}/${report.path}`, search: periodSearch }}
-              className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-secondary aria-[current=page]:text-secondary-foreground"
+              to={{ pathname: `${REPORTS_BASE_PATH}/${report.path}`, search: filtersSearch }}
+              className={TAB_CLASSES}
             >
               {report.label}
             </NavLink>

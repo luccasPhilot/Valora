@@ -81,7 +81,7 @@ export function SavingsRateChart({ months, partialMonth, className }: SavingsRat
     <>
       <PartialMonthNote months={months} partialMonth={partialMonth} />
       <ChartContainer className={className} aria-hidden="true">
-        <LineChart data={[...months]} margin={CHART_MARGIN}>
+        <LineChart accessibilityLayer={false} data={[...months]} margin={CHART_MARGIN}>
           <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
           <XAxis {...monthAxisProps(months.length)} />
           {/* Percentuais não são valores em reais: o eixo continua com "Ocultar valores". */}

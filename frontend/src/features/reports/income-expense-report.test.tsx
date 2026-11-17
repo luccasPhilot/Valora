@@ -198,11 +198,13 @@ describe('Relatório de receitas e despesas', () => {
     expect({
       income: screen.getByRole('region', { name: 'Receitas' }).textContent,
       expense: screen.getByRole('region', { name: 'Despesas' }).textContent,
-      result: screen.getByRole('region', { name: 'Resultado' }).textContent,
+      result: screen
+        .getByRole('region', { name: 'Resultado' })
+        .textContent?.startsWith('Resultado+ R$ 300,00'),
     }).toEqual({
       income: 'Receitas+ R$ 6.000,00',
       expense: 'Despesas− R$ 5.700,00',
-      result: 'Resultado+ R$ 300,00',
+      result: true,
     });
   });
 
@@ -307,5 +309,104 @@ describe('Relatório de receitas e despesas', () => {
     // Assert
     expect(await screen.findByText('Não foi possível carregar o relatório.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument();
+  });
+});
+
+describe('Relatório de receitas e despesas — resposta e contexto', () => {
+  it('should_answer_with_the_monthly_average_of_closed_months_when_there_is_one', async () => {
+    // Arrange
+    stubReport();
+    // Act
+    renderApp(REPORT_PATH);
+    await findReport();
+    // Assert
+    expect(screen.getByText(/entram em média/).textContent).toBe(
+      'No único mês fechado, entram em média R$ 5.000,00 e saem R$ 3.200,00 por mês.',
+    );
+  });
+
+  it('should_count_the_closed_months_when_there_are_several', async () => {
+    // Arrange
+    const september = { ...OCTOBER, month: '2026-09' };
+    stubReport(reportBody({ months: [september, OCTOBER, NOVEMBER] }));
+    // Act
+    renderApp(REPORT_PATH);
+    await findReport();
+    // Assert
+    expect(screen.getByText(/entram em média/)).toHaveTextContent('Nos 2 meses fechados');
+  });
+
+  it('should_show_the_view_toggle_in_the_chart_card_and_not_in_the_filters', async () => {
+    // Arrange
+    stubReport();
+    renderApp(REPORT_PATH);
+    // Act
+    const chartCard = await findReport();
+    // Assert
+    expect(within(chartCard).getByRole('radiogroup', { name: 'Visualização' })).toBeVisible();
+    expect(screen.getAllByRole('radiogroup', { name: 'Visualização' })).toHaveLength(1);
+  });
+
+  it('should_keep_the_table_view_when_the_user_opens_another_report', async () => {
+    // Arrange
+    stubReport();
+    const router = renderApp(`${REPORT_PATH}?visao=tabela`);
+    await findReport();
+    // Act
+    await userEvent.click(screen.getByRole('link', { name: 'Por categoria' }));
+    // Assert
+    await waitFor(() => expect(router.state.location.search).toBe('?visao=tabela'));
+  });
+
+  it('should_say_when_the_data_starts_after_the_first_month_of_the_period', async () => {
+    // Arrange
+    stubReport();
+    // Act
+    renderApp(REPORT_PATH);
+    await findReport();
+    // Assert
+    expect(
+      screen.getByText('Há dados desde out. 2026, por isso o período mostra 2 meses.'),
+    ).toBeInTheDocument();
+  });
+
+  it('should_not_mention_the_history_when_the_data_covers_the_whole_period', async () => {
+    // Arrange
+    stubReport(reportBody({ months: [{ ...OCTOBER, month: '2025-12' }, NOVEMBER] }));
+    // Act
+    renderApp(REPORT_PATH);
+    await findReport();
+    // Assert
+    expect(screen.queryByText(/Há dados desde/)).not.toBeInTheDocument();
+  });
+
+  it('should_title_the_tab_with_the_open_report', async () => {
+    // Arrange
+    stubReport();
+    // Act
+    renderApp(REPORT_PATH);
+    await findReport();
+    // Assert
+    expect(document.title).toBe('Receitas e despesas | Relatórios | Valora');
+  });
+
+  it('should_suggest_a_longer_period_when_the_short_period_has_no_data', async () => {
+    // Arrange
+    stubReport(emptyReportBody());
+    // Act
+    renderApp(`${REPORT_PATH}?periodo=6m`);
+    await screen.findByText('Ainda não há transações neste período');
+    // Assert
+    expect(screen.getByRole('button', { name: 'Mudar período' })).toBeInTheDocument();
+  });
+
+  it('should_point_to_the_accounts_when_even_the_longest_period_has_no_data', async () => {
+    // Arrange
+    stubReport(emptyReportBody());
+    // Act
+    renderApp(`${REPORT_PATH}?periodo=24m`);
+    await screen.findByText('Ainda não há transações neste período');
+    // Assert
+    expect(screen.getByRole('link', { name: 'Ver contas' })).toBeInTheDocument();
   });
 });

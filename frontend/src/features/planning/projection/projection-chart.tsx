@@ -16,7 +16,7 @@ import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { DailyBalance, Projection } from '@/lib/api/projection';
-import { formatCompactCurrency, formatDate, formatIsoDayMonth } from '@/lib/format';
+import { formatAxisCurrency, formatDate, formatIsoDayMonth } from '@/lib/format';
 
 import { projectionEndDate } from './projection-labels';
 
@@ -63,7 +63,11 @@ export function ProjectionChart({ projection }: { projection: Projection }) {
   return (
     <>
       <ChartContainer className="h-52 lg:h-64" aria-hidden="true">
-        <LineChart data={[...projection.daily]} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <LineChart
+          accessibilityLayer={false}
+          data={[...projection.daily]}
+          margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+        >
           <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
           <XAxis
             dataKey="date"
@@ -79,7 +83,7 @@ export function ProjectionChart({ projection }: { projection: Projection }) {
             axisLine={false}
             width={isPhone ? PHONE_AXIS_WIDTH_PX : AXIS_WIDTH_PX}
             domain={[(dataMin: number) => Math.min(dataMin, lowestBalanceCents), 'dataMax']}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           {lowestBalanceCents < 0 ? (
             <ReferenceLine

@@ -150,6 +150,7 @@ describe('Início', () => {
       'Saldo total',
       'Receitas do mês',
       'Despesas do mês',
+      'Resultado do mês',
       'Projeção do fim do mês',
       'Metas',
       'Receitas x despesas',
@@ -203,6 +204,16 @@ describe('Início', () => {
       expect.objectContaining({ textContent: 'Receitas do mês+ R$ 5.000,00' }),
       expect.objectContaining({ textContent: 'Despesas do mês− R$ 2.000,00' }),
     ]);
+  });
+
+  it('should_show_the_month_result_as_income_minus_expense', async () => {
+    // Arrange
+    stubDashboardApi();
+    renderDashboard();
+    // Act
+    const result = await screen.findByRole('heading', { name: 'Resultado do mês' });
+    // Assert
+    expect(result.closest('section')).toHaveTextContent('Resultado do mês+ R$ 3.000,00');
   });
 });
 

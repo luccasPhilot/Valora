@@ -37,7 +37,11 @@ function BalanceEvolutionChart({ points }: { points: readonly BalancePoint[] }) 
   return (
     <>
       <ChartContainer className="h-24 lg:h-28" aria-hidden="true">
-        <AreaChart data={[...points]} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <AreaChart
+          accessibilityLayer={false}
+          data={[...points]}
+          margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={SERIES_COLOR} stopOpacity={AREA_FILL_OPACITY} />

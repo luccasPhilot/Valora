@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatAxisCurrency,
   formatCompactCurrency,
   formatCurrency,
   formatCurrencyTrimmed,
@@ -358,5 +359,25 @@ describe('formatSignedPercent', () => {
     const text = formatSignedPercent(ratio);
     // Assert
     expect(text).toBe('0%');
+  });
+});
+
+describe('formatAxisCurrency', () => {
+  it('should_use_only_non_breaking_spaces_when_formatting_an_axis_label', () => {
+    // Arrange
+    const cents = 340000;
+    // Act
+    const text = formatAxisCurrency(cents);
+    // Assert
+    expect(text).toBe(['R$', '3,4', 'mil'].join(String.fromCharCode(0xa0)));
+  });
+
+  it('should_keep_the_compact_text_when_comparing_ignoring_the_space_kind', () => {
+    // Arrange
+    const cents = 120000;
+    // Act
+    const text = formatAxisCurrency(cents);
+    // Assert
+    expect(text.replaceAll(String.fromCharCode(0xa0), ' ')).toBe(formatCompactCurrency(cents));
   });
 });

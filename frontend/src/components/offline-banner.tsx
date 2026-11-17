@@ -32,7 +32,7 @@ export function OfflineBanner() {
     ? `Sem conexão. Mostrando os dados de ${formatDayMonthAtTime(cachedAt)}.`
     : UNKNOWN_AGE_TEXT;
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 pt-4 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-content px-4 pt-4 sm:px-6 lg:px-8">
       <div
         role="status"
         className="flex min-h-11 w-full items-start gap-3 rounded-lg bg-warning-surface px-4 py-3 text-sm font-medium text-warning"

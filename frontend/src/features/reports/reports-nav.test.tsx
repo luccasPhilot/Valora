@@ -10,10 +10,10 @@ const REPORTS: readonly ReportDefinition[] = [
   { key: 'categories', label: 'Categorias', path: 'categorias' },
 ];
 
-function renderNav(periodSearch: string, reports = REPORTS) {
+function renderNav(filtersSearch: string, reports = REPORTS) {
   render(
     <MemoryRouter initialEntries={['/relatorios/receitas-e-despesas']}>
-      <ReportsNav reports={reports} periodSearch={periodSearch} />
+      <ReportsNav reports={reports} filtersSearch={filtersSearch} />
     </MemoryRouter>,
   );
 }
@@ -39,6 +39,17 @@ describe('ReportsNav', () => {
     expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute(
       'href',
       '/relatorios/categorias?periodo=24m',
+    );
+  });
+
+  it('should_keep_the_view_in_the_links_when_the_url_has_one', () => {
+    // Arrange
+    // Act
+    renderNav('?periodo=6m&visao=tabela');
+    // Assert
+    expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute(
+      'href',
+      '/relatorios/categorias?periodo=6m&visao=tabela',
     );
   });
 

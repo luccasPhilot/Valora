@@ -28,7 +28,7 @@ export function RowsSkeleton({ rowCount = DEFAULT_ROW_COUNT }: RowsSkeletonProps
 // Carga inicial: ainda não existe o AppShell, então repete as margens do `<main>` dele.
 export function AppLoadingSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-content px-4 py-6 sm:px-6 lg:px-8">
       <ScreenSkeleton />
     </div>
   );

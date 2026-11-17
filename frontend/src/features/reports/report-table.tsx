@@ -60,7 +60,7 @@ export function ReportTable({ caption, rowHeaderLabel, columns, rows, total }: R
                 title={column}
                 className={`${CELL_CLASSES} type-label`}
               >
-                <span className="block max-w-40 truncate">{column}</span>
+                <span className="block max-w-48 whitespace-normal">{column}</span>
               </th>
             ))}
           </tr>

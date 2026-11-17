@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { point } from '../../../../test/helpers/net-worth';
 import {
+  describeCreditBills,
   describeHistoryStart,
   describeShortHistory,
   investmentsShare,
@@ -161,6 +162,37 @@ describe('describeHistoryStart', () => {
     // Arrange
     // Act
     const note = describeHistoryStart(null);
+    // Assert
+    expect(note).toBeNull();
+  });
+});
+
+describe('describeCreditBills', () => {
+  it('should_explain_the_plus_sign_when_open_bills_are_a_credit', () => {
+    // Arrange
+    const openBillsCents = -183260;
+    // Act
+    const note = describeCreditBills(openBillsCents);
+    // Assert
+    expect(note).toBe(
+      'Faturas em aberto com + são crédito no cartão: somam ao patrimônio em vez de descontar.',
+    );
+  });
+
+  it('should_return_null_when_open_bills_are_a_debt', () => {
+    // Arrange
+    const openBillsCents = 50000;
+    // Act
+    const note = describeCreditBills(openBillsCents);
+    // Assert
+    expect(note).toBeNull();
+  });
+
+  it('should_return_null_when_there_are_no_open_bills', () => {
+    // Arrange
+    const openBillsCents = 0;
+    // Act
+    const note = describeCreditBills(openBillsCents);
     // Assert
     expect(note).toBeNull();
   });

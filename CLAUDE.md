@@ -106,6 +106,7 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
   - funciona de 320 px até monitores largos, sem rolagem horizontal da página;
   - celular primeiro: abaixo de 1024 px o menu lateral abre por cima, pelo botão de menu no topo; a partir de 1024 px fica fixo e pode ser recolhido (264 px aberto, 72 px só com ícones). Não existe barra inferior;
   - toda tela nova é conferida em 320, 390, 768, 1024 e 1440 px, nos dois temas.
+- **Densidade:** as medidas em px dos documentos valem na base de 16 px; no computador com mouse (≥ 1024 px, `pointer: fine`) a base é 14 px e tudo em `rem` escala junto ([regras](docs/06-design-system.md#densidade-no-computador)). Prefira `rem` a `px` em tamanhos novos e nunca use `zoom`.
 - **Valores:**
   - receita em `positive` com `+`;
   - despesa na cor normal com `−` (U+2212);

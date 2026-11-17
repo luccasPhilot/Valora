@@ -9,12 +9,13 @@ import {
   YAxis,
 } from 'recharts';
 
+import { niceValueAxis } from '@/components/charts/axis-scale';
 import { ChartTooltipCard, type TooltipRow } from '@/components/charts/chart-tooltip';
 import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { SavingsMonth } from '@/lib/api/reports';
-import { formatCompactCurrency, formatMonthYear, formatPercent } from '@/lib/format';
+import { formatAxisCurrency, formatMonthYear, formatPercent } from '@/lib/format';
 
 import {
   CHART_MARGIN,
@@ -67,13 +68,14 @@ export function ResultBarsChart({
 }: ResultBarsChartProps) {
   const { areValuesHidden } = useHideValues();
   const axisWidth = useValueAxisWidth();
+  const scale = niceValueAxis(months.map((month) => month.resultCents));
   const first = months[0];
   const last = months.at(-1);
   return (
     <>
       <PartialMonthNote months={months} partialMonth={partialMonth} />
       <ChartContainer className={className} aria-hidden="true">
-        <BarChart data={[...months]} margin={CHART_MARGIN}>
+        <BarChart accessibilityLayer={false} data={[...months]} margin={CHART_MARGIN}>
           <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
           <XAxis {...monthAxisProps(months.length)} />
           {/* Com os valores ocultos, o eixo também some: ele mostraria os mesmos números. */}
@@ -82,7 +84,9 @@ export function ResultBarsChart({
             tickLine={false}
             axisLine={false}
             width={axisWidth}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            domain={scale.domain}
+            ticks={scale.ticks}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeOpacity={0.6} />
           <Tooltip content={buildTooltip(partialMonth)} cursor={{ fill: 'var(--color-accent)' }} />

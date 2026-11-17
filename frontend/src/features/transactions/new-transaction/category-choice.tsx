@@ -56,11 +56,7 @@ export function CategoryChoice({
       {matches.length === 0 ? (
         <p className="py-1 text-sm text-muted-foreground">Nenhuma categoria encontrada.</p>
       ) : (
-        <div
-          role="radiogroup"
-          aria-labelledby={labelId}
-          className="max-h-44 overflow-y-auto rounded-md border p-1"
-        >
+        <div role="radiogroup" aria-labelledby={labelId} className="rounded-md border p-1">
           {matches.map((category) => {
             const isSelected = category.id === value;
             return (

@@ -3,7 +3,12 @@ import type { ComponentProps } from 'react';
 import { Select } from '@/components/ui/select';
 import type { Category } from '@/lib/api/categories';
 
+import { CategoryGlyph } from './category-icons';
 import { KIND_LABELS, KIND_ORDER } from './category-labels';
+
+function renderCategoryIcon(iconName: string) {
+  return <CategoryGlyph name={iconName} className="size-4" />;
+}
 
 interface CategorySelectProps extends Omit<ComponentProps<'select'>, 'value' | 'onChange'> {
   categories: readonly Category[];
@@ -30,7 +35,12 @@ export function CategorySelect({
 }: CategorySelectProps) {
   const options = categories.filter((category) => !category.isArchived || category.id === value);
   return (
-    <Select value={value} onChange={(event) => onValueChange(event.target.value)} {...props}>
+    <Select
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+      renderOptionIcon={renderCategoryIcon}
+      {...props}
+    >
       {emptyLabel === undefined ? null : <option value="">{emptyLabel}</option>}
       {extraOption ? <option value={extraOption.value}>{extraOption.label}</option> : null}
       {KIND_ORDER.map((kind) => {
@@ -39,7 +49,7 @@ export function CategorySelect({
         return (
           <optgroup key={kind} label={KIND_LABELS[kind]}>
             {kindOptions.map((category) => (
-              <option key={category.id} value={category.id}>
+              <option key={category.id} value={category.id} data-icon={category.icon}>
                 {category.isArchived ? `${category.name} (arquivada)` : category.name}
               </option>
             ))}

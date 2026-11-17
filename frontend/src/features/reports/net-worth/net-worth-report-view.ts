@@ -51,6 +51,15 @@ export function describeShortHistory(firstSnapshotDate: string | null): string {
   return `O histórico começa em ${formatIsoDayMonth(firstSnapshotDate)}. ${rule}`;
 }
 
+/**
+ * Fatura com valor negativo é crédito no cartão (estorno maior que a fatura): ela soma ao patrimônio
+ * em vez de descontar, e a linha "Faturas em aberto" aparece com `+`. Nulo quando há dívida ou nada.
+ */
+export function describeCreditBills(openBillsCents: number): string | null {
+  if (openBillsCents >= 0) return null;
+  return 'Faturas em aberto com + são crédito no cartão: somam ao patrimônio em vez de descontar.';
+}
+
 /** "O histórico começa em 04/11", para a nota abaixo do relatório; nulo sem nenhuma foto. */
 export function describeHistoryStart(firstSnapshotDate: string | null): string | null {
   if (firstSnapshotDate === null) return null;

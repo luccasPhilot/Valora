@@ -9,12 +9,13 @@ import {
   YAxis,
 } from 'recharts';
 
+import { niceValueAxis, stackExtremes } from '@/components/charts/axis-scale';
 import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
 import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { NetWorthPoint } from '@/lib/api/net-worth';
-import { formatCompactCurrency, formatMonthYear } from '@/lib/format';
+import { formatAxisCurrency, formatMonthYear } from '@/lib/format';
 
 import {
   CHART_MARGIN,
@@ -105,6 +106,11 @@ export function CompositionChart({ points, partialMonth, className }: Compositio
   const { areValuesHidden } = useHideValues();
   const axisWidth = useValueAxisWidth();
   const data = points.map(toCompositionPoint);
+  const scale = niceValueAxis(
+    data.flatMap((point) =>
+      stackExtremes([point.accountsCents, point.investmentsCents, point.openBillsNegativeCents]),
+    ),
+  );
   const first = points[0];
   const last = points.at(-1);
   return (
@@ -113,7 +119,7 @@ export function CompositionChart({ points, partialMonth, className }: Compositio
       <PartialMonthNote months={points} partialMonth={partialMonth} />
       <ChartContainer className={className} aria-hidden="true">
         {/* "sign": os valores positivos empilham para cima do zero e os negativos (a fatura) para baixo. Sem isso o negativo entra na pilha positiva. */}
-        <BarChart data={data} margin={CHART_MARGIN} stackOffset="sign">
+        <BarChart accessibilityLayer={false} data={data} margin={CHART_MARGIN} stackOffset="sign">
           <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
           <XAxis {...monthAxisProps(points.length)} />
           {/* Com os valores ocultos, o eixo também some: ele mostraria os mesmos números. */}
@@ -122,7 +128,9 @@ export function CompositionChart({ points, partialMonth, className }: Compositio
             tickLine={false}
             axisLine={false}
             width={axisWidth}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            domain={scale.domain}
+            ticks={scale.ticks}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeOpacity={0.6} />
           <Tooltip content={buildTooltip(partialMonth)} cursor={{ fill: 'var(--color-accent)' }} />

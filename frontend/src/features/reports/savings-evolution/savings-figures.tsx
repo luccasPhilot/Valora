@@ -5,6 +5,7 @@ import { DataCard } from '@/components/cards/data-card';
 import type { SavingsEvolutionReport } from '@/lib/api/reports';
 import { formatSignedPercent } from '@/lib/format';
 
+import { ReportHero } from '../report-hero';
 import { ResultMoney } from '../result-money';
 
 const PERCENT_SCALE = 100;
@@ -40,22 +41,32 @@ function SurplusMonths({ surplusMonths, closedMonths }: SavingsEvolutionReport['
   );
 }
 
-/** Os três números do período: resultado, taxa de poupança e meses com sobra. */
-export function SavingsFigures({ totals }: Pick<SavingsEvolutionReport, 'totals'>) {
+interface SavingsFiguresProps extends Pick<SavingsEvolutionReport, 'totals'> {
+  /** A frase que explica o resultado, ou nulo quando faltam meses fechados para comparar. */
+  context: ReactNode;
+}
+
+/** O resultado do período em destaque e, abaixo, a taxa de poupança e os meses com sobra. */
+export function SavingsFigures({ totals, context }: SavingsFiguresProps) {
   const { savingsRatePercent } = totals;
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <Figure title="Resultado do período" icon={Scale} hint="Receitas menos despesas">
-        <ResultMoney cents={totals.resultCents} />
-      </Figure>
-      <Figure title="Taxa de poupança" icon={Percent} hint="Resultado ÷ receitas do período">
-        {savingsRatePercent === null
-          ? NO_VALUE_TEXT
-          : formatSignedPercent(savingsRatePercent / PERCENT_SCALE)}
-      </Figure>
-      <Figure title="Meses com sobra" icon={CalendarCheck} hint="Só meses já fechados">
-        <SurplusMonths {...totals} />
-      </Figure>
+    <div className="space-y-3">
+      <ReportHero
+        title="Resultado do período"
+        icon={Scale}
+        value={<ResultMoney cents={totals.resultCents} />}
+        context={context}
+      />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Figure title="Taxa de poupança" icon={Percent} hint="Resultado ÷ receitas do período">
+          {savingsRatePercent === null
+            ? NO_VALUE_TEXT
+            : formatSignedPercent(savingsRatePercent / PERCENT_SCALE)}
+        </Figure>
+        <Figure title="Meses com sobra" icon={CalendarCheck} hint="Só meses já fechados">
+          <SurplusMonths {...totals} />
+        </Figure>
+      </div>
     </div>
   );
 }

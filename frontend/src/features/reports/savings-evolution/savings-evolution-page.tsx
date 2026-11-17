@@ -1,15 +1,18 @@
 import { ChartColumn, ChartLine, ChartSpline, TrendingUp } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { DataCard } from '@/components/cards/data-card';
-import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { SavingsEvolutionReport } from '@/lib/api/reports';
 import { todayInSaoPaulo } from '@/lib/dates';
-import { formatMonthYear } from '@/lib/format';
+import { formatMonthYear, formatPercent } from '@/lib/format';
 
-import { focusPeriodFilter } from '../reports-layout';
+import { compareLastClosedSavingsRate } from '../report-answers';
+import { ReportEmptyState } from '../report-empty-state';
+import { HistoryStartNote, RefreshingReport } from '../report-notes';
+import type { ReportPeriod } from '../report-period';
+import { ReportViewToggle } from '../report-view-toggle';
 import { useSavingsEvolutionReport } from '../reports-queries';
 import { type ReportView, useReportFilters } from '../use-report-filters';
 import { CumulativeAreaChart } from './cumulative-area-chart';
@@ -18,14 +21,15 @@ import { SavingsEvolutionTable } from './savings-evolution-table';
 import { SavingsFigures } from './savings-figures';
 import { SavingsRateChart } from './savings-rate-chart';
 
+const PERCENT_SCALE = 100;
 const WIDE_CHART_HEIGHT_CLASSES = 'h-60 lg:h-72';
 const HALF_CHART_HEIGHT_CLASSES = 'h-52 lg:h-60';
 
 function ReportSkeleton() {
   return (
     <div role="status" aria-label="Carregando relatório" className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Skeleton className="h-28 rounded-xl" />
+      <Skeleton className="h-36 rounded-xl" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Skeleton className="h-28 rounded-xl" />
         <Skeleton className="h-28 rounded-xl" />
       </div>
@@ -35,21 +39,6 @@ function ReportSkeleton() {
         <Skeleton className="h-72 rounded-xl" />
       </div>
     </div>
-  );
-}
-
-function EmptyReport() {
-  return (
-    <EmptyState
-      icon={ChartColumn}
-      title="Ainda não há transações neste período"
-      description="Escolha um período maior ou espere a próxima sincronização."
-      action={
-        <Button variant="outline" onClick={focusPeriodFilter}>
-          Mudar período
-        </Button>
-      }
-    />
   );
 }
 
@@ -68,7 +57,7 @@ interface ChartsProps {
 function Charts({ report, partialMonth }: ChartsProps) {
   return (
     <>
-      <DataCard title="Resultado do mês" icon={ChartColumn}>
+      <DataCard title="Resultado do mês" icon={ChartColumn} action={<ReportViewToggle />}>
         <ResultBarsChart
           months={report.months}
           totalResultCents={report.totals.resultCents}
@@ -102,13 +91,45 @@ function Charts({ report, partialMonth }: ChartsProps) {
   );
 }
 
-function ReportContent({ report, view }: { report: SavingsEvolutionReport; view: ReportView }) {
+/** A taxa de poupança do último mês fechado contra a média dos anteriores; nulo sem como comparar. */
+function describeSavingsRate(report: SavingsEvolutionReport, partialMonth: string): ReactNode {
+  const comparison = compareLastClosedSavingsRate(report.months, partialMonth);
+  if (comparison === null) return null;
+  const { month, ratePercent, previousAveragePercent } = comparison;
+  const previousAverage = formatPercent(previousAveragePercent / PERCENT_SCALE);
+  const monthText = `${formatMonthYear(month)}, o último mês fechado`;
+  if (ratePercent < 0) {
+    const overspend = formatPercent(-ratePercent / PERCENT_SCALE);
+    return `Em ${monthText}, você gastou ${overspend} a mais do que recebeu; nos meses anteriores a média foi ${previousAverage} da renda guardada.`;
+  }
+  return `Em ${monthText}, você guardou ${formatPercent(ratePercent / PERCENT_SCALE)} da renda; nos meses anteriores a média foi ${previousAverage}.`;
+}
+
+interface ReportContentProps {
+  report: SavingsEvolutionReport;
+  period: ReportPeriod;
+  view: ReportView;
+}
+
+function ReportContent({ report, period, view }: ReportContentProps) {
   const partialMonth = todayInSaoPaulo().slice(0, 7);
+  const firstMonth = report.months[0];
   return (
     <div className="space-y-4">
-      <SavingsFigures totals={report.totals} />
+      {firstMonth ? (
+        <HistoryStartNote
+          firstMonth={firstMonth.month}
+          monthsCount={report.months.length}
+          period={period}
+        />
+      ) : null}
+      <SavingsFigures totals={report.totals} context={describeSavingsRate(report, partialMonth)} />
       {view === 'tabela' ? (
-        <DataCard title="Evolução financeira por mês" icon={ChartSpline}>
+        <DataCard
+          title="Evolução financeira por mês"
+          icon={ChartSpline}
+          action={<ReportViewToggle />}
+        >
           <SavingsEvolutionTable
             report={report}
             caption={describeReportRange(report)}
@@ -122,7 +143,7 @@ function ReportContent({ report, view }: { report: SavingsEvolutionReport; view:
   );
 }
 
-/** Evolução financeira: os três números do período e, abaixo, os gráficos ou a tabela. */
+/** Evolução financeira: o resultado do período em destaque e, abaixo, os gráficos ou a tabela. */
 export function Component() {
   const { period, view } = useReportFilters();
   const reportQuery = useSavingsEvolutionReport(period);
@@ -135,6 +156,18 @@ export function Component() {
       />
     );
   }
-  if (reportQuery.data.months.length === 0) return <EmptyReport />;
-  return <ReportContent report={reportQuery.data} view={view} />;
+  if (reportQuery.data.months.length === 0) {
+    return (
+      <ReportEmptyState
+        icon={ChartColumn}
+        title="Ainda não há transações neste período"
+        period={period}
+      />
+    );
+  }
+  return (
+    <RefreshingReport isRefreshing={reportQuery.isPlaceholderData}>
+      <ReportContent report={reportQuery.data} period={period} view={view} />
+    </RefreshingReport>
+  );
 }

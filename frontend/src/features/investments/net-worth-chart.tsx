@@ -14,7 +14,7 @@ import { useHideValues } from '@/components/hide-values-provider';
 import { Money } from '@/components/money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { NetWorthPoint } from '@/lib/api/net-worth';
-import { formatCompactCurrency, formatMonth, formatMonthName } from '@/lib/format';
+import { formatAxisCurrency, formatMonth, formatMonthName } from '@/lib/format';
 
 const SERIES_COLOR = 'var(--color-chart-1)';
 const AREA_FILL_OPACITY = 0.15;
@@ -63,7 +63,11 @@ export function NetWorthChart({ points, className = 'h-52 lg:h-64' }: NetWorthCh
   return (
     <>
       <ChartContainer className={className} aria-hidden="true">
-        <AreaChart data={[...points]} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+        <AreaChart
+          accessibilityLayer={false}
+          data={[...points]}
+          margin={{ top: 4, right: 12, bottom: 0, left: 0 }}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={SERIES_COLOR} stopOpacity={AREA_FILL_OPACITY} />
@@ -90,7 +94,7 @@ export function NetWorthChart({ points, className = 'h-52 lg:h-64' }: NetWorthCh
             axisLine={false}
             domain={['auto', 'auto']}
             width={AXIS_WIDTH_PX}
-            tickFormatter={(cents: number) => formatCompactCurrency(cents)}
+            tickFormatter={(cents: number) => formatAxisCurrency(cents)}
           />
           <Tooltip content={NetWorthTooltip} />
           <Area
