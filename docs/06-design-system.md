@@ -246,6 +246,7 @@ O logotipo do Valora tem o **símbolo** e o **nome**. O símbolo é um "V" de du
 
 - Transições de 150 a 200 ms com `ease-out`: hover, abrir menus, trocar de aba.
 - Botões: leve redução de escala ao pressionar (`scale(0.98)`).
+- Menu lateral ao recolher ou expandir: 200 ms com `ease-out` na largura, no cabeçalho (72 → 112 px) e nos espaços entre grupos, para os itens deslizarem em vez de pular; o ícone não se mexe de lado (12 px de margem nos dois estados). Os nomes saem na hora ao recolher e, ao expandir, entram em 150 ms com 75 ms de atraso, quando o menu já abriu o bastante para o texto não aparecer cortado.
 - Gráficos: animação de entrada de no máximo 300 ms.
 - Com `prefers-reduced-motion`, as animações são desligadas.
 - Sem efeitos chamativos (contador girando, confete).
@@ -264,13 +265,13 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 | Rodapé do menu | Categorias e regras, Ajustes | v1 |
 
 - O menu só mostra áreas que já existem. Um grupo aparece quando a primeira área dele fica pronta.
-- O item ativo fica com fundo `secondary`, texto `secondary-foreground` em negrito e o ícone em `primary`. Os itens têm 44 px de altura e `radius-sm`, com o nome em Montserrat Alternates (16 px, peso 500; o ativo em 700), a mesma fonte do nome "Valora" e dos títulos das páginas.
+- O item ativo fica com fundo `secondary`, texto `secondary-foreground` em negrito, o ícone em `primary` e uma **barra de 3 × 20 px em `primary`** à esquerda (4 px da borda do item). O fundo sozinho tem só 1,12:1 contra o menu no claro e 1,22:1 no escuro, abaixo dos 3:1 que um indicador de estado exige; a barra tem 5,41:1 (claro) e 10,08:1 (escuro) contra o menu, e é ela que mostra o item atual com o menu recolhido, quando o negrito some. Ao passar o mouse, o item inativo ganha fundo `muted` (neutro, sem verde, sem barra e sem trocar a cor do texto ou do ícone), para nunca parecer o ativo. Os itens têm 44 px de altura e `radius-sm`, com o nome em Montserrat Alternates (16 px, peso 500; o ativo em 700), a mesma fonte do nome "Valora" e dos títulos das páginas.
 - O nome do grupo usa o estilo `label` (caixa-alta, `muted-foreground`).
 
 **Celular e tablet (< 1024 px):**
 - O botão de menu (ícone `menu`, Lucide) fica à esquerda do título, no topo de cada tela.
 - O menu abre por cima do conteúdo, vindo da esquerda: 300 px de largura (no máximo 85% da tela), com fundo escurecido atrás.
-- Fecha ao tocar fora, no `x`, ao escolher uma área ou com o gesto de voltar.
+- Fecha ao tocar fora, no `x`, ao escolher uma área ou com o gesto de voltar. Abrir o menu cria uma entrada no histórico (mesmo endereço), então voltar fecha o menu em vez de sair da tela; escolher uma área troca essa entrada pela nova tela, e voltar leva à tela anterior, não ao menu.
 - As ações mais usadas não dependem do menu: o Início tem os atalhos e a tela de Transações tem o botão "Nova transação".
 
 **Computador (≥ 1024 px):**
@@ -281,11 +282,16 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 **Espaçamento do menu** (expandido):
 - margem interna de 16 px (14 px recolhido, para centralizar o ícone de 44 px);
 - itens de 44 px de altura, 4 px entre eles, ícone de 20 px e 12 px entre o ícone e o texto;
-- nome do grupo (estilo `label`) com 8 px acima do primeiro item;
+- nome do grupo (estilo `label`) com 8 px acima do primeiro item, e 20 px entre o último item de um grupo e o nome do próximo (dentro do grupo são 4 px, então o grupo se lê como bloco);
+- recolhido, o nome do grupo some e uma linha divisória (`sidebar-border`, de lado a lado, como a do rodapé) separa os grupos, com 8 px de cada lado;
+- **tela baixa** (altura até 780 px, variante `short`: notebooks e celular deitado): o menu inteiro precisa de cerca de 760 px, então o nome dos grupos some (continua lido pelo leitor de tela) e linhas divisórias, as mesmas do menu recolhido, separam os grupos; o vão entre grupos cai de 20 para 8 px e o do rodapé de 24 para 8 px. Os itens continuam com 44 px. Com 650 px de altura o menu cabe sem rolar; abaixo de uns 610 px só a lista rola, com barra fina na cor do tema (`scrollbar-width: thin`) em vez da barra branca do navegador. O `color-scheme` do `:root` e do `.dark` faz o navegador pintar barras de rolagem e controles nativos no tema certo;
+- cada grupo é uma lista nomeada pelo próprio rótulo (`aria-labelledby`), dentro de um único `<nav aria-label="Principal">`; o rodapé é outro `<nav aria-label="Configurações">`;
 - 24 px, no mínimo, entre o grupo "Dia a dia" e o rodapé, e uma linha divisória (`border`) acima de Categorias e regras e Ajustes;
-- cabeçalho de 72 px, sem borda abaixo; só o item ativo tem fundo (`secondary`), e o resto do menu fica sem fundo e sem borda.
+- cabeçalho de 72 px, sem borda abaixo; só o item ativo tem fundo (`secondary`) e barra; o resto do menu fica sem fundo e sem borda (só o hover, em `muted`, e o foco aparecem por um instante).
 
 **Topo de cada tela:** altura de 56 px (72 px a partir de 1024 px, alinhado com o cabeçalho do menu), botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora; a área de toque tem 44 px de altura em qualquer largura, mesmo com o texto pequeno do celular), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**.
+
+**Título da aba do navegador:** "Área | Valora" (por exemplo, "Orçamentos | Valora"); nos relatórios, "Relatório | Relatórios | Valora". Telas sem título próprio ficam só com "Valora".
 
 **Breakpoints** (os do Tailwind): `sm` 640, `md` 768, `lg` 1024, `xl` 1280.
 
@@ -410,10 +416,12 @@ Ordem da tela, em todas as larguras (coluna única no celular; no computador, he
 
 Uma área com um relatório por endereço (`/relatorios/receitas-e-despesas`, `/relatorios/categorias`, `/relatorios/evolucao-financeira` e `/relatorios/patrimonio`). Ordem da tela, em todas as larguras:
 
-0. **Navegação entre relatórios:** pílula com borda e um link por relatório (o aberto em `secondary`, com `aria-current="page"`). **Só aparece com 2 ou mais relatórios** e leva o `?periodo=` atual no link.
-1. **Filtros** (`SegmentedControl`): "Período" (6 meses, 12 meses, 24 meses, Este ano; padrão 12 meses) e "Visualização" (Gráfico, Tabela). Os dois ficam na URL (`?periodo=`, `?visao=tabela`). No celular um embaixo do outro; a partir de 640 px lado a lado.
-2. **Os números do período** em cartões de apoio (`DataCard`, valor em `text-xl` e sem quebra): Receitas com `+` em `positive`, Despesas com `−` na cor normal e Resultado com sinal (`positive` se sobrou, `destructive` só se for negativo). Um por linha abaixo de 640 px; três lado a lado a partir daí.
-3. **Gráfico ou tabela**, nunca os dois, num cartão de apoio. O gráfico tem altura de 240 px (288 px a partir de 1024 px).
+0. **Navegação entre relatórios:** **abas** com sublinhado (uma linha de `border-b`; a aba aberta com sublinhado `primary`, texto normal e `aria-current="page"`). **Só aparece com 2 ou mais relatórios** e leva o `?periodo=` e o `?visao=` atuais no link. Abaixo de 640 px as abas não cabem numa linha: ela rola sem barra, as bordas esmaecem para mostrar que há mais, e a aba aberta sempre é trazida para o centro.
+1. **Filtro de período** (`SegmentedControl`, sem rótulo visível, só para leitor de tela): 6 meses, 12 meses, 24 meses, Este ano; padrão 12 meses; na URL (`?periodo=`). Numa linha só a partir de ~340 px (largura do conteúdo); abaixo de 360 px de tela vira grade 2×2. É o **único** controle da barra: "Gráfico ou tabela" fica no cartão que ele troca. Quando o período não muda nada (patrimônio com menos de dois meses de histórico), o filtro some e uma nota diz o motivo.
+2. **Aviso de histórico** (`text-xs`, `muted-foreground`), só quando os dados começam depois do primeiro mês do período: "Há dados desde abr. 2026, por isso o período mostra 8 meses."
+3. **O cartão-herói** (`DataCard tier="hero"`, um por relatório): o número que responde a pergunta (Resultado; Total gasto com `−`; Resultado do período; Patrimônio hoje) em `type-value-lg` (28 px, em todas as larguras: `type-display` é grande demais para um relatório), e abaixo a **frase de resposta** em uma ou duas linhas (a média dos meses fechados; a maior categoria; a taxa de poupança do último mês fechado contra a média dos anteriores). O Patrimônio não tem frase: o número de apoio "Variação no período" já a diz.
+4. **Os números de apoio** em `DataCard` (valor em `text-xl` e sem quebra): Receitas com `+` em `positive` e Despesas com `−` na cor normal; Taxa de poupança e Meses com sobra; Variação no período e Em investimentos. Um por linha abaixo de 640 px, dois lado a lado a partir daí.
+5. **Gráfico ou tabela**, nunca os dois, num cartão de apoio. O gráfico tem altura de 240 px (288 px a partir de 1024 px). **O seletor "Gráfico | Tabela"** fica no cabeçalho desse cartão (slot `action` do `DataCard`), em texto, com 44 px de toque; no celular desce para baixo do título. Vale para o relatório todo (`?visao=tabela`, mantido ao trocar de relatório). Nos relatórios com vários gráficos, fica no primeiro.
 
 **Mês em andamento (parcial):** o mês atual nunca é marcado só por cor ou hachura.
 - *Gráfico:* as barras do mês levam hachura diagonal (a cor da série a 35% com traços da cor cheia), o item "Mês em andamento" entra na legenda e o tooltip escreve "(em andamento)" depois do mês.
@@ -429,7 +437,7 @@ Uma área com um relatório por endereço (`/relatorios/receitas-e-despesas`, `/
 - **Cor pela posição, não pela categoria:** a série na posição N usa o slot N da paleta, sem pular (as 5 maiores ocupam os slots 1 a 5), e "Outros" usa o cinza. O empilhamento é exatamente a vizinhança na ordem para a qual a paleta foi validada. A cor de uma categoria pode mudar quando o período muda; por isso a legenda sempre traz o nome e a lista abaixo identifica cada categoria pelo nome, nunca só pela cor.
 - Segmentos separados por um traço de 1 px na cor do cartão; sem raio no topo (a coluna é uma pilha). Legenda com os nomes (truncados, `title` com o nome inteiro) e tooltip com o total do mês seguido de cada categoria com valor maior que zero.
 - **Mês em andamento:** sem hachura (os segmentos já são separados por cor e traço); o mês é marcado em texto, "nov. 2026 em andamento" abaixo da legenda e "(em andamento)" no tooltip.
-- **Lista ranqueada** logo abaixo, no cartão "Ranking do período": as barras horizontais numa cor só de "Gastos por categoria" (`primary`, "Outros" cinza), com ícone, nome, total e percentual, e o total do período no cabeçalho do cartão. Não abre transações. Com "Ocultar valores", os totais são mascarados e os percentuais continuam visíveis.
+- **Lista ranqueada** logo abaixo, no cartão "Ranking do período": as barras horizontais numa cor só de "Gastos por categoria" (`primary`, "Outros" cinza), com ícone, nome, total e percentual, e uma **marca de 10 px na cor da coluna** do gráfico acima (a exceção à regra de categorias sem cor: é a legenda do gráfico empilhado, que colore pela posição; as barras seguem numa cor só). Cada categoria **abre as transações** dela no período do relatório (`/transacoes?period=custom&from=…&to=…&category=…`); "Outros" não abre, por juntar várias. O nome quebra em até duas linhas em vez de ser cortado. O total do período fica no cartão-herói. Com "Ocultar valores", os totais são mascarados e os percentuais continuam visíveis.
 - **Tabela:** `ReportTable` com uma coluna por série e a coluna "Total"; o nome da coluna é truncado (`title` com o nome inteiro).
 
 **Gráficos de evolução financeira** (`features/reports/savings-evolution/`): três gráficos, cada um no seu cartão e com a **sua escala**, nunca dois eixos no mesmo gráfico. Todos de uma série só, então sempre o slot 1.
@@ -437,18 +445,20 @@ Uma área com um relatório por endereço (`/relatorios/receitas-e-despesas`, `/
 - **Taxa de poupança:** linha de 2 px com pontos pequenos e eixo em `%`, referência em 0%. Meses sem receita **interrompem** a linha (não viram zero); o ponto mostra um mês isolado entre dois sem receita.
 - **Sobra acumulada:** área (cor da série a 15%, sumindo para 0) com a linha do zero; pode descer abaixo dela. Uma frase abaixo diz que **não é saldo nem patrimônio**.
 - Os dois últimos ficam lado a lado a partir de 1024 px e empilhados abaixo disso. O eixo sempre inclui o zero. Tooltip do resultado: receitas, despesas, resultado com sinal e taxa; os outros, o valor do mês. Mês em andamento marcado em texto ("nov. 2026 em andamento" abaixo do título e "(em andamento)" no tooltip), sem hachura.
-- **Números do período** (três `DataCard` no padrão dos relatórios, cada um com uma linha de explicação em `text-xs`): "Resultado do período" com sinal (`positive` se sobrou, `destructive` só se for negativo), "Taxa de poupança" com sinal e "—" sem receita (cor normal), e "Meses com sobra" ("7 de 10 meses fechados").
+- **Números do período:** o herói "Resultado do período" com sinal (`positive` se sobrou, `destructive` só se for negativo) e, de apoio (cada um com uma linha de explicação em `text-xs`), "Taxa de poupança" com sinal e "—" sem receita (cor normal) e "Meses com sobra" ("7 de 10 meses fechados").
 - **Ocultar valores:** os eixos em reais somem e a taxa continua visível, inclusive o eixo em `%`.
 
-**Gráficos de evolução do patrimônio** (`features/reports/net-worth/`): três números no padrão dos relatórios e dois gráficos, cada um no seu cartão, em largura cheia (240 px de altura, 288 px a partir de 1024 px).
+**Gráficos de evolução do patrimônio** (`features/reports/net-worth/`): o herói e dois números de apoio no padrão dos relatórios e dois gráficos, cada um no seu cartão, em largura cheia (240 px de altura, 288 px a partir de 1024 px).
 - **Patrimônio total:** o mesmo gráfico de área do cartão de Investimentos (`NetWorthChart`, série 1, 2 px, 15% sumindo para 0). Com mais de 12 meses o ano entra no rótulo do eixo X ("nov. 25").
 - **Composição:** **colunas empilhadas** com Contas (slot 1), Investimentos (slot 2) e Faturas em aberto (slot 3), sempre nessa ordem. A fatura é um valor **negativo**: o gráfico usa `stackOffset="sign"`, que empilha os positivos para cima do zero e os negativos para baixo dele (sem isso o negativo entra na pilha positiva e a coluna fica errada). Linha do zero sempre visível, segmentos separados por um traço de 1 px na cor do cartão e legenda sempre, com os nomes. O tooltip traz as três cifras (a fatura com `−`) e o patrimônio do mês.
 - Os dois só são desenhados com 2 ou mais pontos; com um só, o texto "O histórico começa em …" ocupa o lugar. Mês em andamento marcado em texto, sem hachura; "Ocultar valores" remove os eixos em reais.
-- **Números do topo:** "Patrimônio hoje" (vermelho só se negativo), "Variação no período" (`ValueChange`: ícone, `+`/`−`, percentual e "desde dd/mm") e "Em investimentos" (percentual em `text-xl`, que continua visível com "Ocultar valores", e o valor em reais abaixo).
+- **Números do topo:** o herói "Patrimônio hoje" (vermelho só se negativo) e, de apoio, "Variação no período" (`ValueChange`: ícone, `+`/`−`, percentual e "desde dd/mm") e "Em investimentos" (percentual em `text-xl`, que continua visível com "Ocultar valores", e o valor em reais abaixo).
 - **Tabela:** `ReportTable` **sem linha de total** (patrimônio não se soma entre meses), com Contas, Investimentos, Faturas em aberto (com `−`) e Patrimônio. A nota da fórmula, do arquivamento de bancos e das faturas fica abaixo de tudo, em `text-xs`.
 - **Estados:** vazio (sem nenhuma foto) leva a "Ver contas".
 
-**Estados:** carregando (skeleton no formato: três cartões e o gráfico), vazio ("Ainda não há transações neste período" e o botão "Mudar período", que leva o foco ao filtro de período) e erro ("Não foi possível carregar o relatório." e "Tentar de novo"). "Ocultar valores" mascara os números, a tabela e o tooltip, e o eixo vertical do gráfico some. Com um período novo carregando, o relatório anterior continua na tela.
+**Eixos dos gráficos:** os valores em reais usam **números redondos** (R$ 1 mil, R$ 2 mil…, de 1, 2, 2,5 ou 5 vezes uma potência de 10, em cerca de quatro intervalos), sempre com o zero (`components/charts/axis-scale.ts`); o rótulo usa espaço sem quebra para não partir em duas linhas, e a margem direita de 12 px impede o último mês ("nov.") de ser cortado. O texto dos eixos usa `muted-foreground` (7,3:1 no escuro). Os gráficos ficam em `aria-hidden` e **não recebem foco** (`accessibilityLayer={false}`); o resumo em texto ou a tabela é a alternativa. O gráfico de patrimônio total mantém o eixo automático (sem o zero), para a variação não ficar achatada.
+
+**Estados:** carregando (skeleton no formato: o herói, dois cartões de apoio e o gráfico), vazio ("Ainda não há transações neste período": num período curto, "Tente um período maior" com o botão "Mudar período", que leva o foco ao filtro; em 24 meses, "Nem nos últimos 24 meses…" com o botão "Ver contas") e erro ("Não foi possível carregar o relatório." e "Tentar de novo"). "Ocultar valores" mascara os números, a frase, a tabela e o tooltip, e o eixo vertical do gráfico some. Com um período novo carregando, o relatório anterior continua na tela, esmaecido, com `aria-busy` e o aviso "Atualizando o relatório" para leitor de tela. A aba do navegador leva o nome do relatório ("Por categoria | Relatórios | Valora").
 
 ## Componentes
 
@@ -466,6 +476,7 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Progresso de meta (v2) | `Progress` | Valor acumulado / desejado, percentual, prazo estimado |
 | Selo de meta vinculada | — | "Vinculada · N itens" em `secondary`, com ícone `link-2`, no cartão da meta. Metas manuais não têm selo |
 | Painel de meta vinculada | `Sheet` / `Dialog` | No lugar de "Registrar aporte", "Registrar retirada" e do histórico, a seção "Itens vinculados" com o saldo de cada item. Item de banco arquivado leva ícone `archive` e o texto "Banco removido do Valora: não conta". Traz as notas "O valor acompanha o saldo e muda na sincronização diária" e "O ritmo vem da variação dos saldos… e mistura aporte e rendimento", e, havendo aportes guardados, uma linha com o valor deles. No formulário, o controle segmentado "Eu informo" / "Vinculada" mostra a lista de contas e investimentos com caixas de seleção (até 10), a "Soma atual" e o aviso do item que já está em outra meta; o valor inicial some |
+| Seletor (lista suspensa) | `Select` (`<select>` nativo + `Popover`) | O campo é sempre um `<select>` de 44 px, com `radius-md` e chevron que gira ao abrir. **Toque** (`pointer: coarse`): abre o seletor do sistema, o mais fácil com uma mão. **Mouse** (`hover: hover` e `pointer: fine`): abre a lista do Valora, porque a do navegador não segue tema, raio nem tipografia. A lista usa o `Popover` (`border`, fundo `popover`, sombra nível 2), tem a largura do campo (mínimo 224 px), 320 px de altura no máximo com rolagem, linhas de 40 px com `radius-sm`, ativa em `accent`, selecionada em `secondary` com ✓ em `primary`, e rótulos de grupo no estilo `label`. Com 8 opções ou mais aparece o campo "Buscar" (sem acento e sem diferenciar maiúsculas). Teclado: setas, Home, End, Enter, Esc, e Espaço, Enter ou seta abrem o campo. Categorias mostram o ícone ao lado do nome |
 | Filtro de período | `Popover` + `Calendar` | Atalhos: Este mês, Mês passado, Últimos 3 meses, Este ano, Personalizado |
 | Filtros | `Select`, `Popover`, `Badge` | À vista só a busca, o período e o botão "Filtros", que mostra quantos dos quatro filtros do painel (categoria, tipo, origem e conta) estão ativos ("Filtros (2)"). A partir de 768 px o painel é um `Popover` ancorado no botão, que devolve o foco a ele ao fechar; abaixo disso é o `Sheet` de baixo, com o período também. Filtros ativos continuam como chips removíveis abaixo da barra. Nenhum seletor mostra o texto cortado |
 | Resumo do filtro | texto (`p`) | Uma linha entre os chips e a lista, não um cartão: "N transações", receitas com `+` em `positive` e despesas com `−` na cor normal, sem transferências internas (valor zero não aparece). Valores ocultos viram `R$ ••••` e a contagem continua. Carregando: skeleton de uma linha. Erro: "Tentar de novo", sem derrubar a lista. Sem transações: some. Com o filtro "Transferências": só a contagem e a nota de que transferências não entram nos totais |
@@ -591,8 +602,11 @@ Formato do shadcn/ui com Tailwind v4. É a cópia exata de `frontend/src/styles/
 @import '@fontsource/montserrat-alternates/700.css';
 
 @custom-variant dark (&:is(.dark *));
+/* Altura que não comporta o menu inteiro (cerca de 760 px): notebooks e celular deitado. */
+@custom-variant short (@media (max-height: 780px));
 
 :root {
+  color-scheme: light;
   --radius: 1.25rem;
 
   --background: #f7f8f7;
@@ -652,6 +666,7 @@ Formato do shadcn/ui com Tailwind v4. É a cópia exata de `frontend/src/styles/
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0a0a0b;
   --foreground: #ededef;
   --card: #121214;
