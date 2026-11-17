@@ -131,6 +131,8 @@
   --font-sans: 'Inter Variable', system-ui, sans-serif;
   --font-display: 'Montserrat Alternates', 'Inter Variable', system-ui, sans-serif;
 
+  --container-content: 110rem;
+
   --radius-sm: calc(var(--radius) - 8px);
   --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
@@ -193,6 +195,14 @@
 }
 
 @layer base {
+  /* Computador com mouse: base de 14 px (87,5%). Tudo em rem (texto, espaços, menu, alvos de clique)
+     encolhe junto; celular e tablet (toque) ficam em 16 px. */
+  @media (min-width: 1024px) and (pointer: fine) {
+    html {
+      font-size: 87.5%;
+    }
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

@@ -62,7 +62,7 @@ export function AppShell() {
             ref={contentRef}
             id={CONTENT_ID}
             tabIndex={-1}
-            className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] focus:outline-hidden sm:px-6 lg:px-8"
+            className="mx-auto w-full max-w-content flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] focus:outline-hidden sm:px-6 lg:px-8"
           >
             <Suspense fallback={<ScreenSkeleton />}>
               <Outlet />

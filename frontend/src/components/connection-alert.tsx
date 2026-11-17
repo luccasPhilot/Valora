@@ -54,7 +54,7 @@ export function ConnectionAlert() {
   if (brokenConnections.length === 0) return null;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 pt-4 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-content flex-col gap-2 px-4 pt-4 sm:px-6 lg:px-8">
       {brokenConnections.map((connection) => {
         const orphanCause = orphanCauseOf(connection);
         if (orphanCause) {

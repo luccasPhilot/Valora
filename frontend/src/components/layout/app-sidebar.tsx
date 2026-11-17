@@ -105,7 +105,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader
-        className={`h-[72px] flex-row items-center justify-between gap-2 py-0 transition-[height] duration-200 ease-out motion-reduce:transition-none group-data-[collapsible=icon]:h-28 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:py-4 ${SIDE_PADDING_CLASSES}`}
+        className={`h-18 flex-row items-center justify-between gap-2 py-0 transition-[height] duration-200 ease-out motion-reduce:transition-none group-data-[collapsible=icon]:h-28 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:py-4 ${SIDE_PADDING_CLASSES}`}
       >
         <ValoraLogo />
         <CollapseButton />

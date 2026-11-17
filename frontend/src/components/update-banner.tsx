@@ -11,7 +11,7 @@ interface UpdateBannerProps {
 export function UpdateBanner({ isUpdateAvailable, onUpdate }: UpdateBannerProps) {
   if (!isUpdateAvailable) return null;
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 pt-4 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-content px-4 pt-4 sm:px-6 lg:px-8">
       <div
         role="status"
         className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground"
