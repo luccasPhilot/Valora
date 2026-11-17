@@ -12,11 +12,15 @@ import { formatMonthYear } from '@/lib/format';
 
 import { NetWorthChart } from '../../investments/net-worth-chart';
 import { PartialMonthNote } from '../chart-parts';
+import { RefreshingReport } from '../report-notes';
+import { ReportViewToggle } from '../report-view-toggle';
+import { useReportPeriodUnused } from '../reports-layout';
 import { useNetWorthReport } from '../reports-queries';
 import { type ReportView, useReportFilters } from '../use-report-filters';
 import { CompositionChart } from './composition-chart';
 import { NetWorthFigures } from './net-worth-figures';
 import {
+  describeCreditBills,
   describeHistoryStart,
   describeShortHistory,
   MIN_POINTS_FOR_CHARTS,
@@ -30,8 +34,8 @@ const ACCOUNTS_PATH = '/contas';
 function ReportSkeleton() {
   return (
     <div role="status" aria-label="Carregando relatório" className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-36 rounded-xl" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Skeleton className="h-24 rounded-xl" />
         <Skeleton className="h-24 rounded-xl" />
       </div>
@@ -63,9 +67,20 @@ function describeReportRange(netWorth: NetWorth): string {
   return `Patrimônio de ${formatMonthYear(first.month)} a ${formatMonthYear(last.month)}`;
 }
 
-function TableCard({ netWorth, partialMonth }: { netWorth: NetWorth; partialMonth: string }) {
+interface TableCardProps {
+  netWorth: NetWorth;
+  partialMonth: string;
+  /** Sem gráficos (histórico curto) não há o que alternar, então o botão não aparece. */
+  hasViewToggle: boolean;
+}
+
+function TableCard({ netWorth, partialMonth, hasViewToggle }: TableCardProps) {
   return (
-    <DataCard title="Patrimônio por mês" icon={Table2}>
+    <DataCard
+      title="Patrimônio por mês"
+      icon={Table2}
+      action={hasViewToggle ? <ReportViewToggle /> : undefined}
+    >
       <NetWorthTable
         points={netWorth.points}
         caption={describeReportRange(netWorth)}
@@ -78,7 +93,11 @@ function TableCard({ netWorth, partialMonth }: { netWorth: NetWorth; partialMont
 function Charts({ netWorth, partialMonth }: { netWorth: NetWorth; partialMonth: string }) {
   return (
     <>
-      <DataCard title="Patrimônio ao longo do tempo" icon={TrendingUp}>
+      <DataCard
+        title="Patrimônio ao longo do tempo"
+        icon={TrendingUp}
+        action={<ReportViewToggle />}
+      >
         <PartialMonthNote months={netWorth.points} partialMonth={partialMonth} />
         <NetWorthChart points={netWorth.points} className={CHART_HEIGHT_CLASSES} />
       </DataCard>
@@ -101,17 +120,25 @@ function ShortHistory({ netWorth, partialMonth }: { netWorth: NetWorth; partialM
         {describeShortHistory(netWorth.firstSnapshotDate)}
       </p>
       {netWorth.points.length > 0 ? (
-        <TableCard netWorth={netWorth} partialMonth={partialMonth} />
+        <TableCard netWorth={netWorth} partialMonth={partialMonth} hasViewToggle={false} />
       ) : null}
     </>
   );
 }
 
-function ReportNote({ netWorth }: { netWorth: NetWorth }) {
-  const historyStart = describeHistoryStart(netWorth.firstSnapshotDate);
+interface ReportNoteProps {
+  netWorth: NetWorth;
+  /** Sem gráficos, o texto "O histórico começa em..." já está acima e não se repete aqui. */
+  hasCharts: boolean;
+}
+
+function ReportNote({ netWorth, hasCharts }: ReportNoteProps) {
+  const historyStart = hasCharts ? describeHistoryStart(netWorth.firstSnapshotDate) : null;
+  const creditBills = describeCreditBills(netWorth.current.openBillsCents);
   return (
     <p className="text-xs text-muted-foreground">
       {NET_WORTH_REPORT_FORMULA_NOTE}
+      {creditBills === null ? null : ` ${creditBills}`}
       {historyStart === null ? null : ` ${historyStart}`}
     </p>
   );
@@ -125,20 +152,24 @@ function ReportContent({ netWorth, view }: { netWorth: NetWorth; view: ReportVie
       <NetWorthFigures netWorth={netWorth} />
       {!hasCharts ? <ShortHistory netWorth={netWorth} partialMonth={partialMonth} /> : null}
       {hasCharts && view === 'tabela' ? (
-        <TableCard netWorth={netWorth} partialMonth={partialMonth} />
+        <TableCard netWorth={netWorth} partialMonth={partialMonth} hasViewToggle />
       ) : null}
       {hasCharts && view === 'grafico' ? (
         <Charts netWorth={netWorth} partialMonth={partialMonth} />
       ) : null}
-      <ReportNote netWorth={netWorth} />
+      <ReportNote netWorth={netWorth} hasCharts={hasCharts} />
     </div>
   );
 }
 
-/** Evolução do patrimônio: três números e, abaixo, os gráficos (área e composição) ou a tabela. */
+/** Evolução do patrimônio: o valor de hoje em destaque e, abaixo, os gráficos (área e composição) ou a tabela. */
 export function Component() {
   const { period, view } = useReportFilters();
   const reportQuery = useNetWorthReport(period);
+  // Com menos de dois meses de histórico não há curva: o período não muda nada.
+  useReportPeriodUnused(
+    reportQuery.data !== undefined && reportQuery.data.points.length < MIN_POINTS_FOR_CHARTS,
+  );
   if (reportQuery.isPending) return <ReportSkeleton />;
   if (reportQuery.isError) {
     return (
@@ -149,5 +180,9 @@ export function Component() {
     );
   }
   if (reportQuery.data.firstSnapshotDate === null) return <EmptyReport />;
-  return <ReportContent netWorth={reportQuery.data} view={view} />;
+  return (
+    <RefreshingReport isRefreshing={reportQuery.isPlaceholderData}>
+      <ReportContent netWorth={reportQuery.data} view={view} />
+    </RefreshingReport>
+  );
 }

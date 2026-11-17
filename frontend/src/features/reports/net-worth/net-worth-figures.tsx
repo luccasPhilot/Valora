@@ -1,4 +1,3 @@
-import { cn } from 'cn';
 import { Landmark, PiggyBank, TrendingUp } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -8,6 +7,7 @@ import { Money } from '@/components/money';
 import type { NetWorth, NetWorthPoint } from '@/lib/api/net-worth';
 import { formatIsoDayMonth, formatPercent } from '@/lib/format';
 
+import { ReportHero } from '../report-hero';
 import { investmentsShare, periodChange } from './net-worth-report-view';
 
 const NO_VALUE_TEXT = '—';
@@ -57,22 +57,25 @@ interface NetWorthFiguresProps {
   netWorth: NetWorth;
 }
 
-/** Os três números do topo: patrimônio hoje, variação no período e a parte em investimentos. */
+/** O patrimônio de hoje em destaque e, abaixo, a variação no período e a parte em investimentos. */
 export function NetWorthFigures({ netWorth }: NetWorthFiguresProps) {
   const { current, points } = netWorth;
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <Figure title="Patrimônio hoje" icon={Landmark}>
-        <p className={cn(VALUE_CLASSES, current.netWorthCents < 0 && 'text-destructive')}>
-          <Money cents={current.netWorthCents} />
-        </p>
-      </Figure>
-      <Figure title="Variação no período" icon={TrendingUp}>
-        <PeriodChangeFigure points={points} />
-      </Figure>
-      <Figure title="Em investimentos" icon={PiggyBank}>
-        <InvestmentsFigure current={current} />
-      </Figure>
+    <div className="space-y-3">
+      <ReportHero
+        title="Patrimônio hoje"
+        icon={Landmark}
+        value={<Money cents={current.netWorthCents} />}
+        isNegative={current.netWorthCents < 0}
+      />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Figure title="Variação no período" icon={TrendingUp}>
+          <PeriodChangeFigure points={points} />
+        </Figure>
+        <Figure title="Em investimentos" icon={PiggyBank}>
+          <InvestmentsFigure current={current} />
+        </Figure>
+      </div>
     </div>
   );
 }

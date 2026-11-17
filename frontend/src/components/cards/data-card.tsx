@@ -47,7 +47,7 @@ export function DataCard({
       aria-labelledby={titleId}
       className={cn('flex h-full flex-col gap-4', TIER_CLASSES[tier], className)}
     >
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <Heading id={titleId} className="type-label flex min-w-0 items-center gap-2">
           {marker}
           {Icon ? <Icon className="size-3.5 shrink-0 text-primary" aria-hidden="true" /> : null}

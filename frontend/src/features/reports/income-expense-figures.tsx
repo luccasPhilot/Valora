@@ -5,6 +5,7 @@ import { DataCard } from '@/components/cards/data-card';
 import { Money } from '@/components/money';
 import type { IncomeExpenseReport } from '@/lib/api/reports';
 
+import { ReportHero } from './report-hero';
 import { ResultMoney } from './result-money';
 
 interface FigureProps {
@@ -22,21 +23,31 @@ function Figure({ title, icon, children }: FigureProps) {
   );
 }
 
-/** Os três números do período: receitas, despesas e resultado. */
-export function IncomeExpenseFigures({ totals }: Pick<IncomeExpenseReport, 'totals'>) {
+interface IncomeExpenseFiguresProps extends Pick<IncomeExpenseReport, 'totals'> {
+  /** A frase que explica o resultado, ou nulo quando ainda não há mês fechado. */
+  context: ReactNode;
+}
+
+/** O resultado do período em destaque e, abaixo, as receitas e as despesas que o formam. */
+export function IncomeExpenseFigures({ totals, context }: IncomeExpenseFiguresProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <Figure title="Receitas" icon={ArrowDownLeft}>
-        <span className="text-positive">
-          <Money cents={totals.incomeCents} isSigned />
-        </span>
-      </Figure>
-      <Figure title="Despesas" icon={ArrowUpRight}>
-        <Money cents={-totals.expenseCents} isSigned />
-      </Figure>
-      <Figure title="Resultado" icon={Scale}>
-        <ResultMoney cents={totals.resultCents} />
-      </Figure>
+    <div className="space-y-3">
+      <ReportHero
+        title="Resultado"
+        icon={Scale}
+        value={<ResultMoney cents={totals.resultCents} />}
+        context={context}
+      />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Figure title="Receitas" icon={ArrowDownLeft}>
+          <span className="text-positive">
+            <Money cents={totals.incomeCents} isSigned />
+          </span>
+        </Figure>
+        <Figure title="Despesas" icon={ArrowUpRight}>
+          <Money cents={-totals.expenseCents} isSigned />
+        </Figure>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { firstDayOfMonth, todayInSaoPaulo } from '@/lib/dates';
 export type ReportPeriod = '6m' | '12m' | '24m' | 'ano';
 
 export const DEFAULT_REPORT_PERIOD: ReportPeriod = '12m';
+export const LONGEST_REPORT_PERIOD: ReportPeriod = '24m';
 
 export const REPORT_PERIOD_OPTIONS: readonly SegmentedOption<ReportPeriod>[] = [
   { value: '6m', label: '6 meses' },
@@ -44,4 +45,16 @@ export function reportRange(period: ReportPeriod, today: string = todayInSaoPaul
 export function describeReportPeriod(period: ReportPeriod): string {
   if (period === 'ano') return 'este ano';
   return `últimos ${MONTHS_BY_PRESET[period]} meses`;
+}
+
+/**
+ * Verdadeiro quando os dados começam depois do primeiro mês do período: pedir 24 meses com 8 de
+ * histórico devolve 8, e a tela precisa dizer isso. `firstMonth` é `AAAA-MM`.
+ */
+export function isHistoryShorterThanPeriod(
+  firstMonth: string,
+  period: ReportPeriod,
+  today: string = todayInSaoPaulo(),
+): boolean {
+  return firstMonth > reportRange(period, today).from;
 }

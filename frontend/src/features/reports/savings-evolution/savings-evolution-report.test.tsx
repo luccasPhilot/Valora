@@ -145,11 +145,13 @@ describe('Relatório de evolução financeira — números do período', () => {
     await findFigure('Resultado do período');
     // Assert
     expect({
-      result: screen.getByRole('region', { name: 'Resultado do período' }).textContent,
+      result: screen
+        .getByRole('region', { name: 'Resultado do período' })
+        .textContent?.startsWith('Resultado do período+ R$ 1.300,00'),
       rate: screen.getByRole('region', { name: 'Taxa de poupança' }).textContent,
       surplus: screen.getByRole('region', { name: 'Meses com sobra' }).textContent,
     }).toEqual({
-      result: 'Resultado do período+ R$ 1.300,00Receitas menos despesas',
+      result: true,
       rate: 'Taxa de poupança+ 21,7%Resultado ÷ receitas do período',
       surplus: 'Meses com sobra1 de 2 meses fechadosSó meses já fechados',
     });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_REPORT_PERIOD,
   describeReportPeriod,
+  isHistoryShorterThanPeriod,
   parseReportPeriod,
   reportRange,
 } from './report-period';
@@ -90,5 +91,45 @@ describe('describeReportPeriod', () => {
     const descriptions = [describeReportPeriod('6m'), describeReportPeriod('ano')];
     // Assert
     expect(descriptions).toEqual(['últimos 6 meses', 'este ano']);
+  });
+});
+
+describe('isHistoryShorterThanPeriod', () => {
+  const TODAY = '2026-11-10';
+
+  it('should_be_true_when_the_data_starts_after_the_first_month_of_the_period', () => {
+    // Arrange
+    const firstMonth = '2026-04';
+    // Act
+    const isShorter = isHistoryShorterThanPeriod(firstMonth, '24m', TODAY);
+    // Assert
+    expect(isShorter).toBe(true);
+  });
+
+  it('should_be_false_when_the_data_starts_in_the_first_month_of_the_period', () => {
+    // Arrange
+    const firstMonth = '2025-12';
+    // Act
+    const isShorter = isHistoryShorterThanPeriod(firstMonth, '12m', TODAY);
+    // Assert
+    expect(isShorter).toBe(false);
+  });
+
+  it('should_be_false_when_the_data_starts_before_the_period', () => {
+    // Arrange
+    const firstMonth = '2024-01';
+    // Act
+    const isShorter = isHistoryShorterThanPeriod(firstMonth, '6m', TODAY);
+    // Assert
+    expect(isShorter).toBe(false);
+  });
+
+  it('should_compare_with_january_when_the_period_is_this_year', () => {
+    // Arrange
+    const firstMonth = '2026-03';
+    // Act
+    const isShorter = isHistoryShorterThanPeriod(firstMonth, 'ano', TODAY);
+    // Assert
+    expect(isShorter).toBe(true);
   });
 });

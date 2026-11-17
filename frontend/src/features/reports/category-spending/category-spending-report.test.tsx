@@ -182,15 +182,15 @@ describe('Relatório por categoria', () => {
     ]);
   });
 
-  it('should_show_the_total_of_the_period_in_the_ranking_card', async () => {
+  it('should_show_the_total_of_the_period_in_the_hero_card', async () => {
     // Arrange
     stubReport();
     renderApp(REPORT_PATH);
     await findChartCard();
     // Act
-    const card = rankingCard();
+    const hero = screen.getByRole('region', { name: 'Total gasto' });
     // Assert
-    expect(within(card).getByText('R$ 3.000,00')).toBeInTheDocument();
+    expect(within(hero).getByText('− R$ 3.000,00')).toBeInTheDocument();
   });
 
   it('should_show_the_table_with_one_month_per_row_one_column_per_series_and_totals', async () => {
