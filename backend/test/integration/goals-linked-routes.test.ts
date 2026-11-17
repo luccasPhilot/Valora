@@ -16,7 +16,7 @@ import { connectTestDatabase, truncateAllTables } from './test-database.js';
 // 10h em São Paulo, 15 de novembro de 2026.
 const NOW = new Date('2026-11-15T13:00:00Z');
 const NINETY_DAYS_AGO = '2026-08-17';
-const MAX_LINKS = 10;
+const MANY_LINKS = 11;
 
 let testApp: TestApp;
 let database: ReturnType<typeof connectTestDatabase>;
@@ -216,31 +216,18 @@ describe('POST /api/v1/goals — vínculos', () => {
     expect(body.error.details).toEqual([expect.objectContaining({ field: 'links' })]);
   });
 
-  it('should_reject_with_links_in_details_when_there_are_more_than_ten_items', async () => {
-    // Arrange
-    const links = Array.from({ length: MAX_LINKS + 1 }, () => ({
-      type: 'investment',
-      id: crypto.randomUUID(),
-    }));
-    // Act
-    const { statusCode, body } = await createGoal({ links });
-    // Assert
-    expect(statusCode).toBe(400);
-    expect(body.error.details).toEqual([expect.objectContaining({ field: 'links' })]);
-  });
-
-  it('should_accept_ten_items_when_they_are_all_valid', async () => {
+  it('should_accept_more_than_ten_items_when_they_are_all_valid', async () => {
     // Arrange
     const connectionId = await insertConnection(database.db);
     const links: LinkRef[] = [];
-    for (let position = 0; position < MAX_LINKS; position += 1) {
+    for (let position = 0; position < MANY_LINKS; position += 1) {
       links.push({ type: 'investment', id: await insertInvestment(100_000, connectionId) });
     }
     // Act
     const { statusCode, body } = await createGoal({ links });
     // Assert
     expect(statusCode).toBe(201);
-    expect(body.savedCents).toBe(1_000_000);
+    expect(body.savedCents).toBe(MANY_LINKS * 100_000);
   });
 
   it('should_not_create_the_goal_when_a_link_is_invalid', async () => {

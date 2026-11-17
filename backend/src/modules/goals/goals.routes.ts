@@ -7,7 +7,6 @@ import type { ContributionRecord, LinkedItemRecord } from './goals.repository.js
 import type { GoalItem, GoalsService } from './goals.service.js';
 
 const MAX_NAME_LENGTH = 80;
-const MAX_LINKS = 10;
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 
@@ -21,9 +20,7 @@ const contributionsQuerySchema = z.object({
 
 const linkTypeSchema = z.enum(['account', 'investment']);
 
-const linksBodySchema = z
-  .array(z.object({ type: linkTypeSchema, id: z.uuid() }))
-  .max(MAX_LINKS, { error: `Vincule no máximo ${MAX_LINKS} itens` });
+const linksBodySchema = z.array(z.object({ type: linkTypeSchema, id: z.uuid() }));
 
 const goalBodySchema = z.object({
   name: z.string().trim().min(1).max(MAX_NAME_LENGTH),

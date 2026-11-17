@@ -287,7 +287,7 @@ describe('GoalForm linked mode', () => {
     expect(row).not.toHaveTextContent('Já está em outra meta');
   });
 
-  it('should_disable_the_remaining_items_when_ten_are_already_chosen', async () => {
+  it('should_keep_every_item_selectable_when_more_than_ten_are_chosen', async () => {
     // Arrange
     const manyInvestments = Array.from({ length: 11 }, (_, position) =>
       investmentItem({
@@ -305,7 +305,7 @@ describe('GoalForm linked mode', () => {
     const dialog = await openNewGoalForm();
     await chooseLinkedMode(dialog);
     // Act
-    for (const position of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    for (const position of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
       await userEvent.click(
         await within(dialog).findByRole('checkbox', {
           name: new RegExp(`Fundo ${String(position).padStart(2, '0')}`),
@@ -313,7 +313,7 @@ describe('GoalForm linked mode', () => {
       );
     }
     // Assert
-    expect(within(dialog).getByRole('checkbox', { name: /Fundo 11/ })).toBeDisabled();
+    expect(within(dialog).getByRole('checkbox', { name: /Fundo 11/ })).toBeChecked();
   });
 });
 
