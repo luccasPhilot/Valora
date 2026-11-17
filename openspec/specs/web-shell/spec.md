@@ -35,7 +35,7 @@ As fontes Inter e Manrope MUST ser servidas pelo próprio app. O app MUST NOT fa
 ### Requirement: Navegação por menu lateral
 A navegação MUST ser um menu lateral com as áreas agrupadas, e o app MUST NOT ter barra inferior.
 
-- **Conteúdo na v1:** o grupo "Dia a dia" (Início, Transações, Orçamentos, Contas) e, no rodapé do menu, Categorias e regras e Ajustes. O menu MUST mostrar só áreas que já existem.
+- **Conteúdo na v1:** o grupo "Dia a dia" (Início, Transações, Orçamentos, Categorias, Contas) e, no rodapé do menu, Categorias e regras (`/categorias-e-regras`) e Ajustes. "Categorias" (`/categorias`) é a análise de gastos; "Categorias e regras" é a configuração. O menu MUST mostrar só áreas que já existem.
 - **Abaixo de 1024 px:** o menu MUST ficar escondido e abrir por cima do conteúdo, vindo da esquerda, pelo botão de menu no topo da tela. Ele tem 300 px de largura (no máximo 85% da tela) e fundo escurecido atrás. Ele MUST fechar ao tocar fora, no botão de fechar, ao escolher uma área ou com o gesto de voltar.
 - **A partir de 1024 px:** o menu MUST ficar fixo à esquerda, com 264 px quando expandido e 72 px quando recolhido (medidas na base de 16 px; veja "Densidade no computador"), sem o botão de menu do topo e com o botão de recolher (veja "Menu retrátil no computador"). O conteúdo MUST ter no máximo 110 rem de largura (1760 px na base de 16 px, 1540 px com mouse) e ficar centralizado.
 - **Item ativo:** o item da tela atual MUST ficar com fundo `secondary`, texto `secondary-foreground` e rótulo em negrito.
@@ -59,6 +59,10 @@ A navegação MUST ser um menu lateral com as áreas agrupadas, e o app MUST NOT
 #### Scenario: Item ativo
 - **WHEN** o usuário está na tela de Orçamentos
 - **THEN** o item Orçamentos aparece com fundo `secondary` e rótulo em negrito
+
+#### Scenario: Categorias no menu principal
+- **WHEN** o app abre com o menu expandido
+- **THEN** "Categorias" aparece no grupo "Dia a dia", entre "Orçamentos" e "Contas", e "Categorias e regras" aparece só no rodapé
 
 ### Requirement: Sem rolagem horizontal
 Nenhuma tela MUST ter rolagem horizontal da página em 320, 390, 768, 1024 ou 1440 px de largura, nos temas claro e escuro.

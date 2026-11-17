@@ -2,9 +2,7 @@
 
 ## Purpose
 Categorização automática das transações: tipos de categoria, categorias padrão, mapeamento das categorias do Pluggy, regras com prioridade, ordem de decisão (usuário, regra, Pluggy, sem categoria), aplicação na sincronização e ao histórico, aprendizado com correções, gestão de categorias e a tela "Categorias e regras".
-
 ## Requirements
-
 ### Requirement: Tipos de categoria
 Toda categoria MUST ter um tipo: `expense` (despesa), `income` (receita) ou `transfer` (transferência interna). Categorias do tipo `transfer` MUST ficar fora de qualquer total de receitas ou despesas.
 
@@ -106,12 +104,12 @@ A API MUST permitir criar e editar categorias (nome único, tipo e ícone Lucide
 - **THEN** as transações continuam em "Educação" e a categoria some das opções de escolha
 
 ### Requirement: Tela de categorias e regras
-A tela "Categorias e regras", acessível pelo rodapé do menu, MUST mostrar:
+A tela "Categorias e regras" (`/categorias-e-regras`), acessível pelo rodapé do menu, MUST mostrar:
 - as categorias agrupadas por tipo, com ícone;
 - as regras, com padrão, tipo de comparação, categoria e prioridade;
 - o mapeamento das categorias do Pluggy.
 
-A tela MUST permitir criar, editar e arquivar categorias, e criar, editar e excluir regras. Ela MUST seguir o Design System, ter os estados carregando, vazio e erro, e ser responsiva.
+A tela MUST permitir criar, editar e arquivar categorias, e criar, editar e excluir regras. Ela MUST seguir o Design System, ter os estados carregando, vazio e erro, e ser responsiva. A análise de gastos por categoria MUST NOT ficar nesta tela: é a área "Categorias" (`/categorias`), do menu principal, descrita em `category-insights`.
 
 #### Scenario: Criar regra pela tela
 - **WHEN** você cria a regra "contém IFOOD → Alimentação" na tela
@@ -120,3 +118,12 @@ A tela MUST permitir criar, editar e arquivar categorias, e criar, editar e excl
 #### Scenario: Celular
 - **WHEN** a tela é aberta com 320 px de largura
 - **THEN** não há rolagem horizontal e os formulários abrem num painel vindo de baixo
+
+#### Scenario: Endereço e menu
+- **WHEN** você escolhe "Categorias e regras" no rodapé do menu
+- **THEN** a tela abre em `/categorias-e-regras`, com as abas "Categorias", "Regras" e "Pluggy", e o item do rodapé fica ativo
+
+#### Scenario: A análise não está aqui
+- **WHEN** você abre a tela de gestão
+- **THEN** ela não tem aba de análise, e "Categorias" no menu principal leva à análise
+
