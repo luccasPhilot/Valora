@@ -12,7 +12,15 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-export type AreaGroup = 'daily' | 'footer';
+export type AreaGroup = 'daily' | 'planning' | 'wealth' | 'footer';
+export type MenuGroup = Exclude<AreaGroup, 'footer'>;
+
+// Grupos do menu, na ordem em que aparecem (Design System, "Responsividade"); o rodapé não tem nome.
+export const MENU_GROUPS: readonly { readonly id: MenuGroup; readonly title: string }[] = [
+  { id: 'daily', title: 'Dia a dia' },
+  { id: 'planning', title: 'Planejamento' },
+  { id: 'wealth', title: 'Patrimônio' },
+];
 
 export interface AppArea {
   readonly path: string;
@@ -28,11 +36,17 @@ export const APP_AREAS: readonly AppArea[] = [
   { path: '/', title: 'Início', icon: Home, group: 'daily', phase: 1 },
   { path: '/transacoes', title: 'Transações', icon: ArrowLeftRight, group: 'daily', phase: 1 },
   { path: '/orcamentos', title: 'Orçamentos', icon: Target, group: 'daily', phase: 1 },
-  { path: '/planejamento', title: 'Planejamento', icon: CalendarClock, group: 'daily', phase: 2 },
-  { path: '/metas', title: 'Metas', icon: Flag, group: 'daily', phase: 2 },
   { path: '/contas', title: 'Contas', icon: Landmark, group: 'daily', phase: 1 },
-  { path: '/investimentos', title: 'Investimentos', icon: TrendingUp, group: 'daily', phase: 3 },
-  { path: '/relatorios', title: 'Relatórios', icon: ChartColumn, group: 'daily', phase: 3 },
+  {
+    path: '/planejamento',
+    title: 'Planejamento',
+    icon: CalendarClock,
+    group: 'planning',
+    phase: 2,
+  },
+  { path: '/metas', title: 'Metas', icon: Flag, group: 'planning', phase: 2 },
+  { path: '/investimentos', title: 'Investimentos', icon: TrendingUp, group: 'wealth', phase: 3 },
+  { path: '/relatorios', title: 'Relatórios', icon: ChartColumn, group: 'wealth', phase: 3 },
   { path: '/categorias', title: 'Categorias e regras', icon: Tags, group: 'footer', phase: 1 },
   { path: '/ajustes', title: 'Ajustes', icon: Settings, group: 'footer', phase: 1 },
 ];
@@ -48,7 +62,7 @@ const BILLS_TITLE = 'Faturas';
 // Áreas que têm uma tela por endereço (um relatório por endereço): o item e o título valem em `/relatorios/*`.
 const REPORTS_PATH = '/relatorios';
 
-function isInsideReports(pathname: string): boolean {
+export function isInsideReports(pathname: string): boolean {
   return pathname.startsWith(`${REPORTS_PATH}/`);
 }
 
@@ -63,6 +77,12 @@ export function isAreaActive(area: AppArea, pathname: string): boolean {
   if (pathname === area.path) return true;
   if (area.path === REPORTS_PATH) return isInsideReports(pathname);
   return area.path === '/contas' && BILLS_PATH_PATTERN.test(pathname);
+}
+
+/** `page` na tela da própria área; `true` quando a tela aberta pertence a ela (faturas, um relatório). */
+export function getAreaCurrent(area: AppArea, pathname: string): 'page' | 'true' | undefined {
+  if (pathname === area.path) return 'page';
+  return isAreaActive(area, pathname) ? 'true' : undefined;
 }
 
 export function listAreasByGroup(group: AreaGroup): AppArea[] {

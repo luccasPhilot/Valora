@@ -46,7 +46,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 | | Variação do patrimônio no card de saldo, com o link para a curva em Investimentos | v3 |
 | **Transações** | Lista agrupada por dia; filtros por período, categoria, tipo, origem e conta; pesquisa; resumo do filtro (quantas transações, quanto entrou e quanto saiu); detalhe; trocar a categoria | v1 |
 | | Lançamento manual de receitas e despesas, aviso de possível duplicata | v1 |
-| **Contas e cartões** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |
+| **Contas** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |
 | | Faturas do cartão: fatura atual com vencimento e situação (aberta, vencida, paga), próximas faturas e parcelas futuras por mês | v2 |
 | **Categorias e regras** | Categorias próprias, regras automáticas, regras que nascem quando você corrige uma categoria | v1 |
 | **Orçamentos** | Limite por categoria no mês, quanto já foi gasto, aviso perto do limite e quando estoura | v1 |

@@ -240,7 +240,7 @@ Arredondados e calmos em repouso, táteis ao toque: ao pressionar o botão reduz
 - **Focus:** anel `ring`. **Error:** mensagem embaixo do campo em `destructive`, em linguagem simples.
 
 ### Navigation
-- Menu lateral agrupado (Dia a dia, Planejamento, Patrimônio, rodapé com Categorias e Ajustes). Item de 44 px, raio de 12 px, nome em Montserrat Alternates 16 px peso 500; o item ativo fica Menta, em negrito, com o ícone em `primary`. Só o ativo tem fundo.
+- Menu lateral agrupado (Dia a dia, Planejamento, Patrimônio, rodapé com Categorias e Ajustes). Item de 44 px, raio de 12 px, nome em Montserrat Alternates 16 px peso 500; o item ativo fica Menta, em negrito, com o ícone em `primary` e uma barra de 3 × 20 px em `primary` à esquerda (o fundo sozinho dá só 1,12:1). Só o ativo tem fundo; o hover é um cinza neutro (`muted`).
 - Recolhido, só ícones de 44 px com tooltip. No celular, abre por cima com o fundo escurecido.
 
 ### Barras de orçamento e de categoria

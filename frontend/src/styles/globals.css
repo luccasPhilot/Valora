@@ -6,8 +6,11 @@
 @import '@fontsource/montserrat-alternates/700.css';
 
 @custom-variant dark (&:is(.dark *));
+/* Altura que não comporta o menu inteiro (cerca de 760 px): notebooks e celular deitado. */
+@custom-variant short (@media (max-height: 780px));
 
 :root {
+  color-scheme: light;
   --radius: 1.25rem;
 
   --background: #f7f8f7;
@@ -67,6 +70,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0a0a0b;
   --foreground: #ededef;
   --card: #121214;

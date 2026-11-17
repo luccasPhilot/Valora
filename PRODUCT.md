@@ -26,7 +26,7 @@ Dados no servidor do próprio titular, regras previsíveis escritas no código (
 
 ## Capabilities and Constraints
 
-- Áreas: Início, Transações, Contas e cartões, Categorias e regras, Orçamentos, Planejamento, Metas, Alertas, Investimentos, Relatórios. Detalhe em `docs/01-produto.md`.
+- Áreas: Início, Transações, Contas, Categorias e regras, Orçamentos, Planejamento, Metas, Alertas, Investimentos, Relatórios. Detalhe em `docs/01-produto.md`.
 - Dinheiro em centavos inteiros; negativo é saída; transferências internas ficam fora dos totais de receita e despesa.
 - Só leitura: nunca pagamento, Pix ou transferência.
 - Fora do escopo, inclusive no futuro: IA conversacional, carteira com saldo, multiusuário, canais de chat, uso comercial.

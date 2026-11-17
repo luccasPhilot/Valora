@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -14,11 +14,12 @@ const DESKTOP_WIDTH = 1440;
 function renderApp(initialPath: string, viewportWidth: number) {
   stubViewport({ viewportWidth });
   const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  return render(
+  const renderResult = render(
     <AppProviders>
       <RouterProvider router={router} />
     </AppProviders>,
   );
+  return { ...renderResult, router };
 }
 
 function getMenuOverlay(): Element {
@@ -63,6 +64,127 @@ describe('AppShell on desktop', () => {
     const title = await screen.findByRole('heading', { level: 1 });
     // Assert
     expect(title).toHaveTextContent('Início');
+  });
+});
+
+describe('AppShell browser tab title', () => {
+  it('should_name_the_tab_after_the_open_area_when_user_is_on_budgets', async () => {
+    // Arrange
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    // Act
+    await screen.findByRole('heading', { level: 1, name: 'Orçamentos' });
+    // Assert
+    await waitFor(() => expect(document.title).toBe('Orçamentos | Valora'));
+  });
+
+  it('should_update_the_tab_title_when_user_picks_another_area', async () => {
+    // Arrange
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    await screen.findByRole('heading', { level: 1, name: 'Orçamentos' });
+    // Act
+    await userEvent.click(screen.getByRole('link', { name: 'Metas' }));
+    // Assert
+    await waitFor(() => expect(document.title).toBe('Metas | Valora'));
+  });
+
+  it('should_keep_the_report_title_when_a_report_is_open', async () => {
+    // Arrange
+    renderApp('/relatorios/categorias', DESKTOP_WIDTH);
+    // Act
+    await screen.findByRole('heading', { level: 1, name: 'Relatórios' });
+    // Assert
+    await waitFor(() => expect(document.title).toBe('Por categoria | Relatórios | Valora'));
+  });
+});
+
+describe('AppShell landmarks and skip link', () => {
+  it('should_group_the_daily_areas_in_a_named_navigation_when_menu_is_expanded', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    // Act
+    const navigation = await screen.findByRole('navigation', { name: 'Principal' });
+    // Assert
+    expect(within(navigation).getByRole('link', { name: 'Transações' })).toBeVisible();
+  });
+
+  it('should_split_the_menu_in_three_named_groups_when_menu_is_expanded', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    const navigation = await screen.findByRole('navigation', { name: 'Principal' });
+    // Act
+    const groups = within(navigation).getAllByRole('list');
+    // Assert
+    expect(groups.map((group) => group.getAttribute('aria-labelledby'))).toEqual([
+      'menu-group-daily',
+      'menu-group-planning',
+      'menu-group-wealth',
+    ]);
+  });
+
+  it('should_keep_planning_and_goals_together_in_the_planning_group', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    await screen.findByRole('navigation', { name: 'Principal' });
+    // Act
+    const planningGroup = screen.getByRole('list', { name: 'Planejamento' });
+    // Assert
+    expect(
+      within(planningGroup)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Planejamento', 'Metas']);
+  });
+
+  it('should_keep_investments_and_reports_together_in_the_wealth_group', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    await screen.findByRole('navigation', { name: 'Principal' });
+    // Act
+    const wealthGroup = screen.getByRole('list', { name: 'Patrimônio' });
+    // Assert
+    expect(
+      within(wealthGroup)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Investimentos', 'Relatórios']);
+  });
+
+  it('should_group_settings_in_their_own_navigation_when_menu_is_expanded', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    // Act
+    const navigation = await screen.findByRole('navigation', { name: 'Configurações' });
+    // Assert
+    expect(within(navigation).getByRole('link', { name: 'Ajustes' })).toBeVisible();
+  });
+
+  it('should_mark_only_the_open_area_as_the_current_page_when_user_is_on_budgets', async () => {
+    // Arrange
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    // Act
+    const currentLinks = await screen.findAllByRole('link', { current: 'page' });
+    // Assert
+    expect(currentLinks.map((link) => link.textContent)).toEqual(['Orçamentos']);
+  });
+
+  it('should_make_the_skip_link_the_first_stop_when_user_presses_tab', async () => {
+    // Arrange
+    renderApp('/', DESKTOP_WIDTH);
+    await screen.findByRole('heading', { level: 1 });
+    // Act
+    await userEvent.tab();
+    // Assert
+    expect(screen.getByRole('link', { name: 'Pular para o conteúdo' })).toHaveFocus();
+  });
+
+  it('should_move_focus_to_the_content_without_changing_the_address_when_skip_link_is_used', async () => {
+    // Arrange
+    renderApp('/orcamentos', DESKTOP_WIDTH);
+    await screen.findByRole('heading', { level: 1 });
+    // Act
+    await userEvent.click(screen.getByRole('link', { name: 'Pular para o conteúdo' }));
+    // Assert
+    expect(document.getElementById('conteudo')).toHaveFocus();
   });
 });
 
@@ -131,6 +253,90 @@ describe('AppShell on mobile', () => {
     await userEvent.keyboard('{Escape}');
     // Assert
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('AppShell mobile menu focus and state', () => {
+  it('should_announce_the_menu_button_as_expanded_only_while_the_menu_is_open', async () => {
+    // Arrange
+    renderApp('/', MOBILE_WIDTH);
+    const trigger = await screen.findByRole('button', { name: 'Abrir menu' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // Act
+    await userEvent.click(trigger);
+    // Assert
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('should_return_focus_to_the_menu_button_when_menu_is_closed_with_escape', async () => {
+    // Arrange
+    renderApp('/', MOBILE_WIDTH);
+    const trigger = await screen.findByRole('button', { name: 'Abrir menu' });
+    await userEvent.click(trigger);
+    await screen.findByRole('dialog');
+    // Act
+    await userEvent.keyboard('{Escape}');
+    // Assert
+    expect(trigger).toHaveFocus();
+  });
+
+  it('should_close_menu_with_a_single_escape_when_a_menu_link_has_focus', async () => {
+    // Arrange
+    renderApp('/', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    const menu = await screen.findByRole('dialog');
+    within(menu).getByRole('link', { name: 'Orçamentos' }).focus();
+    // Act
+    await userEvent.keyboard('{Escape}');
+    // Assert
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('should_close_menu_when_user_goes_back_while_menu_is_open', async () => {
+    // Arrange
+    const { router } = renderApp('/', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    await screen.findByRole('dialog');
+    // Act
+    await act(() => router.navigate(-1));
+    // Assert
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('should_stay_on_the_same_screen_when_menu_is_closed_by_going_back', async () => {
+    // Arrange
+    const { router } = renderApp('/orcamentos', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    await screen.findByRole('dialog');
+    // Act
+    await act(() => router.navigate(-1));
+    // Assert
+    expect(router.state.location.pathname).toBe('/orcamentos');
+  });
+
+  it('should_return_to_the_previous_screen_and_not_to_the_menu_when_user_goes_back_after_picking_an_area', async () => {
+    // Arrange
+    const { router } = renderApp('/', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    const menu = await screen.findByRole('dialog');
+    await userEvent.click(within(menu).getByRole('link', { name: 'Orçamentos' }));
+    await screen.findByRole('heading', { level: 1, name: 'Orçamentos' });
+    // Act
+    await act(() => router.navigate(-1));
+    // Assert
+    expect(await screen.findByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('should_not_mount_tooltips_for_menu_links_when_menu_is_a_drawer', async () => {
+    // Arrange
+    renderApp('/', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    const menu = await screen.findByRole('dialog');
+    // Act
+    within(menu).getByRole('link', { name: 'Orçamentos' }).focus();
+    // Assert
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 });
 
