@@ -163,6 +163,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [x] histórico de receitas e despesas;
   - [x] análise por categoria ao longo dos meses;
   - [x] evolução do patrimônio.
+- [x] **Análise de categorias do mês** (área "Categorias" no menu principal, `/categorias`): todas as categorias com comparação, tendência de 6 meses, orçamento, pontos de atenção e cobranças recorrentes.
 - [x] Variação do patrimônio no card de saldo do Início.
 
 **Pronto quando:**
