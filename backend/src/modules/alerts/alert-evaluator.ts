@@ -11,11 +11,9 @@ import {
   connectionSituations,
 } from './alert-situations.js';
 import type { AlertsRepository } from './alerts.repository.js';
+import { PATTERN_LOOKBACK_MONTHS } from './detectors/charge-row.js';
 import { detectDuplicateCharges } from './detectors/duplicate-charges.js';
 import { detectSubscriptions } from './detectors/subscriptions.js';
-
-// Assinatura mensal precisa de 3 cobranças e a última com até 45 dias: 7 meses cobrem com folga.
-const PATTERN_LOOKBACK_MONTHS = 7;
 
 export interface AlertEvaluatorDependencies {
   readonly alerts: AlertsRepository;

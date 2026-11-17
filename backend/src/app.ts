@@ -6,6 +6,7 @@ import type { Database } from './db/database.js';
 import { AccountsRepository } from './modules/accounts/accounts.repository.js';
 import { accountsRoutes } from './modules/accounts/accounts.routes.js';
 import { AccountsService } from './modules/accounts/accounts.service.js';
+import { AlertChargesRepository } from './modules/alerts/alert-charges.repository.js';
 import { createAlertsModule } from './modules/alerts/alerts.module.js';
 import { alertsRoutes } from './modules/alerts/alerts.routes.js';
 import { BudgetsRepository } from './modules/budgets/budgets.repository.js';
@@ -17,6 +18,8 @@ import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { categoryRulesRoutes } from './modules/categories/category-rules.routes.js';
 import type { CategorySeedService } from './modules/categories/category-seed.service.js';
 import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-category-mappings.routes.js';
+import { categoryInsightsRoutes } from './modules/category-insights/category-insights.routes.js';
+import { CategoryInsightsService } from './modules/category-insights/category-insights.service.js';
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
 import { connectionsRoutes } from './modules/connections/connections.routes.js';
 import { ConnectionsService } from './modules/connections/connections.service.js';
@@ -187,5 +190,16 @@ function registerModules(
   app.register(reportsRoutes(new ReportsService({ totals: transactionTotals, now })), {
     prefix: API_PREFIX,
   });
+  app.register(
+    categoryInsightsRoutes(
+      new CategoryInsightsService({
+        totals: transactionTotals,
+        budgets: new BudgetsRepository(database.db),
+        charges: new AlertChargesRepository(database.db),
+        now,
+      }),
+    ),
+    { prefix: API_PREFIX },
+  );
   return { syncService, categorySeedService: categories.categorySeedService, accountsService };
 }

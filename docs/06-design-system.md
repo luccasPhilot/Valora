@@ -268,10 +268,10 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 
 | Grupo | Áreas | Fase |
 |---|---|---|
-| Dia a dia | Início, Transações, Orçamentos, Contas | v1 |
+| Dia a dia | Início, Transações, Orçamentos, Categorias, Contas | v1 |
 | Planejamento | Planejamento, Metas | v2 |
 | Patrimônio | Investimentos, Relatórios | v3 |
-| Rodapé do menu | Categorias e regras, Ajustes | v1 |
+| Rodapé do menu | Categorias e regras (configuração, `/categorias-e-regras`), Ajustes | v1 |
 
 - O menu só mostra áreas que já existem. Um grupo aparece quando a primeira área dele fica pronta.
 - O item ativo fica com fundo `secondary`, texto `secondary-foreground` em negrito, o ícone em `primary` e uma **barra de 3 × 20 px em `primary`** à esquerda (4 px da borda do item). O fundo sozinho tem só 1,12:1 contra o menu no claro e 1,22:1 no escuro, abaixo dos 3:1 que um indicador de estado exige; a barra tem 5,41:1 (claro) e 10,08:1 (escuro) contra o menu, e é ela que mostra o item atual com o menu recolhido, quando o negrito some. Ao passar o mouse, o item inativo ganha fundo `muted` (neutro, sem verde, sem barra e sem trocar a cor do texto ou do ícone), para nunca parecer o ativo. Os itens têm 44 px de altura e `radius-sm`, com o nome em Montserrat Alternates (16 px, peso 500; o ativo em 700), a mesma fonte do nome "Valora" e dos títulos das páginas.
@@ -468,6 +468,21 @@ Uma área com um relatório por endereço (`/relatorios/receitas-e-despesas`, `/
 **Eixos dos gráficos:** os valores em reais usam **números redondos** (R$ 1 mil, R$ 2 mil…, de 1, 2, 2,5 ou 5 vezes uma potência de 10, em cerca de quatro intervalos), sempre com o zero (`components/charts/axis-scale.ts`); o rótulo usa espaço sem quebra para não partir em duas linhas, e a margem direita de 12 px impede o último mês ("nov.") de ser cortado. O texto dos eixos usa `muted-foreground` (7,3:1 no escuro). Os gráficos ficam em `aria-hidden` e **não recebem foco** (`accessibilityLayer={false}`); o resumo em texto ou a tabela é a alternativa. O gráfico de patrimônio total mantém o eixo automático (sem o zero), para a variação não ficar achatada.
 
 **Estados:** carregando (skeleton no formato: o herói, dois cartões de apoio e o gráfico), vazio ("Ainda não há transações neste período": num período curto, "Tente um período maior" com o botão "Mudar período", que leva o foco ao filtro; em 24 meses, "Nem nos últimos 24 meses…" com o botão "Ver contas") e erro ("Não foi possível carregar o relatório." e "Tentar de novo"). "Ocultar valores" mascara os números, a frase, a tabela e o tooltip, e o eixo vertical do gráfico some. Com um período novo carregando, o relatório anterior continua na tela, esmaecido, com `aria-busy` e o aviso "Atualizando o relatório" para leitor de tela. A aba do navegador leva o nome do relatório ("Por categoria | Relatórios | Valora").
+
+### Análise de categorias
+
+A área "Categorias" (`/categorias`, `features/categories/analysis/`), no grupo "Dia a dia" do menu, entre Orçamentos e Contas, sem abas. A configuração é outra tela, "Categorias e regras", no rodapé. Ordem da tela, em todas as larguras: seletor de mês (o mesmo de Orçamentos, com "Próximo mês" desativado no mês atual), herói, pontos de atenção, "Para onde foi o dinheiro" e, ao lado ou abaixo, "O que mudou" e "Cobranças recorrentes".
+
+- **Herói** ("Gasto no mês", `DataCard tier="hero"`): o total com `−` em `lg`, a variação em seta e texto ("20% a mais, até o dia 17, contra o mesmo trecho de outubro") na cor normal, e a maior categoria. Sem mês anterior para comparar, diz isso em texto.
+- **Pede atenção:** lista de botões de 44 px com ícone e texto. `budget_exceeded` usa o ícone `CircleAlert` na cor `status-critical` (a mesma de "Orçamento estourado" em Orçamentos); alta forte e "sem categoria" usam ícone na cor normal. Some quando não há pontos.
+- **Para onde foi o dinheiro:** **todas** as categorias, sem "Outros", numa lista de barras de uma cor só (`primary`, largura = % do gasto). Cada linha: ícone, nome (até 2 linhas), valor com `−`, percentual, variação, selo de orçamento e mini-gráfico de linha dos últimos 6 meses (slot 1 da paleta, 72 × 28 px, sem eixos, só com 2 ou mais meses e escondido abaixo de 400 px). A linha inteira é um botão de 44 px que abre o detalhe. A lista cresce com a página, sem rolagem própria.
+- **Variação:** seta (`ArrowUp`, `ArrowDown`, `Minus`) e texto ("+ 50%", "− 10%", "Novo" com `Sparkles`), sempre em `muted-foreground`. **Gastar mais não é vermelho**: `status-critical` é só do orçamento estourado, `destructive` só de erro.
+- **Selo de orçamento:** ícone e texto, com as cores de Orçamentos (`status-ok`, `status-warning`, `status-critical`; só o ícone leva a cor, o texto fica na cor normal por contraste): "Dentro do orçamento", "Perto do limite", "Orçamento estourado".
+- **O que mudou:** dois grupos ("Subiram" e "Caíram", cada um com seta e título) em barras de uma cor só na escala da maior diferença; as quedas ancoram à direita e as altas à esquerda. Some sem mês anterior com gasto.
+- **Cobranças recorrentes:** total por mês (`md`) e por ano, lista com descrição, quantidade e data da última cobrança, e a nota de que mostra o que vale hoje.
+- **Detalhe da categoria:** `FormPanel` (de baixo, lateral ou janela), com o gasto, o gráfico de colunas dos meses (slot 1; o mês analisado em cor cheia e os anteriores a 35%; o mês em andamento com hachura e "em andamento"; tabela para leitor de tela), média, maior mês, orçamento e o botão "Ver transações". É a única área com rolagem.
+- **Sem cor por categoria, sem rosca e sem treemap:** o visual vem de tamanho (barras), posição (ranking) e forma (linha de tendência).
+- **Estados:** carregando (skeleton nos formatos dos cartões), vazio ("Nenhum gasto neste mês", com o seletor à vista) e erro ("Tentar de novo"). Com "Ocultar valores", os valores ficam mascarados, os percentuais continuam e o eixo de valor do detalhe some.
 
 ## Componentes
 

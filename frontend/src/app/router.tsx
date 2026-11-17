@@ -51,7 +51,11 @@ export const appRoutes: RouteObject[] = [
           },
         ],
       },
-      { path: 'categorias', lazy: () => import('@/features/categories/categories-page') },
+      { path: 'categorias', lazy: () => import('@/features/categories/analysis/analysis-page') },
+      {
+        path: 'categorias-e-regras',
+        lazy: () => import('@/features/categories/categories-page'),
+      },
       { path: 'ajustes', lazy: () => import('@/features/settings/settings-page') },
     ],
   },

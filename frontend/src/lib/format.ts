@@ -33,6 +33,10 @@ const monthFormat = new Intl.DateTimeFormat(LOCALE, {
   month: 'long',
   year: 'numeric',
 });
+const longMonthNameFormat = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: APP_TIMEZONE,
+  month: 'long',
+});
 const shortMonthFormat = new Intl.DateTimeFormat(LOCALE, {
   timeZone: APP_TIMEZONE,
   month: 'short',
@@ -130,6 +134,11 @@ export function formatDate(isoDate: string): string {
 
 export function formatMonth(isoDate: string): string {
   return monthFormat.format(isoDateToInstant(isoDate));
+}
+
+/** Nome inteiro do mês de um `AAAA-MM`, sem o ano e em minúsculas: "outubro". */
+export function formatMonthLongName(month: string): string {
+  return longMonthNameFormat.format(isoDateToInstant(`${month}-01`));
 }
 
 /** Nome abreviado do mês de um `AAAA-MM`, como "jun.": cabe nos rótulos do eixo dos gráficos. */

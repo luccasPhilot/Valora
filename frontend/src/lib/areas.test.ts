@@ -25,6 +25,13 @@ function accountsArea() {
 }
 
 describe('findScreenTitle', () => {
+  it('should_return_categories_title_for_the_analysis_and_the_settings_title_for_the_rules_screen', () => {
+    // Arrange & Act
+    const titles = [findScreenTitle('/categorias'), findScreenTitle('/categorias-e-regras')];
+    // Assert
+    expect(titles).toEqual(['Categorias', 'Categorias e regras']);
+  });
+
   it('should_return_the_area_title_when_the_path_is_an_area', () => {
     // Arrange & Act
     const title = findScreenTitle('/contas');
@@ -112,7 +119,17 @@ describe('listAreasByGroup', () => {
     // Arrange & Act
     const titles = listAreasByGroup('daily').map((area) => area.title);
     // Assert
-    expect(titles).toEqual(['Início', 'Transações', 'Orçamentos', 'Contas']);
+    expect(titles).toEqual(['Início', 'Transações', 'Orçamentos', 'Categorias', 'Contas']);
+  });
+
+  it('should_keep_only_the_settings_areas_in_the_footer', () => {
+    // Arrange & Act
+    const footer = listAreasByGroup('footer').map((area) => [area.title, area.path]);
+    // Assert
+    expect(footer).toEqual([
+      ['Categorias e regras', '/categorias-e-regras'],
+      ['Ajustes', '/ajustes'],
+    ]);
   });
 
   it('should_name_a_menu_group_for_every_area_that_is_not_in_the_footer', () => {

@@ -14,7 +14,7 @@ interface StatusDisplay {
 }
 
 // Design System, "Status de orçamento": ícone Lucide e cor de cada estado.
-const STATUS_DISPLAY: Readonly<Record<BudgetStatus, StatusDisplay>> = {
+export const STATUS_DISPLAY: Readonly<Record<BudgetStatus, StatusDisplay>> = {
   ok: { icon: CircleCheck, iconClass: 'text-status-ok', fillClass: 'bg-status-ok' },
   warning: {
     icon: TriangleAlert,

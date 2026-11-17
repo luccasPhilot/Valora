@@ -49,6 +49,7 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 | **Contas** | Contas e cartões, saldo de cada um e o total, status de cada conexão | v1 |
 | | Faturas do cartão: fatura atual com vencimento e situação (aberta, vencida, paga), próximas faturas e parcelas futuras por mês | v2 |
 | **Categorias e regras** | Categorias próprias, regras automáticas, regras que nascem quando você corrige uma categoria | v1 |
+| **Categorias** | O gasto de um mês em todas as categorias, com comparação, tendência, orçamento e cobranças recorrentes ([regras](#análise-de-categorias)). É a análise do dia a dia, no menu principal; a configuração fica em "Categorias e regras", no rodapé | v3 |
 | **Orçamentos** | Limite por categoria no mês, quanto já foi gasto, aviso perto do limite e quando estoura | v1 |
 | **Planejamento** | Receitas e despesas previstas (avulsas ou que se repetem todo mês ou todo ano), por mês: o que falta acontecer, o que já foi realizado e o que foi pulado, com os totais previstos. Você vincula uma previsão à transação real (o app sugere candidatas, mas nunca vincula sozinho), marca como realizada sem vincular, pula o mês ou desfaz; também pode pausar e excluir | v2 |
 | | Projeção do saldo no fim do mês: o saldo de hoje mais o que está previsto e menos as faturas que vencem, dia a dia, com o ponto mais baixo e o aviso de saldo negativo. Fica no topo da tela de Planejamento ([regras](#projeção-do-fim-do-mês)) | v2 |
@@ -90,6 +91,22 @@ Responde "como vou chegar ao fim do mês?" com uma conta que dá para conferir �
 - **Saídas primeiro.** No mesmo dia, as saídas vêm antes das entradas, para o ponto mais baixo não ser otimista.
 - **Cartão sem vencimento** (o banco não informou e não há como estimar) não entra na conta, e a tela avisa qual cartão ficou de fora. Vencimento **estimado** entra e vem marcado.
 - **Não prevê gastos do dia a dia** (mercado, lazer) nem meses futuros, e os gastos no cartão ainda fora de fatura fechada entram só na fatura que vencer depois. A tela diz isso.
+
+## Análise de categorias
+
+A área **Categorias** (`/categorias`, no grupo "Dia a dia" do menu, depois de Orçamentos) responde "para onde foi o dinheiro e o que devo decidir sobre isso". Ela olha **um mês** (seletor de mês de Orçamentos, padrão o mês atual, `?month=AAAA-MM`; nunca depois do mês atual) e só despesas.
+
+- **Gasto no mês:** a mesma conta dos orçamentos e de `/relatorios/categorias` (líquido por categoria, com mínimo de zero, sem transferências, com manuais e pendentes, saída sem categoria em "Sem categoria"). O total bate com o relatório por categoria do mesmo mês.
+- **Comparação justa:** num mês encerrado, contra o mês anterior inteiro. No **mês em andamento**, contra o **mesmo trecho** do mês anterior (dia 1 até hoje, limitado ao último dia dele), para o gasto parcial não parecer uma queda. A tela diz o trecho comparado. Categoria que não gastou nada no período de comparação aparece como "Novo".
+- **Todas as categorias**, sem "Outros", do maior gasto para o menor: valor, % do gasto, variação, selo do orçamento (se houver limite), e uma linha dos últimos 6 meses (só com 2 ou mais meses de histórico). Tocar numa categoria abre o detalhe: colunas dos meses, média dos meses anteriores, maior mês, orçamento e o link para as transações dela no mês.
+- **O que mudou:** as 3 maiores altas e as 3 maiores quedas contra o período de comparação, em reais (uma categoria que zerou conta como queda inteira). Não aparece se o período de comparação não teve gasto.
+- **Pede atenção**, com regras fixas (nada de IA):
+  - orçamento **estourado** no mês;
+  - **alta forte**: categoria que subiu 30% ou mais **e** R$ 50,00 ou mais (categoria nova não conta, porque não há base);
+  - **sem categoria** com 10% ou mais do gasto do mês.
+- **Cobranças recorrentes:** as assinaturas detectadas pela **mesma regra do alerta de assinatura** ([Alertas](#alertas)), com o total por mês e por ano. Mostra a situação de **hoje**, qualquer que seja o mês escolhido, e pega assinaturas fora da categoria "Assinaturas". Como a regra exige o mesmo valor, uma assinatura que mudou de preço some até repetir o novo valor 3 vezes.
+- **Só leitura:** não cria nem altera orçamento, não cancela assinatura e não cria alertas novos no sino.
+- Sem gasto no mês, a tela diz "Nenhum gasto neste mês" e o seletor de mês continua à vista.
 
 ## Orçamentos
 
