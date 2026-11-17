@@ -11,20 +11,43 @@ export function subscriptionDedupeKey(amountCents: number, descriptionNormalized
   return `subscription_detected:${amountCents}:${descriptionNormalized}`;
 }
 
+/** Uma assinatura ativa: a sequência mensal mais recente de um mesmo valor e descrição. */
+export interface ActiveSubscription {
+  readonly latestCharge: ChargeRow;
+  /** Valor da cobrança, positivo. */
+  readonly amountCents: number;
+  readonly chargesCount: number;
+}
+
 /**
  * Assinatura: 3 ou mais cobranças de mesmo valor e descrição (em qualquer conta) em sequência, com 25 a
- * 35 dias entre cada par consecutivo, e a última com até 45 dias. Uma situação por descrição e valor,
- * ligada à cobrança mais recente (`today` é AAAA-MM-DD).
+ * 35 dias entre cada par consecutivo, e a última com até 45 dias (`today` é AAAA-MM-DD). Uma por
+ * descrição e valor, com a sequência ativa mais recente. É a única definição de assinatura: o alerta
+ * e a análise de categorias leem daqui.
  */
-export function detectSubscriptions(rows: readonly ChargeRow[], today: string): AlertSituation[] {
+export function findActiveSubscriptions(
+  rows: readonly ChargeRow[],
+  today: string,
+): ActiveSubscription[] {
   const groups = groupByKey(
     rows.filter(isPatternCharge),
     (row) => `${row.amountCents}|${row.descriptionNormalized}`,
   );
   return groups.flatMap((group) => {
-    const latestActive = activeSequences(group, today).at(-1)?.at(-1);
-    return latestActive ? [subscriptionSituation(latestActive)] : [];
+    const sequence = activeSequences(group, today).at(-1);
+    const latestCharge = sequence?.at(-1);
+    if (!sequence || !latestCharge) return [];
+    return [
+      { latestCharge, amountCents: -latestCharge.amountCents, chargesCount: sequence.length },
+    ];
   });
+}
+
+/** Uma situação por assinatura ativa, ligada à cobrança mais recente. */
+export function detectSubscriptions(rows: readonly ChargeRow[], today: string): AlertSituation[] {
+  return findActiveSubscriptions(rows, today).map((subscription) =>
+    subscriptionSituation(subscription.latestCharge),
+  );
 }
 
 /** Sequências mensais (3 ou mais cobranças) cuja última cobrança ainda é recente, da mais antiga à mais nova. */

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectSubscriptions } from '../../../../src/modules/alerts/detectors/subscriptions.js';
+import {
+  detectSubscriptions,
+  findActiveSubscriptions,
+} from '../../../../src/modules/alerts/detectors/subscriptions.js';
 import { chargeRow } from './charge-row-builder.js';
 
 const TODAY = '2026-11-10';
@@ -187,5 +190,54 @@ describe('detectSubscriptions', () => {
     const situations = detectSubscriptions(rows, TODAY);
     // Assert
     expect(situations).toEqual([]);
+  });
+});
+
+describe('findActiveSubscriptions', () => {
+  it('should_return_the_latest_charge_count_and_positive_amount_when_a_subscription_is_active', () => {
+    // Arrange
+    const rows = monthly(['2026-07-06', '2026-08-05', '2026-09-04', '2026-10-05']);
+    // Act
+    const [subscription] = findActiveSubscriptions(rows, TODAY);
+    // Assert
+    expect(subscription).toMatchObject({
+      amountCents: 3990,
+      chargesCount: 4,
+      latestCharge: { id: rows[3]?.id },
+    });
+  });
+
+  it('should_return_one_subscription_per_description_and_amount', () => {
+    // Arrange
+    const rows = [
+      ...monthly(['2026-08-05', '2026-09-04', '2026-10-05']),
+      ...monthly(['2026-08-10', '2026-09-09', '2026-10-10'], {
+        description: 'Musica Exemplo',
+        descriptionNormalized: 'MUSICA EXEMPLO',
+        amountCents: -2190,
+      }),
+    ];
+    // Act
+    const subscriptions = findActiveSubscriptions(rows, TODAY);
+    // Assert
+    expect(subscriptions).toHaveLength(2);
+  });
+
+  it('should_ignore_installments', () => {
+    // Arrange
+    const rows = monthly(['2026-08-05', '2026-09-04', '2026-10-05'], { installmentTotal: 12 });
+    // Act
+    const subscriptions = findActiveSubscriptions(rows, TODAY);
+    // Assert
+    expect(subscriptions).toEqual([]);
+  });
+
+  it('should_return_nothing_when_only_the_old_sequence_ended', () => {
+    // Arrange
+    const rows = monthly(['2026-03-01', '2026-03-31', '2026-04-30']);
+    // Act
+    const subscriptions = findActiveSubscriptions(rows, TODAY);
+    // Assert
+    expect(subscriptions).toEqual([]);
   });
 });

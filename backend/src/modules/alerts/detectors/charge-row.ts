@@ -14,6 +14,9 @@ export interface ChargeRow {
   readonly categoryKind: string | null;
 }
 
+/** Assinatura mensal precisa de 3 cobranças e a última com até 45 dias: 7 meses cobrem com folga. */
+export const PATTERN_LOOKBACK_MONTHS = 7;
+
 /** Abaixo disso vira ruído (taxas, tarifas, café): R$ 5,00. */
 export const MIN_PATTERN_CHARGE_CENTS = 500;
 
