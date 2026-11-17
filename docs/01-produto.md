@@ -140,7 +140,7 @@ Uma meta é algo que você quer juntar: a reserva de emergência, a viagem, a en
 
 Em vez de informar aportes, você pode **vincular a meta a contas e investimentos**: o valor acumulado passa a ser o saldo deles e muda sozinho a cada sincronização. O app continua só leitura.
 
-- **O que dá para vincular.** Até 10 itens por meta: contas corrente e poupança (inclusive as ocultas dos totais) e investimentos, sempre de bancos ativos. Não vale cartão de crédito, a conta "Dinheiro" nem item de banco arquivado.
+- **O que dá para vincular.** Sem limite de itens por meta: contas corrente e poupança (inclusive as ocultas dos totais) e investimentos, sempre de bancos ativos. Não vale cartão de crédito, a conta "Dinheiro" nem item de banco arquivado.
 - **Valor acumulado.** `max(0, soma dos saldos atuais dos itens)`, o saldo inteiro de cada item, sem descontar nada. Saldo negativo (cheque especial) não deixa o valor abaixo de zero. Um item de banco arquivado continua listado, marcado "Banco removido do Valora: não conta", e conta zero.
 - **Valor inicial e vínculo não convivem:** criar uma meta vinculada com valor inicial é recusado. Aporte e retirada manuais também são recusados enquanto a meta é vinculada.
 - **Aportes antigos são preservados.** Vincular não apaga o histórico: os aportes ficam guardados, não contam enquanto a meta é vinculada e **voltam a valer se ela for desvinculada**. O formulário avisa nos dois sentidos.

@@ -2,7 +2,6 @@ import type { Goal, GoalInput, GoalLinkRef, NewGoalInput } from '@/lib/api/goals
 import { centsToDigits, digitsToCents } from '@/lib/money-digits';
 
 export const MAX_GOAL_NAME_LENGTH = 80;
-export const MAX_GOAL_LINKS = 10;
 const DEFAULT_ICON = 'piggy-bank';
 
 export type GoalFormField = 'name' | 'target' | 'links';

@@ -124,7 +124,7 @@ A área "Metas" (`/metas`) MUST aparecer no menu lateral e listar as metas com �
 - **THEN** a tela pede confirmação antes de apagar
 
 ### Requirement: Meta vinculada
-`POST /api/v1/goals` e `PUT /api/v1/goals/:id` MUST aceitar `links`: até 10 itens `{ type, id }`, com `type` `account` (conta `checking` ou `savings`) ou `investment`, de bancos ativos. Cartão de crédito, a conta "Dinheiro", itens de banco arquivado, ids inexistentes e itens repetidos MUST ser recusados com 400 `VALIDATION_ERROR` e `links` em `details`. No `PUT`, `links` ausente MUST manter os vínculos e `links: []` MUST desvincular a meta. `GET /api/v1/goals` MUST trazer `isLinked`, `links` (cada um com `type`, `id`, `name`, `institutionName`, `balanceCents` e `isArchived`) e `manualSavedCents`. O valor acumulado `savedCents` de uma meta vinculada MUST ser `max(0, soma dos saldos atuais dos itens de bancos ativos)`; um item de banco arquivado MUST continuar listado e MUST contar zero. `goals.saved_cents` MUST NOT ser alterado enquanto a meta é vinculada, e os aportes já registrados MUST ser mantidos e voltar a valer na desvinculação. Progresso, valor restante e situação MUST usar o valor acumulado calculado.
+`POST /api/v1/goals` e `PUT /api/v1/goals/:id` MUST aceitar `links`: itens `{ type, id }`, sem limite de quantidade, com `type` `account` (conta `checking` ou `savings`) ou `investment`, de bancos ativos. Cartão de crédito, a conta "Dinheiro", itens de banco arquivado, ids inexistentes e itens repetidos MUST ser recusados com 400 `VALIDATION_ERROR` e `links` em `details`. No `PUT`, `links` ausente MUST manter os vínculos e `links: []` MUST desvincular a meta. `GET /api/v1/goals` MUST trazer `isLinked`, `links` (cada um com `type`, `id`, `name`, `institutionName`, `balanceCents` e `isArchived`) e `manualSavedCents`. O valor acumulado `savedCents` de uma meta vinculada MUST ser `max(0, soma dos saldos atuais dos itens de bancos ativos)`; um item de banco arquivado MUST continuar listado e MUST contar zero. `goals.saved_cents` MUST NOT ser alterado enquanto a meta é vinculada, e os aportes já registrados MUST ser mantidos e voltar a valer na desvinculação. Progresso, valor restante e situação MUST usar o valor acumulado calculado.
 
 #### Scenario: Soma de dois itens
 - **WHEN** a meta está vinculada a um CDB de R$ 10.000,00 e a uma conta poupança de R$ 2.500,00
@@ -138,9 +138,9 @@ A área "Metas" (`/metas`) MUST aparecer no menu lateral e listar as metas com �
 - **WHEN** o usuário tenta vincular uma conta do tipo cartão de crédito
 - **THEN** a API responde 400 `VALIDATION_ERROR` com `links` em `details`
 
-#### Scenario: Mais de 10 itens
-- **WHEN** `links` tem 11 itens
-- **THEN** a API responde 400 `VALIDATION_ERROR` com `links` em `details`
+#### Scenario: Muitos itens
+- **WHEN** `links` tem 11 itens válidos
+- **THEN** a API cria a meta e `savedCents` é a soma dos saldos dos 11 itens
 
 #### Scenario: Banco arquivado depois do vínculo
 - **WHEN** o banco de um item vinculado é arquivado
@@ -190,7 +190,7 @@ O ritmo mensal de uma meta vinculada MUST ser `max(0, floor(Σ variações × 30
 - **THEN** a situação é `completed`, qualquer que seja o ritmo
 
 ### Requirement: Vínculo na tela de Metas
-O formulário de meta MUST oferecer "Eu informo" e "Vinculada". Em "Vinculada", MUST listar as contas (corrente e poupança) e os investimentos de bancos ativos com nome, instituição e saldo, permitir escolher até 10, mostrar a soma atual, esconder o valor inicial e avisar quando um item já está em outra meta. Ao vincular uma meta com aportes, MUST avisar que eles deixam de contar; ao desvincular, MUST avisar que o valor volta a ser o dos aportes. O cartão MUST mostrar o selo "Vinculada" com ícone e a quantidade de itens. O painel de uma meta vinculada MUST listar os itens com o saldo de cada um, marcar o item de banco arquivado como "Banco removido do Valora: não conta", esconder "Registrar aporte" e "Registrar retirada" e explicar que o valor acompanha o saldo e muda na sincronização diária e que o ritmo mistura aporte e rendimento. MUST manter os estados, "Ocultar valores" e o funcionamento de 320 px a 1440 px nos dois temas.
+O formulário de meta MUST oferecer "Eu informo" e "Vinculada". Em "Vinculada", MUST listar as contas (corrente e poupança) e os investimentos de bancos ativos com nome, instituição e saldo, permitir escolher qualquer quantidade, mostrar a soma atual, esconder o valor inicial e avisar quando um item já está em outra meta. Ao vincular uma meta com aportes, MUST avisar que eles deixam de contar; ao desvincular, MUST avisar que o valor volta a ser o dos aportes. O cartão MUST mostrar o selo "Vinculada" com ícone e a quantidade de itens. O painel de uma meta vinculada MUST listar os itens com o saldo de cada um, marcar o item de banco arquivado como "Banco removido do Valora: não conta", esconder "Registrar aporte" e "Registrar retirada" e explicar que o valor acompanha o saldo e muda na sincronização diária e que o ritmo mistura aporte e rendimento. MUST manter os estados, "Ocultar valores" e o funcionamento de 320 px a 1440 px nos dois temas.
 
 #### Scenario: Escolher itens
 - **WHEN** o usuário escolhe "Vinculada" e marca um CDB e uma poupança

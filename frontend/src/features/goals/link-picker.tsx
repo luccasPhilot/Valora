@@ -7,7 +7,6 @@ import type { GoalLink, GoalLinkRef } from '@/lib/api/goals';
 
 import { useAccountsOverview } from '../accounts/accounts-queries';
 import { useInvestments } from '../investments/investments-queries';
-import { MAX_GOAL_LINKS } from './goal-form-values';
 import { useGoals } from './goals-queries';
 import {
   buildLinkCandidates,
@@ -42,29 +41,17 @@ function LinkError({ id, message }: { id: string; message: string | undefined })
 interface CandidateRowProps {
   candidate: LinkCandidate;
   isChecked: boolean;
-  isDisabled: boolean;
   isInOtherGoal: boolean;
   onToggle: () => void;
 }
 
-function CandidateRow({
-  candidate,
-  isChecked,
-  isDisabled,
-  isInOtherGoal,
-  onToggle,
-}: CandidateRowProps) {
+function CandidateRow({ candidate, isChecked, isInOtherGoal, onToggle }: CandidateRowProps) {
   return (
     <li>
-      <label
-        className={`flex min-h-11 items-start gap-3 rounded-md border bg-card p-3 text-sm ${
-          isDisabled ? 'opacity-50' : 'cursor-pointer hover:bg-accent'
-        }`}
-      >
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md border bg-card p-3 text-sm hover:bg-accent">
         <input
           type="checkbox"
           checked={isChecked}
-          disabled={isDisabled}
           onChange={onToggle}
           className="mt-0.5 size-5 shrink-0 accent-primary"
         />
@@ -112,7 +99,6 @@ function CandidateGroup({
 }: CandidateGroupProps) {
   if (candidates.length === 0) return null;
   const chosen = new Set(selected.map(linkKey));
-  const isFull = selected.length >= MAX_GOAL_LINKS;
   return (
     <section aria-label={title} className="space-y-2">
       <h4 className="type-label px-1">{title}</h4>
@@ -124,7 +110,6 @@ function CandidateGroup({
               key={linkKey(candidate)}
               candidate={candidate}
               isChecked={isChecked}
-              isDisabled={isFull && !isChecked}
               isInOtherGoal={otherGoalKeys.has(linkKey(candidate))}
               onToggle={() => onChange(toggleLink(selected, candidate))}
             />
@@ -184,7 +169,7 @@ export function LinkPicker({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        O valor da meta passa a ser a soma dos saldos que você marcar. Escolha até {MAX_GOAL_LINKS}.
+        O valor da meta passa a ser a soma dos saldos que você marcar.
       </p>
       <CandidateGroup
         title="Contas"

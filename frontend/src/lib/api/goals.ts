@@ -78,7 +78,7 @@ export interface GoalInput {
   readonly targetCents: number;
   /** AAAA-MM-DD, ou nulo sem prazo. */
   readonly targetDate: string | null;
-  /** Até 10 itens; lista vazia deixa a meta manual (e desvincula uma vinculada). */
+  /** Lista vazia deixa a meta manual (e desvincula uma vinculada). */
   readonly links: readonly GoalLinkRef[];
 }
 
