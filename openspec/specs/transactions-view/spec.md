@@ -2,9 +2,7 @@
 
 ## Purpose
 Consulta paginada e filtrada de transações, detalhe, troca de categoria com aprendizado ("Aplicar sempre") e a tela de Transações: lista agrupada por dia, filtros, busca, detalhe em painel, layout em colunas no computador, estados e responsividade.
-
 ## Requirements
-
 ### Requirement: Lista paginada de transações
 `GET /api/v1/transactions` MUST devolver as transações ordenadas por data (mais recente primeiro) e, na mesma data, pela criação mais recente. A resposta MUST trazer `items` e `pagination` (`page`, `limit`, `total`). O `limit` padrão MUST ser 50 e o máximo 100. Sem filtro de período, MUST devolver o mês atual (fuso de São Paulo).
 
@@ -180,3 +178,15 @@ A tela MUST ter os estados carregando (skeleton da lista), vazio e erro, e MUST 
 #### Scenario: Mês sem transações
 - **WHEN** o período escolhido não tem transações
 - **THEN** a tela mostra o estado vazio "Nenhuma transação neste período" com a ação "Mudar período"
+
+### Requirement: Uma rolagem só no detalhe da transação
+O painel de detalhes da transação MUST ser a única área com rolagem: a lista de categorias de "Trocar categoria" MUST NOT ter altura limitada nem rolagem própria. A busca de categoria MUST continuar filtrando a lista.
+
+#### Scenario: Trocar categoria
+- **WHEN** o usuário abre os detalhes de uma transação
+- **THEN** a lista de categorias cresce com o conteúdo e só o painel tem barra de rolagem
+
+#### Scenario: Buscar categoria
+- **WHEN** o usuário digita "merc" em "Buscar categoria"
+- **THEN** a lista mostra só as categorias que contêm "merc", sem rolagem própria
+

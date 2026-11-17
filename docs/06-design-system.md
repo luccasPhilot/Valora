@@ -203,6 +203,15 @@ Base de 4 px. Escala: `4, 8, 12, 16, 20, 24, 32, 40, 48, 64`.
 | Espaço interno do card | 16 | 20 a 24 |
 | Espaço entre itens de lista | 12 | 12 |
 
+### Densidade no computador
+
+Todas as medidas em px deste documento (tamanhos de texto, espaços, 264 px do menu, 44 px de toque, 72 px do cabeçalho) valem na **base de 16 px**. Em telas de **1024 px ou mais com mouse** (`pointer: fine`), a base cai para **14 px** (`html { font-size: 87.5% }` em `globals.css`), e como tudo é `rem` o app inteiro escala por 87,5%: o menu expandido tem 231 px, os itens do menu e os botões 38,5 px, o cabeçalho 63 px, o saldo (`display`) 42 px. Celular, tablet e telas de toque ficam em 16 px, com os 44 px de toque.
+
+- A porcentagem (e não `14px`) respeita a preferência de tamanho de fonte do navegador.
+- Não use `zoom` nem `transform: scale` para isso, e prefira `rem` a `px` em tamanhos novos, senão o valor não escala.
+- 38,5 px continua acima do mínimo de 24 px do WCAG 2.2 (critério 2.5.8).
+- Os gráficos (Recharts) medem fonte e margens em px e **não** escalam com a base.
+
 ## Bordas e raios
 
 `--radius: 1.25rem` (20 px), com as variações do shadcn/ui:
@@ -277,7 +286,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 **Computador (≥ 1024 px):**
 - Menu lateral fixo à esquerda, **retrátil**: 264 px expandido e 72 px recolhido, sem o botão de menu do topo.
 - O botão de recolher (`chevrons-left` e `chevrons-right`, nome acessível "Recolher menu" ou "Expandir menu") fica no cabeçalho do menu. Recolhido, o menu mostra só os ícones, cada um com 44 px e com um tooltip com o nome da área ao passar o mouse ou receber o foco. A escolha fica salva no aparelho.
-- Conteúdo com largura máxima de 1200 px.
+- Conteúdo com largura máxima de **110 rem** (`max-w-content`: 1540 px com mouse, 1760 px em toque), centralizado. A altura de 72 px do cabeçalho também é em rem (`h-18`), para o topo da tela e o cabeçalho do menu ficarem alinhados em qualquer escala.
 
 **Espaçamento do menu** (expandido):
 - margem interna de 16 px (14 px recolhido, para centralizar o ícone de 44 px);
@@ -302,7 +311,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 **Regras gerais:**
 - **Celular primeiro:** os estilos base são para o celular; `md:`, `lg:` e `xl:` só ampliam.
 - **Nunca rolagem horizontal da página**, em nenhuma largura. No celular a tabela vira blocos por linha; uma tabela larga em tela maior rola dentro do próprio card, com a primeira coluna fixa.
-- **Nada depende de hover.** Tooltip, menu e ações abrem com toque. A área de toque mínima é 44 × 44 px.
+- **Nada depende de hover.** Tooltip, menu e ações abrem com toque. A área de toque mínima é 44 × 44 px (na base de 16 px; com mouse no computador os alvos escalam junto com a base de 14 px e ficam com 38,5 px, veja [Densidade no computador](#densidade-no-computador)).
 - **Funciona em retrato e paisagem**, e com o zoom do navegador em 200% sem quebrar o layout.
 - **Áreas seguras do celular:** o menu, os rodapés fixos (como o botão "Salvar") e os painéis respeitam `env(safe-area-inset-*)`, para não ficarem embaixo do indicador do iPhone ou da barra do Android.
 
@@ -312,7 +321,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 |---|---|---|---|
 | Navegação | Menu que abre por cima, pelo botão no topo | Menu que abre por cima, pelo botão no topo | Menu lateral fixo, retrátil (264 px ou 72 px) |
 | Margem lateral | 16 px | 24 px | 32 px |
-| Início | 1 coluna | 2 colunas | Grade de 12 colunas, até 1200 px |
+| Início | 1 coluna | 2 colunas | Grade de 12 colunas, até 110 rem (1540 px com mouse) |
 | Lista de transações | Item em 2 linhas (descrição em cima; categoria e conta embaixo) | Igual ao celular, com mais espaço | Linha única com colunas: data, descrição, categoria, conta, valor |
 | Formulários e detalhes | `Sheet` vindo de baixo, em tela quase cheia | `Sheet` lateral | `Dialog` centralizado |
 | Filtros | Busca e botão "Filtros", que abre um `Sheet` de baixo com período, categoria, tipo, origem e conta | Busca, período e botão "Filtros", que abre um `Popover` com categoria, tipo, origem e conta | Igual ao tablet |
@@ -337,7 +346,7 @@ Ordem no celular, logo abaixo do topo de tela (título "Início" e status da sin
    - v1: Adicionar receita, Registrar despesa, Transações, Orçamentos;
    - na v2, Orçamentos dá lugar a Metas.
    - "Adicionar receita" e "Registrar despesa" abrem o formulário de [Nova transação](#nova-transação) já com o tipo escolhido.
-3. Receitas e despesas do mês: dois números lado a lado.
+3. Receitas, despesas e resultado do mês: três números (veja "Detalhes de implementação").
 4. **Projeção do fim do mês** (v2): saldo projetado em `type-value-lg`, aviso "Saldo negativo em 20/11" (ícone e texto, `destructive`) só quando o menor saldo é negativo, e "Ver planejamento". Sem nada previsto, o estado vazio "Planeje o mês". O saldo projetado só fica vermelho se terminar negativo.
 5. **Metas** (v2): até 3 linhas com ícone, nome, percentual, barra, "R$ x de R$ y" e a situação em ícone e texto (a mesma de Metas), e "Ver metas". Sem metas em andamento, o estado vazio com "Criar meta".
 6. Receitas x despesas dos últimos 6 meses: barras agrupadas, slots 1 e 2.
@@ -351,7 +360,7 @@ No computador, os mesmos blocos ficam numa grade de 12 colunas, sem mudar a orde
 
 | Linha | Blocos (colunas) |
 |---|---|
-| 1 e 2 | Card de saldo (7) e atalhos (7) empilhados à esquerda; receitas e despesas do mês (5) à direita, uma sobre a outra, ocupando as duas linhas |
+| 1 e 2 | Card de saldo (7) e atalhos (7) empilhados à esquerda; receitas, despesas e resultado do mês (5) à direita, um sobre o outro, ocupando as duas linhas |
 | 3 | Projeção do fim do mês (5) e metas (7) |
 | 4 | Gráfico de receitas x despesas (7) e gastos por categoria (5) |
 | 5 | Orçamentos (5) e últimas transações (7) |
@@ -359,7 +368,7 @@ No computador, os mesmos blocos ficam numa grade de 12 colunas, sem mudar a orde
 No tablet (2 colunas), saldo, atalhos, números do mês, gráfico e últimas transações ocupam a linha toda; projeção e metas, e também categorias e orçamentos, ficam lado a lado. Quando a projeção não vem (mês que não é o atual), o cartão some e o das metas fica sozinho.
 
 **Detalhes de implementação:**
-- Os dois números do mês ficam lado a lado a partir de 400 px; abaixo disso empilham, para o valor nunca ser cortado (em 320 px, "+ R$ 12.345,67" não cabe em meia coluna).
+- Os números do mês são três cards: **Receitas do mês**, **Despesas do mês** e **Resultado do mês** (receitas menos despesas, calculado no front, com `+` ou `−` e a cor normal do texto: vermelho é só para estouro, erro e saldo negativo). Receitas e despesas ficam lado a lado a partir de 400 px e o resultado ocupa a linha de baixo; abaixo de 400 px empilham, para o valor nunca ser cortado (em 320 px, "+ R$ 12.345,67" não cabe em meia coluna). No computador os três empilham à direita, com a mesma altura, ocupando a altura do card de saldo e dos atalhos: card de resumo não estica sem conteúdo.
 - Os meses do eixo do gráfico são sempre abreviados ("jun."): os nomes inteiros se sobrepõem na coluna de 7/12 do computador.
 - Com os valores ocultos, o eixo vertical do gráfico some junto, porque mostraria os mesmos números.
 - Cada gráfico tem um resumo para leitor de tela (a tabela dos 6 meses; o saldo no primeiro e no último dia do gráfico de área).
@@ -514,7 +523,7 @@ Campos, nesta ordem:
 5. **Conta:** "Dinheiro" vem selecionado; a lista também mostra as contas e cartões conectados.
 6. **Data:** "Hoje" vem selecionado; atalhos "Ontem" e "Escolher data".
 
-Botão **"Salvar"** (primário, largura total) fixo no rodapé do formulário. Depois de salvar, o formulário fecha e um toast confirma: "Despesa registrada".
+Botão **"Salvar"** (primário, largura total) fixo no rodapé do formulário. No `Dialog` (computador), o rodapé fica rente à borda de baixo (`lg:-bottom-6`, o inverso do espaço interno de `p-6`): sem isso o `sticky` para 24 px acima da borda e o conteúdo aparece por baixo. O painel é a **única** área com rolagem: a lista de categorias não tem altura limitada nem rolagem própria (vale também para "Trocar categoria" nos detalhes da transação). Depois de salvar, o formulário fecha e um toast confirma: "Despesa registrada".
 
 Erros aparecem embaixo do campo, em `destructive`, em linguagem simples ("Informe o valor", "Escolha uma categoria").
 

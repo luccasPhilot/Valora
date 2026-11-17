@@ -2,9 +2,7 @@
 
 ## Purpose
 Lançamento manual de receitas e despesas (dinheiro em espécie e transações que o Open Finance não trouxe): conta "Dinheiro", criação, edição e exclusão de transações manuais, proteção das transações do Open Finance, detecção e resolução de possíveis duplicatas, filtros de origem e a interface correspondente.
-
 ## Requirements
-
 ### Requirement: Conta "Dinheiro"
 Na primeira execução, a API MUST criar uma única conta "Dinheiro" com `type = 'cash'`, sem conexão e com `balance_cents` nulo. O banco MUST impedir uma segunda conta `cash`. A conta "Dinheiro" MUST ficar fora do saldo total e MUST NOT ganhar foto diária de saldo.
 
@@ -163,3 +161,15 @@ Tudo MUST seguir o Design System e funcionar sem rolagem horizontal em 320, 390,
 #### Scenario: Celular pequeno
 - **WHEN** o formulário é aberto com 320 px de largura
 - **THEN** todos os campos e o botão "Salvar" ficam visíveis sem rolagem horizontal, com o botão acima da área segura
+
+### Requirement: Uma rolagem só no formulário
+O painel do formulário de nova transação MUST ser a única área com rolagem: a lista de categorias MUST NOT ter altura limitada nem rolagem própria. O botão "Salvar" MUST ficar fixo no rodapé do painel e, no diálogo (a partir de 1024 px), rente à borda de baixo, sem faixa por onde o conteúdo apareça, tanto no topo quanto no fim da rolagem.
+
+#### Scenario: Lista de categorias
+- **WHEN** o formulário é aberto e a lista mostra todas as categorias do tipo escolhido
+- **THEN** a lista cresce com o conteúdo e só o painel tem barra de rolagem
+
+#### Scenario: Salvar no diálogo
+- **WHEN** o formulário abre num diálogo de 1440 px de largura e o conteúdo é mais alto que a tela
+- **THEN** o rodapé com o botão "Salvar" fica rente à borda de baixo do diálogo, com a rolagem no topo e no fim
+
