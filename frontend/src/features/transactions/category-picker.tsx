@@ -70,7 +70,7 @@ export function CategoryPicker({
       {matches.length === 0 ? (
         <p className="py-2 text-sm text-muted-foreground">Nenhuma categoria encontrada.</p>
       ) : (
-        <div className="max-h-64 space-y-3 overflow-y-auto">
+        <div className="space-y-3">
           {KIND_ORDER.map((kind) => {
             const kindMatches = matches.filter((category) => category.kind === kind);
             if (kindMatches.length === 0) return null;
