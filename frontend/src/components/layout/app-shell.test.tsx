@@ -303,6 +303,18 @@ describe('AppShell mobile menu focus and state', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('should_keep_menu_closed_when_user_goes_forward_after_closing_it', async () => {
+    // Arrange
+    const { router } = renderApp('/orcamentos', MOBILE_WIDTH);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir menu' }));
+    await screen.findByRole('dialog');
+    await act(() => router.navigate(-1));
+    // Act
+    await act(() => router.navigate(1));
+    // Assert
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('should_stay_on_the_same_screen_when_menu_is_closed_by_going_back', async () => {
     // Arrange
     const { router } = renderApp('/orcamentos', MOBILE_WIDTH);

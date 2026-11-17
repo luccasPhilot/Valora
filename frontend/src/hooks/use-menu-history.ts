@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect } from 'react';
+import { useLocation, useNavigate, useNavigationType } from 'react-router';
 
 interface MenuLocationState {
   readonly isMenuOpen: true;
@@ -24,11 +24,26 @@ interface MenuHistory {
  * fechar volta uma. Assim o gesto de voltar do celular fecha o menu em vez de sair da tela, e
  * escolher uma área (que substitui a entrada, ver `AreaMenu`) deixa o histórico como se o menu nunca
  * tivesse existido.
+ *
+ * Voltar deixa a entrada do menu logo à frente no histórico, e o gesto de avançar do celular (da
+ * direita para a esquerda) cairia nela. Por isso o menu só vale como aberto quando acabou de ser
+ * empilhado por nós (`PUSH`); uma entrada de menu alcançada por avançar, voltar ou recarregar é
+ * limpa e o menu fica fechado.
  */
 export function useMenuHistory(): MenuHistory {
   const location = useLocation();
   const navigate = useNavigate();
-  const isMenuOpen = isMenuLocationState(location.state);
+  const navigationType = useNavigationType();
+  const hasMenuState = isMenuLocationState(location.state);
+  const isMenuOpen = hasMenuState && navigationType === 'PUSH';
+
+  useEffect(() => {
+    if (!hasMenuState || isMenuOpen) return;
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: null },
+    );
+  }, [hasMenuState, isMenuOpen, location.pathname, location.search, location.hash, navigate]);
 
   const setMenuOpen = useCallback(
     (shouldOpen: boolean) => {
