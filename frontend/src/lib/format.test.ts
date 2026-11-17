@@ -12,6 +12,7 @@ import {
   formatIsoDayMonth,
   formatMoment,
   formatMonth,
+  formatMonthLongName,
   formatMonthName,
   formatMonthYear,
   formatPercent,
@@ -154,6 +155,17 @@ describe('formatMonthName', () => {
     const text = formatMonthName(month);
     // Assert
     expect(text).toBe('jun.');
+  });
+});
+
+describe('formatMonthLongName', () => {
+  it('should_return_the_full_lowercase_month_name_without_the_year', () => {
+    // Arrange
+    const month = '2026-10';
+    // Act
+    const text = formatMonthLongName(month);
+    // Assert
+    expect(text).toBe('outubro');
   });
 });
 

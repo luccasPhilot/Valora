@@ -11,10 +11,17 @@ interface MonthSelectorProps {
   onChange: (month: string) => void;
   /** Nome acessível do grupo; cada tela diz o que o mês escolhe. */
   label?: string;
+  /** Último mês que pode ser escolhido (`AAAA-MM`); depois dele "Próximo mês" fica desativado. */
+  maxMonth?: string;
 }
 
 /** Mês anterior e próximo, com o nome do mês no meio ("novembro de 2026"). */
-export function MonthSelector({ month, onChange, label = 'Mês do orçamento' }: MonthSelectorProps) {
+export function MonthSelector({
+  month,
+  onChange,
+  label = 'Mês do orçamento',
+  maxMonth,
+}: MonthSelectorProps) {
   return (
     <div className="flex items-center gap-1" role="group" aria-label={label}>
       <Button
@@ -39,6 +46,7 @@ export function MonthSelector({ month, onChange, label = 'Mês do orçamento' }:
         size="icon"
         className="size-11"
         aria-label="Próximo mês"
+        disabled={maxMonth !== undefined && month >= maxMonth}
         onClick={() => onChange(shiftMonth(month, 1))}
       >
         <ChevronRight aria-hidden="true" />

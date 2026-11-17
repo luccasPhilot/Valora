@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   CalendarClock,
+  ChartBarBig,
   ChartColumn,
   Flag,
   Home,
@@ -36,6 +37,7 @@ export const APP_AREAS: readonly AppArea[] = [
   { path: '/', title: 'Início', icon: Home, group: 'daily', phase: 1 },
   { path: '/transacoes', title: 'Transações', icon: ArrowLeftRight, group: 'daily', phase: 1 },
   { path: '/orcamentos', title: 'Orçamentos', icon: Target, group: 'daily', phase: 1 },
+  { path: '/categorias', title: 'Categorias', icon: ChartBarBig, group: 'daily', phase: 3 },
   { path: '/contas', title: 'Contas', icon: Landmark, group: 'daily', phase: 1 },
   {
     path: '/planejamento',
@@ -47,7 +49,13 @@ export const APP_AREAS: readonly AppArea[] = [
   { path: '/metas', title: 'Metas', icon: Flag, group: 'planning', phase: 2 },
   { path: '/investimentos', title: 'Investimentos', icon: TrendingUp, group: 'wealth', phase: 3 },
   { path: '/relatorios', title: 'Relatórios', icon: ChartColumn, group: 'wealth', phase: 3 },
-  { path: '/categorias', title: 'Categorias e regras', icon: Tags, group: 'footer', phase: 1 },
+  {
+    path: '/categorias-e-regras',
+    title: 'Categorias e regras',
+    icon: Tags,
+    group: 'footer',
+    phase: 1,
+  },
   { path: '/ajustes', title: 'Ajustes', icon: Settings, group: 'footer', phase: 1 },
 ];
 
