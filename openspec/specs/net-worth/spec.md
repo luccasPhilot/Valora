@@ -2,11 +2,9 @@
 
 ## Purpose
 Patrimônio (contas + investimentos − faturas em aberto): valor de hoje, valor de um dia passado a partir das fotos diárias, pontos mensais, variação no mês, intervalo de meses e o cartão de patrimônio na tela de Investimentos.
-
 ## Requirements
-
 ### Requirement: Patrimônio de hoje
-`GET /api/v1/net-worth` MUST devolver `current` com `date` (hoje, em São Paulo), `accountsCents`, `investmentsCents`, `openBillsCents` (positivo) e `netWorthCents`. `accountsCents` MUST ser o saldo total de Contas (corrente e poupança não ocultas, de bancos ativos), `investmentsCents` MUST ser a soma das posições dos investimentos de bancos ativos, `openBillsCents` MUST ser a soma das faturas atuais dos cartões não ocultos de bancos ativos, e `netWorthCents` MUST ser `accountsCents + investmentsCents − openBillsCents`. A conta "Dinheiro" MUST ficar de fora.
+`GET /api/v1/net-worth` MUST devolver `current` com `date` (hoje, em São Paulo), `accountsCents`, `investmentsCents`, `openBillsCents` (positivo) e `netWorthCents`. `accountsCents` MUST ser o saldo total de Contas (corrente e poupança não ocultas, de bancos ativos), `investmentsCents` MUST ser a soma das posições dos investimentos de bancos ativos **e de todas as posições manuais**, `openBillsCents` MUST ser a soma das faturas atuais dos cartões não ocultos de bancos ativos, e `netWorthCents` MUST ser `accountsCents + investmentsCents − openBillsCents`. A conta "Dinheiro" MUST ficar de fora.
 
 #### Scenario: Soma dos bancos e corretoras
 - **WHEN** as contas somam R$ 5.000,00, os investimentos R$ 12.000,00 e as faturas em aberto R$ 1.500,00
@@ -16,6 +14,10 @@ Patrimônio (contas + investimentos − faturas em aberto): valor de hoje, valor
 - **WHEN** a tela de Contas mostra saldo total de R$ 5.000,00 e a de Investimentos R$ 12.000,00
 - **THEN** `accountsCents` é `500000` e `investmentsCents` é `1200000`
 
+#### Scenario: Posição manual entra
+- **WHEN** os investimentos do Open Finance somam R$ 12.000,00 e há uma posição manual de R$ 25.000,00
+- **THEN** `investmentsCents` é `3700000`
+
 #### Scenario: Conta oculta
 - **WHEN** uma conta corrente está marcada como "Ocultar dos totais"
 - **THEN** o saldo dela não entra no patrimônio
@@ -24,12 +26,16 @@ Patrimônio (contas + investimentos − faturas em aberto): valor de hoje, valor
 - **WHEN** um banco com R$ 3.000,00 em conta e R$ 2.000,00 em investimentos está arquivado
 - **THEN** nenhum desses valores entra em `current`
 
+#### Scenario: Banco arquivado e posição manual
+- **WHEN** um banco é arquivado e há uma posição manual de R$ 25.000,00
+- **THEN** a posição manual continua em `investmentsCents`
+
 #### Scenario: Patrimônio negativo
 - **WHEN** as faturas em aberto passam da soma de contas e investimentos
 - **THEN** `netWorthCents` é negativo
 
 ### Requirement: Valor do patrimônio num dia
-O patrimônio de um dia passado MUST ser calculado das fotos diárias, por item: cada conta e cada investimento MUST valer a foto mais recente até o dia, **desde que tenha no máximo 7 dias**; um item sem foto nessa janela MUST NOT entrar naquele dia. Contas ocultas e a conta "Dinheiro" MUST NOT entrar. Itens de bancos arquivados MUST entrar só em dias anteriores ao dia do arquivamento (fuso de São Paulo).
+O patrimônio de um dia passado MUST ser calculado das fotos diárias, por item: cada conta e cada investimento (do Open Finance ou manual) MUST valer a foto mais recente até o dia, **desde que tenha no máximo 7 dias**; um item sem foto nessa janela MUST NOT entrar naquele dia. Contas ocultas e a conta "Dinheiro" MUST NOT entrar. Itens de bancos arquivados MUST entrar só em dias anteriores ao dia do arquivamento (fuso de São Paulo). Uma posição manual, que não tem banco, MUST NOT ser tratada como arquivada em nenhum dia.
 
 #### Scenario: Foto faltando num dia
 - **WHEN** uma conta tem foto no dia 8 e no dia 10, e nenhuma no dia 9
@@ -38,6 +44,14 @@ O patrimônio de um dia passado MUST ser calculado das fotos diárias, por item:
 #### Scenario: Item sem foto há mais de 7 dias
 - **WHEN** a última foto de um investimento é de 10 dias antes do dia calculado
 - **THEN** ele não entra naquele dia
+
+#### Scenario: Posição manual com foto diária
+- **WHEN** uma posição manual de R$ 25.000,00 foi informada no dia 1 e a sincronização gravou a foto dela em todos os dias até o dia 20
+- **THEN** o patrimônio do dia 20 inclui os R$ 25.000,00
+
+#### Scenario: Posição manual sem banco para arquivar
+- **WHEN** um banco é arquivado no dia 10 e existe uma posição manual com foto no dia 12
+- **THEN** a posição manual entra no patrimônio do dia 12
 
 #### Scenario: Passado do banco arquivado
 - **WHEN** um banco é arquivado no dia 10
@@ -141,3 +155,4 @@ O cartão "Patrimônio" da tela Investimentos MUST ter o link "Ver relatório co
 #### Scenario: Celular estreito
 - **WHEN** a largura é 320 px
 - **THEN** o link aparece inteiro, com pelo menos 44 px de altura, sem rolagem horizontal
+
