@@ -18,3 +18,7 @@ Thumbs.db
 .claude/settings.local.json
 .github/prompts/
 .github/skills/
+
+# Cópias do banco de produção: têm todo o histórico financeiro
+dumps-Producao/
+*.dump

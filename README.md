@@ -29,6 +29,7 @@ Cada parte tem o próprio `README.md` (como rodar) e `CLAUDE.md` (regras só del
 | [Deploy](docs/05-deploy.md) | Servidor Linux, Docker, Tailscale, backup |
 | [Design System](docs/06-design-system.md) | Cores, tipografia, componentes, gráficos, tokens em CSS |
 | [Roadmap](docs/07-roadmap.md) | Fases 0 a 3, com tarefas e critérios de pronto |
+| [Revisão e próximas fases](docs/08-revisao-e-proximas-fases.md) | Melhorias encontradas na revisão do código e as Fases 4 a 7 propostas |
 | [Identidade visual](docs/design/identidade-visual.md) | Guia original de identidade e o moodboard |
 | [Figma do Valora](https://www.figma.com/design/MNdGWT8ZnSZkTRxlvoI0Ie/Valora) | Variáveis, componentes e telas do celular (em construção) |
 
