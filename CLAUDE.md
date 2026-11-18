@@ -6,7 +6,7 @@ Instruções específicas deste projeto. As convenções gerais (nomes, funçõe
 
 App de finanças pessoais para **um único usuário**, rodando num **servidor Linux em casa**. Os dados chegam pelo Open Finance via **Meu Pluggy** e ficam num PostgreSQL próprio.
 
-**Status:** Fase 0 do [roadmap](docs/07-roadmap.md) em andamento. As changes `setup-repository` e `setup-api-foundation` estão implementadas; a próxima é `setup-web-foundation`.
+**Status:** Fases 0 a 3 do [roadmap](docs/07-roadmap.md) concluídas. As melhorias e as próximas fases propostas estão em [docs/08-revisao-e-proximas-fases.md](docs/08-revisao-e-proximas-fases.md).
 
 ## Onde está cada coisa
 
@@ -18,7 +18,7 @@ App de finanças pessoais para **um único usuário**, rodando num **servidor Li
 | Criar ou mudar tabela | [docs/04-modelo-de-dados.md](docs/04-modelo-de-dados.md) |
 | Mexer em Docker, Tailscale ou backup | [docs/05-deploy.md](docs/05-deploy.md) |
 | Criar ou mudar qualquer tela ou componente | [docs/06-design-system.md](docs/06-design-system.md), [docs/design/](docs/design/) e o [Figma do Valora](https://www.figma.com/design/MNdGWT8ZnSZkTRxlvoI0Ie/Valora) (em construção) |
-| Escolher a próxima tarefa | [docs/07-roadmap.md](docs/07-roadmap.md) |
+| Escolher a próxima tarefa | [docs/07-roadmap.md](docs/07-roadmap.md) e [docs/08-revisao-e-proximas-fases.md](docs/08-revisao-e-proximas-fases.md) |
 
 ## Fluxo de trabalho e skills
 
@@ -74,11 +74,12 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
 6. **Transferências internas** (categorias `kind = 'transfer'`, como pagamento de fatura) **ficam fora de todos os totais** de receita e despesa.
 7. **Gravar fotos diárias** de saldo e de investimentos (`balance_snapshots`, `investment_snapshots`). Histórico perdido não volta.
 8. **Só leitura.** Nunca implementar pagamento, Pix ou transferência.
-9. **Lançamento manual só como complemento** ([regras](docs/01-produto.md#lançamento-manual)): dinheiro em espécie (conta "Dinheiro") e transações que o Open Finance não trouxe.
+9. **Lançamento manual só como complemento** ([regras](docs/01-produto.md#lançamento-manual)): dinheiro em espécie (conta "Dinheiro"), transações que o Open Finance não trouxe e posições de investimento de instituições fora do Open Finance (INCO, Binance, corretoras sem conector).
    - "Dinheiro" **não é carteira com saldo**: não tem saldo e fica fora do saldo total. Ignore o item "Carteiras" do guia visual.
    - Transação manual (`source = 'manual'`) pode ser editada e excluída por inteiro e a sincronização nunca a altera nem apaga.
    - Numa transação do Open Finance, só a categoria é editável.
    - Possível duplicata entre manual e Open Finance é sugerida; **nunca juntar sozinho**.
+   - Posição manual de investimento (`investments.source = 'manual'`): valor informado em reais, editável e excluível por inteira. A sincronização nunca a altera nem zera, e grava a foto diária dela. Não é carteira com saldo, não busca cotação e não calcula rentabilidade ([regras](docs/01-produto.md#posições-manuais)).
 10. **Sem IA conversacional.** Funcionalidade nova vira tela ou regra, não pergunta a um modelo.
 11. **Um único usuário.** Sem multiusuário, sem cadastro, sem tela de login na v1.
 

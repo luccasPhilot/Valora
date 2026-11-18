@@ -165,6 +165,7 @@ Regras em [produto](01-produto.md#lançamento-manual).
   - [x] evolução do patrimônio.
 - [x] **Análise de categorias do mês** (área "Categorias" no menu principal, `/categorias`): todas as categorias com comparação, tendência de 6 meses, orçamento, pontos de atenção e cobranças recorrentes.
 - [x] Variação do patrimônio no card de saldo do Início.
+- [x] **Investimentos manuais:** INCO, Binance e corretoras fora do Open Finance, com o valor informado à mão e a foto diária gravada pela sincronização.
 
 **Pronto quando:**
 - o patrimônio total confere com a soma dos bancos e corretoras;

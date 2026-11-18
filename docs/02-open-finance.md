@@ -77,9 +77,9 @@ No MeuPluggy, o conector se chama sempre "MeuPluggy", qualquer que seja o banco.
 A página do Meu Pluggy avisa que alguns conectores de corretoras e bancos de investimento funcionam de forma diferente. Na dúvida sobre uma instituição específica, pergunte no Discord do Pluggy.
 
 **Fica de fora:**
-- cripto em corretoras de criptomoedas;
+- cripto em corretoras de criptomoedas (cadastre como [posição manual](01-produto.md#posições-manuais));
 - previdência e seguros, que ficam em outro sistema, o Open Insurance (SUSEP);
-- instituições pequenas que não participam do Open Finance.
+- instituições pequenas que não participam do Open Finance (investimentos delas também entram como posição manual).
 
 ## Atualização e limites
 
