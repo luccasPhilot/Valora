@@ -21,6 +21,8 @@ describe('investmentTypeInfo', () => {
     ['ETF', 'ETFs'],
     ['SECURITY', 'Títulos e previdência'],
     ['COE', 'COE'],
+    ['CRYPTO', 'Criptomoedas'],
+    ['OTHER', 'Outros'],
   ])('should_translate_%s_to_%s_when_the_type_is_known', (type, label) => {
     // Arrange & Act
     const info = investmentTypeInfo(type);

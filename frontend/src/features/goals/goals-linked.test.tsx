@@ -131,6 +131,8 @@ function investmentItem(overrides: Record<string, unknown> = {}) {
     balanceCents: 1_000_000,
     percent: 100,
     institutionName: 'Banco Azul',
+    source: 'open_finance',
+    balanceUpdatedOn: null,
     ...overrides,
   };
 }

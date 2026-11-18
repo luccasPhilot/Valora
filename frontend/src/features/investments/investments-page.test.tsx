@@ -19,6 +19,8 @@ function item(id: number, overrides: Record<string, unknown> = {}) {
     balanceCents: 100000,
     percent: 50,
     institutionName: 'Nubank',
+    source: 'open_finance',
+    balanceUpdatedOn: null,
     ...overrides,
   };
 }

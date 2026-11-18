@@ -266,6 +266,8 @@ describe('NetWorthCard — estados', () => {
                   balanceCents: 50000,
                   percent: 100,
                   institutionName: 'Nubank',
+                  source: 'open_finance',
+                  balanceUpdatedOn: null,
                 },
               ],
             },
