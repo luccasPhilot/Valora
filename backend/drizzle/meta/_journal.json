@@ -71,6 +71,13 @@
       "when": 1794432045362,
       "tag": "0009_add_goal_links",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794953832524,
+      "tag": "0010_add_manual_investments",
+      "breakpoints": true
     }
   ]
 }

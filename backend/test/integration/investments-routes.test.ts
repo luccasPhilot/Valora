@@ -138,10 +138,12 @@ describe('GET /api/v1/investments', () => {
     // Assert
     expect(Object.keys(body.groups[0].items[0]).sort()).toEqual([
       'balanceCents',
+      'balanceUpdatedOn',
       'id',
       'institutionName',
       'name',
       'percent',
+      'source',
       'subtype',
     ]);
   });

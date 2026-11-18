@@ -12,6 +12,7 @@ import {
   investments,
   investmentSnapshots,
 } from '../../db/schema.js';
+import { investmentInstitutionName } from '../investments/investment-institution.js';
 import type { ContributionKind } from './goal-pace.js';
 
 const contributionKindSchema = z.enum([
@@ -187,7 +188,7 @@ const investmentItemColumns = {
   id: investments.id,
   name: investments.name,
   balanceCents: investments.balanceCents,
-  institutionName: connections.institutionName,
+  institutionName: investmentInstitutionName,
   archivedAt: connections.archivedAt,
 };
 
@@ -396,7 +397,7 @@ export class GoalsRepository {
         .select({ goalId: goalLinks.goalId, ...investmentItemColumns })
         .from(goalLinks)
         .innerJoin(investments, eq(goalLinks.investmentId, investments.id))
-        .innerJoin(connections, eq(investments.connectionId, connections.id))
+        .leftJoin(connections, eq(investments.connectionId, connections.id))
         .where(inArray(goalLinks.goalId, ids)),
     ]);
     return [
@@ -422,7 +423,7 @@ export class GoalsRepository {
         : this.db
             .select(investmentItemColumns)
             .from(investments)
-            .innerJoin(connections, eq(investments.connectionId, connections.id))
+            .leftJoin(connections, eq(investments.connectionId, connections.id))
             .where(inArray(investments.id, investmentIds)),
     ]);
     return [...accountRows.map(toAccountCandidate), ...investmentRows.map(toInvestmentCandidate)];

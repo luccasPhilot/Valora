@@ -15,6 +15,7 @@ import {
   insertCategory,
   insertConnection,
   insertInvestmentWith,
+  insertManualInvestment,
   transactionValues,
 } from './fixtures.js';
 import { connectTestDatabase, truncateAllTables } from './test-database.js';
@@ -106,6 +107,56 @@ describe('database constraints', () => {
       const insert = db.insert(accounts).values(wallet);
       // Assert
       await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+  });
+
+  describe('investment source', () => {
+    it('should_reject_an_open_finance_investment_when_it_has_no_connection', async () => {
+      // Arrange
+      const values = {
+        source: 'open_finance',
+        pluggyInvestmentId: 'inv-1',
+        name: 'CDB',
+        type: 'FIXED_INCOME',
+        balanceCents: 100_00,
+      };
+      // Act
+      const insert = db.insert(investments).values(values);
+      // Assert
+      await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+
+    it('should_reject_a_manual_investment_when_it_has_a_connection', async () => {
+      // Arrange
+      const connectionId = await insertConnection(db);
+      // Act
+      const insert = insertManualInvestment(db, { connectionId });
+      // Assert
+      await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+
+    it('should_reject_a_manual_investment_when_the_institution_is_missing', async () => {
+      // Arrange / Act
+      const insert = insertManualInvestment(db, { institutionName: null });
+      // Assert
+      await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+
+    it('should_reject_an_unknown_source_when_the_investment_is_inserted', async () => {
+      // Arrange / Act
+      const insert = insertManualInvestment(db, { source: 'broker' });
+      // Assert
+      await expect(insert).rejects.toMatchObject({ cause: { code: CHECK_VIOLATION } });
+    });
+
+    it('should_accept_many_manual_investments_when_the_pluggy_id_is_null', async () => {
+      // Arrange
+      await insertManualInvestment(db);
+      // Act
+      await insertManualInvestment(db, { name: 'Binance', institutionName: 'Binance' });
+      const stored = await db.select().from(investments);
+      // Assert
+      expect(stored).toHaveLength(2);
     });
   });
 

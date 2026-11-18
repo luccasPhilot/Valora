@@ -111,11 +111,16 @@ function registerModules(
     deps.config.pluggyItemIds,
     alerts.connectionAlertRefresher,
   );
+  const investmentsService = new InvestmentsService({
+    repository: new InvestmentsRepository(database.db),
+    now,
+  });
   const syncService = createSyncService({
     config: deps.config,
     database,
     pluggySdk: deps.pluggySdk,
     alerts: alerts.evaluator,
+    manualInvestments: investmentsService,
     logger: app.log,
     now,
   });
@@ -136,7 +141,6 @@ function registerModules(
     now,
   });
   app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
-  const investmentsService = new InvestmentsService(new InvestmentsRepository(database.db));
   app.register(investmentsRoutes(investmentsService), { prefix: API_PREFIX });
   const netWorthService = new NetWorthService({
     netWorth: new NetWorthRepository(database.db),

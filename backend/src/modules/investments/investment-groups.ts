@@ -1,5 +1,10 @@
+import { z } from 'zod';
+
 const PERCENT_SCALE = 1000;
 const PERCENT_DECIMALS_DIVISOR = 10;
+
+export const investmentSourceSchema = z.enum(['open_finance', 'manual']);
+export type InvestmentSource = z.infer<typeof investmentSourceSchema>;
 
 export interface InvestmentPosition {
   readonly id: string;
@@ -8,6 +13,9 @@ export interface InvestmentPosition {
   readonly subtype: string | null;
   readonly balanceCents: number;
   readonly institutionName: string;
+  readonly source: InvestmentSource;
+  /** Dia do último valor informado; só em posição manual. */
+  readonly balanceUpdatedOn: string | null;
 }
 
 export interface InvestmentItem extends InvestmentPosition {

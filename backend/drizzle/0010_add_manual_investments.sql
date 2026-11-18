@@ -1,0 +1,7 @@
+ALTER TABLE "investments" ALTER COLUMN "connection_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "investments" ALTER COLUMN "pluggy_investment_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "investments" ADD COLUMN "source" text DEFAULT 'open_finance' NOT NULL;--> statement-breakpoint
+ALTER TABLE "investments" ADD COLUMN "institution_name" text;--> statement-breakpoint
+ALTER TABLE "investments" ADD COLUMN "balance_updated_on" date;--> statement-breakpoint
+ALTER TABLE "investments" ADD CONSTRAINT "investments_source_check" CHECK ("investments"."source" in ('open_finance', 'manual'));--> statement-breakpoint
+ALTER TABLE "investments" ADD CONSTRAINT "investments_source_shape_check" CHECK (("investments"."source" = 'open_finance' and "investments"."connection_id" is not null and "investments"."pluggy_investment_id" is not null and "investments"."institution_name" is null and "investments"."balance_updated_on" is null) or ("investments"."source" = 'manual' and "investments"."connection_id" is null and "investments"."pluggy_investment_id" is null and "investments"."raw" is null and "investments"."institution_name" is not null and "investments"."balance_updated_on" is not null));
