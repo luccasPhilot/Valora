@@ -26,7 +26,6 @@ import { ConnectionsService } from './modules/connections/connections.service.js
 import { CreditCardBillsRepository } from './modules/credit-card-bills/credit-card-bills.repository.js';
 import { creditCardBillsRoutes } from './modules/credit-card-bills/credit-card-bills.routes.js';
 import { CreditCardBillsService } from './modules/credit-card-bills/credit-card-bills.service.js';
-import { DashboardRepository } from './modules/dashboard/dashboard.repository.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
 import { GoalsRepository } from './modules/goals/goals.repository.js';
@@ -142,8 +141,9 @@ function registerModules(
   });
   app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
   app.register(investmentsRoutes(investmentsService), { prefix: API_PREFIX });
+  const netWorthRepository = new NetWorthRepository(database.db);
   const netWorthService = new NetWorthService({
-    netWorth: new NetWorthRepository(database.db),
+    netWorth: netWorthRepository,
     accounts: accountsService,
     investments: investmentsService,
     now,
@@ -180,7 +180,7 @@ function registerModules(
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
   const transactionTotals = new TransactionTotalsRepository(database.db);
   const dashboardService = new DashboardService({
-    dashboard: new DashboardRepository(database.db),
+    snapshots: netWorthRepository,
     totals: transactionTotals,
     accounts: accountsService,
     budgets: budgetsService,

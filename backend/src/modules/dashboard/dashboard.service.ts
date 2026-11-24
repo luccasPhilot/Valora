@@ -1,16 +1,27 @@
-import { firstDayOfMonth, lastDayOfMonth, todayInSaoPaulo } from '../../shared/dates.js';
+import {
+  firstDayOfMonth,
+  lastDayOfMonth,
+  subtractDays,
+  todayInSaoPaulo,
+} from '../../shared/dates.js';
 import { fillMonthTotals, monthsEndingAt, type MonthTotals } from '../../shared/months.js';
-import { buildValueChange, type ValueChange } from '../../shared/value-change.js';
-import { isIncludedInTotalBalance } from '../accounts/account-totals.js';
+import type { ValueChange } from '../../shared/value-change.js';
 import type { AccountsService } from '../accounts/accounts.service.js';
 import type { BudgetItem, BudgetsService } from '../budgets/budgets.service.js';
 import type { GoalsService } from '../goals/goals.service.js';
+import type { NetWorthRepository } from '../net-worth/net-worth.repository.js';
 import type { NetWorthService } from '../net-worth/net-worth.service.js';
+import {
+  type BalancePoint,
+  buildAccountsMonthChange,
+  buildBalanceSeries,
+  groupSnapshotRows,
+  SNAPSHOT_TOLERANCE_DAYS,
+} from '../net-worth/net-worth-calculations.js';
 import type { ProjectionService } from '../projection/projection.service.js';
 import type { TransactionTotalsRepository } from '../transactions/transaction-totals.repository.js';
 import type { TransactionRecord } from '../transactions/transactions.repository.js';
 import type { TransactionsService } from '../transactions/transactions.service.js';
-import type { BalancePoint, DashboardRepository } from './dashboard.repository.js';
 import {
   buildSpendingBreakdown,
   INCOME_VS_EXPENSE_MONTHS,
@@ -48,7 +59,7 @@ export interface DashboardOverview {
 }
 
 export interface DashboardServiceDependencies {
-  readonly dashboard: DashboardRepository;
+  readonly snapshots: Pick<NetWorthRepository, 'findAccountSnapshots'>;
   readonly totals: Pick<TransactionTotalsRepository, 'findMonthTotals' | 'findCategorySpending'>;
   readonly accounts: Pick<AccountsService, 'overview'>;
   readonly budgets: Pick<BudgetsService, 'overview'>;
@@ -64,11 +75,10 @@ export class DashboardService {
 
   /** `month` é o dia 1 do mês; sem ele, vale o mês atual no fuso de São Paulo. */
   async overview(month: string = this.currentMonth()): Promise<DashboardOverview> {
-    const { accounts, totals } = await this.deps.accounts.overview();
-    const balanceAccountIds = accounts.filter(isIncludedInTotalBalance).map(({ id }) => id);
+    const today = todayInSaoPaulo(this.deps.now());
     const [
-      activeBalanceEvolution,
-      balanceEvolution,
+      { totals },
+      snapshotRows,
       incomeVsExpense,
       spending,
       budgets,
@@ -77,11 +87,10 @@ export class DashboardService {
       goals,
       netWorth,
     ] = await Promise.all([
-      // A variação do mês usa só os bancos ativos; o gráfico soma também o passado dos arquivados.
-      this.deps.dashboard.findBalanceEvolution(balanceAccountIds, month, lastDayOfMonth(month)),
-      this.deps.dashboard.findBalanceEvolutionWithArchived(
-        balanceAccountIds,
-        month,
+      this.deps.accounts.overview(),
+      // Os 7 dias antes do mês deixam a tolerância alcançar a foto do mês anterior.
+      this.deps.snapshots.findAccountSnapshots(
+        subtractDays(month, SNAPSHOT_TOLERANCE_DAYS),
         lastDayOfMonth(month),
       ),
       this.findIncomeVsExpense(month),
@@ -93,16 +102,16 @@ export class DashboardService {
       this.findNetWorth(month),
     ]);
     const requestedMonthTotals = incomeVsExpense.at(-1);
-    const [firstActivePoint] = activeBalanceEvolution;
+    const snapshotItems = groupSnapshotRows(snapshotRows);
     return {
       month,
       totalBalanceCents: totals.totalBalanceCents,
-      balanceEvolution,
-      balanceChange: buildValueChange(
-        totals.totalBalanceCents,
-        firstActivePoint && { date: firstActivePoint.date, cents: firstActivePoint.balanceCents },
-        todayInSaoPaulo(this.deps.now()),
-      ),
+      balanceEvolution: buildBalanceSeries(snapshotItems, month),
+      // "Desde o começo do mês" só faz sentido no mês atual: num mês passado compararia com hoje.
+      balanceChange:
+        month === firstDayOfMonth(today)
+          ? buildAccountsMonthChange(snapshotItems, totals.totalBalanceCents, today)
+          : null,
       netWorth,
       monthIncomeCents: requestedMonthTotals?.incomeCents ?? 0,
       monthExpenseCents: requestedMonthTotals?.expenseCents ?? 0,

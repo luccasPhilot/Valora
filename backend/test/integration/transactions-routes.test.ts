@@ -177,7 +177,9 @@ describe('GET /api/v1/transactions', () => {
     beforeEach(async () => {
       const cardPayment = await categoryIdOf('credit_card_payment');
       const salary = await categoryIdOf('salary');
+      const groceries = await categoryIdOf('groceries');
       await insertTransaction({ description: 'despesa sem categoria', amountCents: -1000 });
+      await insertTransaction({ description: 'estorno', amountCents: 5000, categoryId: groceries });
       await insertTransaction({ description: 'receita sem categoria', amountCents: 2000 });
       await insertTransaction({ description: 'salário', amountCents: 500000, categoryId: salary });
       await insertTransaction({
@@ -187,15 +189,15 @@ describe('GET /api/v1/transactions', () => {
       });
     });
 
-    it('should_return_only_negative_non_transfer_transactions_when_type_is_expense', async () => {
+    it('should_return_negative_non_transfers_and_refunds_when_type_is_expense', async () => {
       // Arrange
       // Act
       const descriptions = await listDescriptions('?type=expense');
       // Assert
-      expect(descriptions).toEqual(['despesa sem categoria']);
+      expect(descriptions.sort()).toEqual(['despesa sem categoria', 'estorno']);
     });
 
-    it('should_return_only_positive_non_transfer_transactions_when_type_is_income', async () => {
+    it('should_return_positive_transactions_without_refunds_when_type_is_income', async () => {
       // Arrange
       // Act
       const descriptions = await listDescriptions('?type=income');

@@ -8,8 +8,12 @@ export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
 /**
  * Condição do tipo da transação, para consultas que juntam `transactions` com `categories`
- * (left join). A categoria decide a transferência; fora dela, o sinal do valor decide. Reutilizada
- * por orçamentos e pela tela inicial para que "despesa" signifique o mesmo em todo lugar.
+ * (left join). Reutilizada pelo Início, pelos relatórios e por Transações para que "despesa"
+ * signifique o mesmo em todo lugar:
+ * - a categoria de transferência decide a transferência;
+ * - toda transação numa categoria de despesa é despesa, qualquer que seja o sinal: o estorno (entrada
+ *   em "Compras") reduz a despesa, como nos gastos por categoria, e não vira receita;
+ * - fora delas, o sinal decide (a saída numa categoria de receita continua despesa).
  */
 export function transactionTypeCondition(type: TransactionType): SQL {
   // `is distinct from` trata a categoria nula (sem categoria) como "não é transferência".
@@ -18,8 +22,8 @@ export function transactionTypeCondition(type: TransactionType): SQL {
     case 'transfer':
       return sql`${categories.kind} = 'transfer'`;
     case 'expense':
-      return sql`(${transactions.amountCents} < 0 and ${isNotTransfer})`;
+      return sql`(${categories.kind} = 'expense' or (${transactions.amountCents} < 0 and ${isNotTransfer}))`;
     case 'income':
-      return sql`(${transactions.amountCents} > 0 and ${isNotTransfer})`;
+      return sql`(${transactions.amountCents} > 0 and (${categories.kind} is null or ${categories.kind} = 'income'))`;
   }
 }

@@ -92,6 +92,18 @@ describe('GET /api/v1/transactions/summary', () => {
     expect(body).toEqual({ incomeCents: 0, expenseCents: 4000, count: 2 });
   });
 
+  it('should_reduce_the_expense_and_keep_the_income_when_a_refund_is_in_an_expense_category', async () => {
+    // Arrange
+    const shoppingId = await insertCategoryOfKind(database.db, 'expense', 'Compras');
+    await insertTransaction(-20000, { categoryId: shoppingId });
+    await insertTransaction(5000, { categoryId: shoppingId });
+    await insertTransaction(850000);
+    // Act
+    const body = await getSummary('?type=expense');
+    // Assert
+    expect(body).toEqual({ incomeCents: 0, expenseCents: 15000, count: 2 });
+  });
+
   it('should_include_manual_and_pending_transactions_in_the_totals', async () => {
     // Arrange
     await insertTransaction(-1250, { source: 'manual' });

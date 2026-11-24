@@ -113,6 +113,60 @@ describe('GET /api/v1/dashboard — saldo', () => {
     expect(body).toMatchObject({ balanceChange: null, balanceEvolution: [] });
   });
 
+  it('should_not_count_missing_bank_as_gain_when_it_failed_on_day_1', async () => {
+    // Arrange
+    const failedId = await insertAccountWith(database.db, { balanceCents: 100000 });
+    const steadyId = await insertAccountWith(database.db, { name: 'Outra', balanceCents: 300000 });
+    await insertSnapshot(failedId, '2026-10-31', 100000);
+    await insertSnapshot(failedId, '2026-11-02', 100000);
+    await insertSnapshot(steadyId, '2026-10-31', 300000);
+    await insertSnapshot(steadyId, '2026-11-01', 300000);
+    await insertSnapshot(steadyId, '2026-11-02', 300000);
+    // Act
+    const body = await getDashboard();
+    // Assert
+    expect(body).toMatchObject({
+      balanceEvolution: [
+        { date: '2026-11-01', balanceCents: 400000 },
+        { date: '2026-11-02', balanceCents: 400000 },
+      ],
+      balanceChange: { cents: 0, percent: 0 },
+    });
+  });
+
+  it('should_drop_account_from_balance_when_last_snapshot_is_older_than_7_days', async () => {
+    // Arrange
+    const staleId = await insertAccountWith(database.db, { balanceCents: 100000 });
+    const steadyId = await insertAccountWith(database.db, { name: 'Outra', balanceCents: 300000 });
+    await insertSnapshot(staleId, '2026-11-01', 100000);
+    await insertSnapshot(steadyId, '2026-11-01', 300000);
+    await insertSnapshot(steadyId, '2026-11-10', 300000);
+    // Act
+    const body = await getDashboard();
+    // Assert
+    expect(body.balanceEvolution).toEqual([
+      { date: '2026-11-01', balanceCents: 400000 },
+      { date: '2026-11-10', balanceCents: 300000 },
+    ]);
+  });
+
+  it('should_return_null_balance_change_when_month_is_not_current', async () => {
+    // Arrange
+    const accountId = await insertAccountWith(database.db, { balanceCents: 485032 });
+    await insertSnapshot(accountId, '2026-10-01', 400000);
+    await insertSnapshot(accountId, '2026-10-20', 450000);
+    // Act
+    const body = await getDashboard('?month=2026-10');
+    // Assert
+    expect(body).toMatchObject({
+      balanceEvolution: [
+        { date: '2026-10-01', balanceCents: 400000 },
+        { date: '2026-10-20', balanceCents: 450000 },
+      ],
+      balanceChange: null,
+    });
+  });
+
   it('should_return_zero_balance_when_there_are_no_accounts', async () => {
     // Arrange
     // Act
@@ -163,6 +217,30 @@ describe('GET /api/v1/dashboard — receitas e despesas', () => {
     const body = await getDashboard();
     // Assert
     expect(body.monthIncomeCents).toBe(500000);
+  });
+
+  it('should_reduce_expense_when_refund_is_in_expense_category', async () => {
+    // Arrange
+    const accountId = await insertAccountWith(database.db);
+    const shoppingId = await insertCategory(database.db);
+    const salaryId = await insertCategoryOfKind(database.db, 'income', 'Salário');
+    await insertTransaction(accountId, -20000, { categoryId: shoppingId });
+    await insertTransaction(accountId, 5000, { categoryId: shoppingId });
+    await insertTransaction(accountId, 500000, { categoryId: salaryId });
+    // Act
+    const body = await getDashboard();
+    // Assert
+    expect(body).toMatchObject({ monthExpenseCents: 15000, monthIncomeCents: 500000 });
+  });
+
+  it('should_count_uncategorized_inflow_as_income', async () => {
+    // Arrange
+    const accountId = await insertAccountWith(database.db);
+    await insertTransaction(accountId, 30000);
+    // Act
+    const body = await getDashboard();
+    // Assert
+    expect(body).toMatchObject({ monthIncomeCents: 30000, monthExpenseCents: 0 });
   });
 
   it('should_return_six_months_in_order_with_zero_in_the_empty_ones', async () => {

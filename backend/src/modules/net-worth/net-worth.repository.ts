@@ -49,7 +49,8 @@ export class NetWorthRepository {
     return dates.sort()[0] ?? null;
   }
 
-  private async findAccountSnapshots(from: string, to: string): Promise<SnapshotRow[]> {
+  /** Só as fotos das contas (corrente, poupança e cartão) de `from` a `to`. */
+  async findAccountSnapshots(from: string, to: string): Promise<SnapshotRow[]> {
     const rows = await this.db
       .select({
         itemId: balanceSnapshots.accountId,
