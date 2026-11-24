@@ -32,4 +32,4 @@
 ## 5. Documentação
 
 - [x] 5.1 `docs/06-design-system.md`: com os valores ocultos, nenhuma cor revela o sinal; padrão "em branco mantém o valor" nos formulários de edição
-- [ ] 5.2 Ao arquivar: marcar F7, F8, F15 e F17 como resolvidos e o "Acabamento de Transações" da Fase 4 como feito em `docs/08-revisao-e-proximas-fases.md`
+- [x] 5.2 Ao arquivar: marcar F7, F8, F15 e F17 como resolvidos e o "Acabamento de Transações" da Fase 4 como feito em `docs/08-revisao-e-proximas-fases.md`
