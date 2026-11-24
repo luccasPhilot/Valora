@@ -28,4 +28,4 @@
 ## 6. Documentação
 
 - [x] 6.1 `docs/01-produto.md` (alertas: foto de 31/12), `docs/04-modelo-de-dados.md` (tipos de `alerts`)
-- [ ] 6.2 Ao arquivar: marcar a "Foto de 31/12 garantida" (Fase 4) e a prioridade 10 como feitas em `docs/08-revisao-e-proximas-fases.md`, e lembrar do deploy antes de 31/12/2026
+- [x] 6.2 Ao arquivar: marcar a "Foto de 31/12 garantida" (Fase 4) e a prioridade 10 como feitas em `docs/08-revisao-e-proximas-fases.md`, e lembrar do deploy antes de 31/12/2026

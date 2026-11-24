@@ -27,11 +27,11 @@ As dez prioridades:
 | 3 | ~~Janela da sincronização a partir da última sincronização~~ (feito em 24/11/2026) | Banco parado mais de 30 dias **perde transações para sempre** | [S1](#sincronização-e-integridade-dos-dados) |
 | 4 | ~~Não apagar a categoria escolhida quando a pendente vira postada~~ (feito em 24/11/2026) | Quebra a regra 3 por um caminho indireto | [S2](#sincronização-e-integridade-dos-dados) |
 | 5 | ~~Não zerar investimentos numa coleta parcial do Pluggy~~ (feito em 24/11/2026) | Grava foto 0 no histórico do patrimônio | [S4](#sincronização-e-integridade-dos-dados) |
-| 6 | ~~Recuperar a foto diária quando o cron das 07:00 não roda~~ (feito em 24/11/2026); o aviso de 31/12 sem foto continua na Fase 4 | Um deploy ou reinício no horário deixa o dia sem foto | [S5](#sincronização-e-integridade-dos-dados) |
+| 6 | ~~Recuperar a foto diária quando o cron das 07:00 não roda~~ (feito em 24/11/2026); o aviso de 31/12 sem foto também (24/11/2026, `add-year-end-snapshot-check`) | Um deploy ou reinício no horário deixa o dia sem foto | [S5](#sincronização-e-integridade-dos-dados) |
 | 7 | Curva e variação do saldo do Início com a foto que faltou | Um banco que falhou no dia 1 vira "ganho no mês" | [D1](#regras-de-negócio-e-cálculos) |
 | 8 | Error boundary nas rotas | Um chunk que falha deixa a PWA numa tela em inglês sem saída | [F1](#frontend) |
 | 9 | Invalidações do TanStack Query depois de regra e categoria | Início e orçamentos mostram números velhos | [F2–F3](#frontend) |
-| 10 | Garantir a foto de 31/12/2026 | É a base dos bens e direitos no IR 2027 e só pode ser gravada naquele dia | [Fase 4](#fase-4--confiança-e-rotina) |
+| 10 | ~~Garantir a foto de 31/12/2026~~ (feito em 24/11/2026; **o deploy precisa sair antes de 31/12/2026**) | É a base dos bens e direitos no IR 2027 e só pode ser gravada naquele dia | [Fase 4](#fase-4--confiança-e-rotina) |
 
 ---
 
@@ -179,7 +179,7 @@ As fases seguem a ordem de valor por esforço. Esforço: **P** (um dia ou dois),
 
 | Item | O que é | Esforço | Dados |
 |---|---|---|---|
-| **Foto de 31/12 garantida** | Checagem que avisa se 31/12 terminar sem foto de saldo e de investimentos e permite repetir a sincronização no dia 1º. Base dos bens e direitos no IR. **Precisa estar pronta antes de 31/12/2026.** A sincronização já recupera o dia ao subir e tenta de novo 3 horas depois (`fix-sync-data-loss`); falta a checagem na tela. | P | Fotos existentes. |
+| ~~**Foto de 31/12 garantida**~~ (feito em 24/11/2026) | Checagem que avisa se 31/12 terminar sem foto de saldo e de investimentos. Base dos bens e direitos no IR. A sincronização recupera o dia ao subir e tenta de novo 3 horas depois (`fix-sync-data-loss`); o sino avisa no próprio dia 31/12, enquanto ainda dá para sincronizar, e em janeiro, se o dia terminou sem foto (`add-year-end-snapshot-check`). **O deploy precisa sair antes de 31/12/2026.** | P | Fotos existentes. |
 | **Caixa de entrada "Para revisar"** | Fila com as transações novas desde a última revisão, as sem categoria e as possíveis duplicatas; "Ok", "Trocar categoria" e "Marcar tudo como revisado"; contador no Início. É o hábito que sustenta apps como YNAB e Copilot. | M | `transactions.reviewed_at`; a carga atual entra como revisada. |
 | **Categoria em massa** | Seleção múltipla na lista e na caixa de entrada. Grava `category_source = 'user'`. | M | Existentes. |
 | **Regra sugerida pelas correções** | Depois de 2 ou mais correções da mesma descrição para a mesma categoria, sem regra que cubra, o app oferece "Criar regra?". Regra fixa, sem IA. | P | `category_source`, `description_normalized`. |
@@ -267,7 +267,7 @@ Cada linha é uma change do OpenSpec, nesta ordem. As três primeiras protegem d
 | 0 | `add-manual-investments` | ~~Commitar, ajustar F11 e arquivar.~~ Arquivada em 18/11/2026; falta o commit. | Feito |
 | 1 | `harden-backups` | ~~I1, I3, I5, I8 e o aviso de I4.~~ Arquivada em 23/11/2026; a cópia fora de casa ficou de fora, por escolha. | Feito |
 | 2 | `fix-sync-data-loss` | ~~S1, S2, S3, S4, S5 e a foto de 31/12, com os testes que faltam.~~ Arquivada em 24/11/2026, com o S8. A parte de tela da "Foto de 31/12 garantida" (aviso e repetição no dia 1º) continua na Fase 4. | Feito |
-| 2a | `add-year-end-snapshot-check` | Parte de tela da "Foto de 31/12 garantida": alerta no próprio dia 31/12 e depois da virada. Proposta em 24/11/2026. | **Antes de 31/12/2026** |
+| 2a | `add-year-end-snapshot-check` | ~~Parte de tela da "Foto de 31/12 garantida": alerta no próprio dia 31/12 e depois da virada.~~ Arquivada em 24/11/2026; falta o deploy, **antes de 31/12/2026**. | Feito |
 | 3 | `fix-balance-history-gaps` | D1, D9 e D2 (decidida: o estorno reduz a despesa), mais a D6. Proposta em 24/11/2026. | Logo depois |
 | 4 | `harden-frontend-data` | F1, F2, F3, F4, F13 e `query-keys.ts`. Proposta em 24/11/2026. | Logo depois |
 | 5 | `refine-transactions-ux` | F7, F8, F17 e F15. Proposta em 24/11/2026. | Fase 4 |
