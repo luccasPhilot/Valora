@@ -51,13 +51,13 @@
 
 ## 9. No servidor (manual, depois do deploy)
 
-- [ ] 9.1 No healthchecks.io, criar três checks no fuso `America/Sao_Paulo`: "Valora backup semanal" (cron `0 3 * * 0`, tolerância 2 h), "Valora sincronização" (cron `0 7 * * *`, tolerância 1 h) e "Valora disco" (cron `0 6 * * *`, tolerância 1 h), com o aviso por e-mail
-- [ ] 9.2 Preencher `HEALTHCHECK_BACKUP_URL`, `HEALTHCHECK_SYNC_URL` e `HEALTHCHECK_DISK_URL` no `~/Valora/infra/.env` e reiniciar o backend (`docker compose -f infra/compose.yml up -d backend`) para ele ler a URL
-- [ ] 9.3 `crontab -e`: trocar a linha do `backup.sh` por `0 3 * * 0 /home/luccas-philot/Valora/infra/scripts/weekly-backup.sh >> /var/log/valora-backup.log 2>&1` e incluir `0 6 * * * /home/luccas-philot/Valora/infra/scripts/disk-check.sh >> /var/log/valora-backup.log 2>&1`
-- [ ] 9.4 Permissões: `chmod 700 /mnt/hdd/valora` e `chmod 600 /mnt/hdd/valora/*.dump`
-- [ ] 9.5 Rodar `~/Valora/infra/scripts/weekly-backup.sh` e `~/Valora/infra/scripts/disk-check.sh` uma vez; conferir no log o arquivo `valora-weekly-…`, o restore-check com as seis tabelas, e os dois checks verdes no painel; conferir que o log não tem a URL
-- [ ] 9.6 No dia seguinte, depois das 07:00, conferir que o check "Valora sincronização" recebeu o sinal (o aviso só sai da sincronização agendada, não do botão)
-- [ ] 9.7 Conferir a rotação: `docker inspect --format '{{.HostConfig.LogConfig}}' valora-backend-1` mostra `max-size` e `max-file`, e `docker compose -f infra/compose.yml logs backend` não tem mais as linhas do health
+- [x] 9.1 No healthchecks.io, criar três checks no fuso `America/Sao_Paulo`: "Valora backup semanal" (cron `0 3 * * 0`, tolerância 2 h), "Valora sincronização" (cron `0 7 * * *`, tolerância 1 h) e "Valora disco" (cron `0 6 * * *`, tolerância 1 h), com o aviso por e-mail
+- [x] 9.2 Preencher `HEALTHCHECK_BACKUP_URL`, `HEALTHCHECK_SYNC_URL` e `HEALTHCHECK_DISK_URL` no `~/Valora/infra/.env` e reiniciar o backend (`docker compose -f infra/compose.yml up -d backend`) para ele ler a URL
+- [x] 9.3 `crontab -e`: trocar a linha do `backup.sh` por `0 3 * * 0 /home/luccas-philot/Valora/infra/scripts/weekly-backup.sh >> /var/log/valora-backup.log 2>&1` e incluir `0 6 * * * /home/luccas-philot/Valora/infra/scripts/disk-check.sh >> /var/log/valora-backup.log 2>&1`
+- [x] 9.4 Permissões: `chmod 700 /mnt/hdd/valora` e `chmod 600 /mnt/hdd/valora/*.dump`
+- [x] 9.5 Rodar `~/Valora/infra/scripts/weekly-backup.sh` e `~/Valora/infra/scripts/disk-check.sh` uma vez; conferir no log o arquivo `valora-weekly-…`, o restore-check com as seis tabelas, e os dois checks verdes no painel; conferir que o log não tem a URL
+- [x] 9.6 No dia seguinte, depois das 07:00, conferir que o check "Valora sincronização" recebeu o sinal (o aviso só sai da sincronização agendada, não do botão)
+- [x] 9.7 Conferir a rotação: `docker inspect --format '{{.HostConfig.LogConfig}}' valora-backend-1` mostra `max-size` e `max-file`, e `docker compose -f infra/compose.yml logs backend` não tem mais as linhas do health
 
 ## 10. Documentação
 
@@ -67,4 +67,4 @@
 - [x] 10.4 `docs/03-arquitetura.md`: linha "Avisos de falha pelo healthchecks.io" na tabela "Decisões" (sinal de ok/falha sem dados, opcional, dead-man's switch, nunca derruba o monitorado, o agendamento avisa e o `SyncService` não sabe), seção curta "Segurança" (entra só pela Tailscale; saem só as chamadas ao Pluggy e o sinal do healthchecks.io; logs sem dados; dumps `600`) e o diagrama da visão geral com a seta do aviso
 - [x] 10.5 `infra/README.md`: os scripts novos (`weekly-backup.sh`, `disk-check.sh`, `lib/`, `tests/`), a retenção nova e como rodar os testes
 - [x] 10.6 `CLAUDE.md`, seção Comandos: `backup.sh [weekly|predeploy|manual]` com a retenção em camadas, `weekly-backup.sh`, `disk-check.sh` e `bash infra/scripts/tests/run-tests.sh`; o job `infra` do CI na frase sobre o CI
-- [ ] 10.7 Ao arquivar: em `docs/07-roadmap.md`, atualizar o item "Backup semanal (domingo) com retenção de 30 dias" para a retenção em camadas e incluir, marcado `[x]`, "Avisos de falha do backup, da sincronização e do disco pelo healthchecks.io"; em `docs/08-revisao-e-proximas-fases.md`, marcar I1, I3, I4, I5 e I8 como resolvidos (I3 com a cópia off-site pendente) e a linha `harden-backups` da ordem sugerida como feita
+- [x] 10.7 Ao arquivar: em `docs/07-roadmap.md`, atualizar o item "Backup semanal (domingo) com retenção de 30 dias" para a retenção em camadas e incluir, marcado `[x]`, "Avisos de falha do backup, da sincronização e do disco pelo healthchecks.io"; em `docs/08-revisao-e-proximas-fases.md`, marcar I1, I3, I4, I5 e I8 como resolvidos (I3 com a cópia off-site pendente) e a linha `harden-backups` da ordem sugerida como feita

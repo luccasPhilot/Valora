@@ -115,7 +115,8 @@ Regras em [produto](01-produto.md#lançamento-manual).
 
 - [x] `Dockerfile` do backend, `Dockerfile` do frontend (nginx) e `infra/compose.yml` de produção com `frontend`, `backend` e `db` ([deploy](05-deploy.md)).
 - [x] Só o front publica porta, presa ao `127.0.0.1`, e o app é publicado só pela Tailscale com HTTPS.
-- [x] Backup semanal (domingo) com retenção de 30 dias, e **uma restauração testada**.
+- [x] Backup semanal (domingo) com retenção em camadas (semanais por 8 semanas, o primeiro de cada mês por 12 meses, pré-deploy e manuais por 30 dias), e **uma restauração testada**, conferida sozinha toda semana.
+- [x] Avisos de falha do backup, da sincronização e do disco pelo healthchecks.io.
 
 **Pronto quando:**
 - o app roda no servidor e abre no celular pela Tailscale;
