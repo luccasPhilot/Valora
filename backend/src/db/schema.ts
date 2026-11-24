@@ -275,20 +275,35 @@ export const plannedEntryOccurrences = pgTable(
   ],
 );
 
-export const investments = pgTable('investments', {
-  id: primaryId(),
-  connectionId: uuid('connection_id')
-    .notNull()
-    .references(() => connections.id),
-  pluggyInvestmentId: text('pluggy_investment_id').notNull().unique(),
-  name: text('name').notNull(),
-  type: text('type').notNull(),
-  // Subtipo do Pluggy (CDB, TREASURY...); nulo quando o Pluggy não manda.
-  subtype: text('subtype'),
-  balanceCents: cents('balance_cents').notNull(),
-  raw: jsonb('raw'),
-  updatedAt: timestamptz('updated_at').notNull().defaultNow(),
-});
+// Posição `manual` não tem conexão nem id do Pluggy (como a conta "Dinheiro"); o CHECK mantém
+// as duas formas coerentes.
+export const investments = pgTable(
+  'investments',
+  {
+    id: primaryId(),
+    source: text('source').notNull().default('open_finance'),
+    connectionId: uuid('connection_id').references(() => connections.id),
+    pluggyInvestmentId: text('pluggy_investment_id').unique(),
+    // Só em posição manual: a instituição que o usuário informou.
+    institutionName: text('institution_name'),
+    name: text('name').notNull(),
+    type: text('type').notNull(),
+    // Subtipo do Pluggy (CDB, TREASURY...); nulo quando o Pluggy não manda e na posição manual.
+    subtype: text('subtype'),
+    balanceCents: cents('balance_cents').notNull(),
+    // Só em posição manual: o dia do último valor informado.
+    balanceUpdatedOn: day('balance_updated_on'),
+    raw: jsonb('raw'),
+    updatedAt: timestamptz('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    check('investments_source_check', sql`${table.source} in ('open_finance', 'manual')`),
+    check(
+      'investments_source_shape_check',
+      sql`(${table.source} = 'open_finance' and ${table.connectionId} is not null and ${table.pluggyInvestmentId} is not null and ${table.institutionName} is null and ${table.balanceUpdatedOn} is null) or (${table.source} = 'manual' and ${table.connectionId} is null and ${table.pluggyInvestmentId} is null and ${table.raw} is null and ${table.institutionName} is not null and ${table.balanceUpdatedOn} is not null)`,
+    ),
+  ],
+);
 
 export const investmentSnapshots = pgTable(
   'investment_snapshots',

@@ -111,6 +111,26 @@ export async function insertInvestmentWith(
   return investment.id;
 }
 
+export async function insertManualInvestment(
+  db: Db,
+  overrides: Partial<typeof investments.$inferInsert> = {},
+): Promise<string> {
+  const [investment] = await db
+    .insert(investments)
+    .values({
+      source: 'manual',
+      name: 'Fundo INCO',
+      institutionName: 'INCO',
+      type: 'MUTUAL_FUND',
+      balanceCents: 2_500_000,
+      balanceUpdatedOn: '2026-11-10',
+      ...overrides,
+    })
+    .returning({ id: investments.id });
+  if (!investment) throw new Error('Fixture: posição manual não foi criada');
+  return investment.id;
+}
+
 export async function insertAccountSnapshot(
   db: Db,
   accountId: string,

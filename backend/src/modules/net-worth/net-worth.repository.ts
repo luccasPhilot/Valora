@@ -77,7 +77,7 @@ export class NetWorthRepository {
       })
       .from(investmentSnapshots)
       .innerJoin(investments, eq(investments.id, investmentSnapshots.investmentId))
-      .innerJoin(connections, eq(connections.id, investments.connectionId))
+      .leftJoin(connections, eq(connections.id, investments.connectionId))
       .where(between(investmentSnapshots.date, from, to))
       .orderBy(investmentSnapshots.investmentId, investmentSnapshots.date);
     return rows.map((row) => ({ ...row, type: 'investment', isHidden: false }));

@@ -33,7 +33,7 @@ import { GoalsRepository } from './modules/goals/goals.repository.js';
 import { goalsRoutes } from './modules/goals/goals.routes.js';
 import { GoalsService } from './modules/goals/goals.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
-import { healthRoutes } from './modules/health/health.routes.js';
+import { HEALTH_ROUTE, healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
 import { InvestmentsRepository } from './modules/investments/investments.repository.js';
 import { investmentsRoutes } from './modules/investments/investments.routes.js';
@@ -89,7 +89,7 @@ export function buildApp(deps: AppDependencies): ValoraApp {
   });
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
-  registerRequestLog(app);
+  registerRequestLog(app, { quietPath: `${API_PREFIX}${HEALTH_ROUTE}` });
   registerErrorHandlers(app);
   app.addHook('onClose', async () => {
     await deps.database.pool.end();
@@ -111,11 +111,16 @@ function registerModules(
     deps.config.pluggyItemIds,
     alerts.connectionAlertRefresher,
   );
+  const investmentsService = new InvestmentsService({
+    repository: new InvestmentsRepository(database.db),
+    now,
+  });
   const syncService = createSyncService({
     config: deps.config,
     database,
     pluggySdk: deps.pluggySdk,
     alerts: alerts.evaluator,
+    manualInvestments: investmentsService,
     logger: app.log,
     now,
   });
@@ -136,7 +141,6 @@ function registerModules(
     now,
   });
   app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
-  const investmentsService = new InvestmentsService(new InvestmentsRepository(database.db));
   app.register(investmentsRoutes(investmentsService), { prefix: API_PREFIX });
   const netWorthService = new NetWorthService({
     netWorth: new NetWorthRepository(database.db),

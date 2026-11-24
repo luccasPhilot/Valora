@@ -35,6 +35,7 @@ describe('loadConfig', () => {
       pluggyClientSecret: 'client-secret-value',
       pluggyItemIds: ['item-a', 'item-b'],
       syncCron: '0 7 * * *',
+      healthcheckSyncUrl: null,
     });
   });
 
@@ -162,5 +163,42 @@ describe('loadConfig', () => {
     const error = loadAndCatch(env);
     // Assert
     expect(error.message).toContain('SYNC_CRON');
+  });
+
+  it('should_turn_off_the_sync_healthcheck_when_the_url_is_empty', () => {
+    // Arrange
+    const env = { ...VALID_ENV, HEALTHCHECK_SYNC_URL: '' };
+    // Act
+    const config = loadConfig(env);
+    // Assert
+    expect(config.healthcheckSyncUrl).toBeNull();
+  });
+
+  it('should_keep_the_sync_healthcheck_url_when_it_is_https', () => {
+    // Arrange
+    const url = 'https://hc-ping.com/00000000-0000-4000-8000-000000000000';
+    const env = { ...VALID_ENV, HEALTHCHECK_SYNC_URL: url };
+    // Act
+    const config = loadConfig(env);
+    // Assert
+    expect(config.healthcheckSyncUrl).toBe(url);
+  });
+
+  it('should_name_the_sync_healthcheck_url_when_it_is_not_https', () => {
+    // Arrange
+    const env = { ...VALID_ENV, HEALTHCHECK_SYNC_URL: 'http://hc-ping.com/inseguro' };
+    // Act
+    const error = loadAndCatch(env);
+    // Assert
+    expect(error.message).toContain('HEALTHCHECK_SYNC_URL');
+  });
+
+  it('should_not_print_the_sync_healthcheck_url_when_it_is_invalid', () => {
+    // Arrange
+    const env = { ...VALID_ENV, HEALTHCHECK_SYNC_URL: 'http://hc-ping.com/segredo-do-check' };
+    // Act
+    const error = loadAndCatch(env);
+    // Assert
+    expect(error.message).not.toContain('segredo-do-check');
   });
 });

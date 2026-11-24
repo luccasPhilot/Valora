@@ -4,6 +4,7 @@ import type {
   ConnectionRecord,
   ConnectionsRepository,
 } from '../connections/connections.repository.js';
+import type { InvestmentsService } from '../investments/investments.service.js';
 import type { ItemConnectionState } from './item-status.js';
 import type { PluggyAccountList, PluggyClient, PluggyItemOverview } from './pluggy-client.js';
 import { PluggyItemNotFoundError } from './pluggy-errors.js';
@@ -17,6 +18,7 @@ import type { ItemRepositories, SyncUnitOfWork } from './sync.unit-of-work.js';
 import type { SyncLock, SyncLockHandle } from './sync-lock.repository.js';
 import { addStats, EMPTY_STATS, type ItemOutcome, summarizeRun } from './sync-outcome.js';
 import type {
+  FinishedSyncRunStatus,
   SyncRunOutcome,
   SyncRunRecord,
   SyncRunsRepository,
@@ -57,6 +59,7 @@ export interface SyncServiceDependencies {
   readonly connections: ConnectionsRepository;
   readonly unitOfWork: SyncUnitOfWork;
   readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
+  readonly manualInvestments: Pick<InvestmentsService, 'snapshotManualPositions'>;
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -65,10 +68,16 @@ export type StartSyncResult =
   | {
       readonly status: 'started';
       readonly run: SyncRunRecord;
-      /** Termina quando a execução acaba. Nunca rejeita: falhas viram `failed` em `sync_runs`. */
-      readonly finished: Promise<void>;
+      /**
+       * Termina com o status final quando a execução acaba. Nunca rejeita: falhas viram `failed`
+       * em `sync_runs`.
+       */
+      readonly finished: Promise<FinishedSyncRunStatus>;
     }
   | { readonly status: 'already_running' };
+
+/** Resultado de um disparo do agendamento: `skipped` quando outra sincronização já rodava. */
+export type ScheduledSyncResult = FinishedSyncRunStatus | 'skipped';
 
 interface ItemData {
   readonly accountList: PluggyAccountList;
@@ -110,13 +119,13 @@ export class SyncService {
   }
 
   /** Disparo do agendamento: se já houver uma sincronização rodando, só registra que pulou. */
-  async runScheduled(): Promise<void> {
+  async runScheduled(): Promise<ScheduledSyncResult> {
     const started = await this.start('schedule');
     if (started.status === 'already_running') {
       this.deps.logger.info({}, 'scheduled sync skipped: another sync is running');
-      return;
+      return 'skipped';
     }
-    await started.finished;
+    return started.finished;
   }
 
   findLatestRun(): Promise<SyncRunRecord | null> {
@@ -128,18 +137,37 @@ export class SyncService {
     return this.deps.syncRuns.failInterrupted(INTERRUPTED_RUN_MESSAGE);
   }
 
-  private async execute(runId: string, lock: SyncLockHandle): Promise<void> {
+  private async execute(runId: string, lock: SyncLockHandle): Promise<FinishedSyncRunStatus> {
     try {
-      const outcome = await this.evaluateAlerts(await this.syncAllItems());
+      const itemsOutcome = await this.syncAllItems();
+      await this.snapshotManualInvestments();
+      const outcome = await this.evaluateAlerts(itemsOutcome);
       await this.deps.syncRuns.finish(runId, outcome);
       this.deps.logger.info({ runId, status: outcome.status, ...outcome.stats }, 'sync finished');
+      return outcome.status;
     } catch (error) {
       this.deps.logger.error({ runId, errorType: errorTypeOf(error) }, 'sync failed unexpectedly');
       await this.finishAsUnexpectedFailure(runId);
+      return 'failed';
     } finally {
       await lock.release().catch((error: unknown) => {
         this.deps.logger.error({ errorType: errorTypeOf(error) }, 'sync lock release failed');
       });
+    }
+  }
+
+  /**
+   * Foto do dia das posições manuais, com ou sem falha nos bancos: o valor delas não vem do Pluggy.
+   * Falhar aqui só deixa o log (o tipo do erro) e não muda o resultado dos bancos.
+   */
+  private async snapshotManualInvestments(): Promise<void> {
+    try {
+      await this.deps.manualInvestments.snapshotManualPositions();
+    } catch (error) {
+      this.deps.logger.error(
+        { errorType: errorTypeOf(error) },
+        'manual investments snapshot failed',
+      );
     }
   }
 

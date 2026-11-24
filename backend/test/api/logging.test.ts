@@ -115,4 +115,25 @@ describe('request logging', () => {
     // Assert
     expect(JSON.stringify(logLines)).not.toMatch(/FARMACIA|farmacia/);
   });
+
+  it('should_log_health_when_status_is_503', async () => {
+    // Arrange: o app de teste não alcança o banco, então o health responde 503.
+    const { server, logLines } = startApp();
+    // Act
+    await server.inject({ method: 'GET', url: `${API_PREFIX}/health` });
+    // Assert
+    expect(logLines.find((line) => line.msg === 'request completed')).toMatchObject({
+      path: `${API_PREFIX}/health`,
+      statusCode: 503,
+    });
+  });
+
+  it('should_log_other_routes_when_status_is_200', async () => {
+    // Arrange
+    const { server, logLines } = startApp();
+    // Act
+    await server.inject({ method: 'GET', url: `${API_PREFIX}/payments` });
+    // Assert
+    expect(logLines.filter((line) => line.msg === 'request completed')).toHaveLength(1);
+  });
 });

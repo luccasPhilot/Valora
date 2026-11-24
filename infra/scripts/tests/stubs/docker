@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# `docker` de mentira para os testes dos scripts: entende só o `docker compose ... exec` que os
+# scripts usam, para pg_dump, psql e pg_restore.
+#
+#   STUB_DUMP_FAILS=1            pg_dump falha sem escrever nada
+#   STUB_LIVE_COUNT              contagem de cada tabela no banco em uso (padrão: 10)
+#   STUB_RESTORED_COUNT          contagem de cada tabela no banco restaurado (padrão: a do banco em uso)
+#   STUB_RESTORED_COUNT_<tabela> contagem de uma tabela no banco restaurado
+#   STUB_RESTORED_FILE           onde o pg_restore grava o que recebeu no stdin
+#   STUB_CALLS                   arquivo onde cada chamada é registrada
+set -euo pipefail
+
+readonly DEFAULT_COUNT=10
+
+record_call() {
+  [[ -z "${STUB_CALLS:-}" ]] || echo "docker $*" >>"$STUB_CALLS"
+}
+
+argument_after() {
+  local flag="$1"
+  shift
+  while (($# > 0)); do
+    if [[ "$1" == "$flag" ]]; then
+      echo "${2:-}"
+      return
+    fi
+    shift
+  done
+}
+
+fake_psql() {
+  local database sql table count_variable
+  database="$(argument_after -d "$@")"
+  sql="$(argument_after -c "$@")"
+  if [[ "$sql" =~ ^SELECT\ count\(\*\)\ FROM\ ([a-z_]+)$ ]]; then
+    table="${BASH_REMATCH[1]}"
+    if [[ "$database" == "valora" ]]; then
+      echo "${STUB_LIVE_COUNT:-$DEFAULT_COUNT}"
+      return
+    fi
+    count_variable="STUB_RESTORED_COUNT_$table"
+    echo "${!count_variable:-${STUB_RESTORED_COUNT:-${STUB_LIVE_COUNT:-$DEFAULT_COUNT}}}"
+  fi
+}
+
+main() {
+  record_call "$@"
+  case " $* " in
+    *" pg_dump "*)
+      [[ "${STUB_DUMP_FAILS:-0}" != "1" ]] || exit 1
+      echo "conteudo-do-dump"
+      ;;
+    *" psql "*) fake_psql "$@" ;;
+    *" pg_restore "*) cat >"${STUB_RESTORED_FILE:-/dev/null}" ;;
+  esac
+}
+
+main "$@"

@@ -13,6 +13,8 @@ function position(overrides: Partial<InvestmentPosition> = {}): InvestmentPositi
     subtype: 'CDB',
     balanceCents: 100000,
     institutionName: 'Banco de teste',
+    source: 'open_finance',
+    balanceUpdatedOn: null,
     ...overrides,
   };
 }

@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { createDatabase } from './db/database.js';
 import { runMigrations } from './db/migrate.js';
+import { HealthcheckPinger } from './modules/sync/healthcheck-pinger.js';
 import { createPluggySdk } from './modules/sync/pluggy-sdk.js';
 import { startSyncSchedule } from './modules/sync/sync.schedule.js';
 import { ConfigError, loadConfig } from './shared/config.js';
@@ -21,7 +22,12 @@ async function main(): Promise<void> {
   const interruptedRuns = await syncService.failInterruptedRuns();
   if (interruptedRuns > 0) app.log.warn({ interruptedRuns }, 'interrupted sync runs closed');
   await app.listen({ host: config.host, port: config.port });
-  startSyncSchedule({ pattern: config.syncCron, sync: syncService, logger: app.log });
+  const heartbeat = new HealthcheckPinger({
+    url: config.healthcheckSyncUrl,
+    fetch: globalThis.fetch,
+    logger: app.log,
+  });
+  startSyncSchedule({ pattern: config.syncCron, sync: syncService, logger: app.log, heartbeat });
 }
 
 main().catch((error: unknown) => {

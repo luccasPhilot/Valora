@@ -2,6 +2,7 @@ import type { Database } from '../../db/database.js';
 import type { Config } from '../../shared/config.js';
 import type { AlertEvaluator } from '../alerts/alert-evaluator.js';
 import { ConnectionsRepository } from '../connections/connections.repository.js';
+import type { InvestmentsService } from '../investments/investments.service.js';
 import { PluggyClient } from './pluggy-client.js';
 import type { PluggySdk } from './pluggy-sdk.js';
 import { type SyncLogger, SyncService } from './sync.service.js';
@@ -14,6 +15,7 @@ export interface SyncModuleDependencies {
   readonly database: Database;
   readonly pluggySdk: PluggySdk;
   readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
+  readonly manualInvestments: Pick<InvestmentsService, 'snapshotManualPositions'>;
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -27,6 +29,7 @@ export function createSyncService(deps: SyncModuleDependencies): SyncService {
     connections: new ConnectionsRepository(deps.database.db),
     unitOfWork: new SyncUnitOfWork(deps.database.db),
     alerts: deps.alerts,
+    manualInvestments: deps.manualInvestments,
     logger: deps.logger,
     now: deps.now,
   });

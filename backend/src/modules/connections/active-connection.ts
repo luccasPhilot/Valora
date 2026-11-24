@@ -1,6 +1,6 @@
 import { isNull, or } from 'drizzle-orm';
 
-import { accounts, connections } from '../../db/schema.js';
+import { accounts, connections, investments } from '../../db/schema.js';
 
 /**
  * Única definição de "banco ativo": não foi arquivado. Contas, faturas, alertas, conexões e a
@@ -14,5 +14,14 @@ export const connectionIsActive = isNull(connections.archivedAt);
  */
 export const accountIsOfActiveConnection = or(
   isNull(accounts.connectionId),
+  isNull(connections.archivedAt),
+);
+
+/**
+ * Para consultas de investimentos com `leftJoin(connections)`: a posição é de um banco ativo ou é
+ * manual (sem conexão, nunca arquivada).
+ */
+export const investmentIsOfActiveConnection = or(
+  isNull(investments.connectionId),
   isNull(connections.archivedAt),
 );

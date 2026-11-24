@@ -26,6 +26,8 @@ function group(
       balanceCents,
       percent: 0,
       institutionName: 'Banco',
+      source: 'open_finance',
+      balanceUpdatedOn: null,
     })),
   };
 }

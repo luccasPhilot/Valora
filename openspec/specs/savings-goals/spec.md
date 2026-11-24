@@ -2,9 +2,7 @@
 
 ## Purpose
 Metas de poupança: valor desejado, aportes informados à mão, progresso, situação frente ao prazo e estimativa pelo ritmo, e a tela de Metas.
-
 ## Requirements
-
 ### Requirement: Cadastro de metas
 O sistema MUST permitir criar, editar e excluir metas com nome (1 a 80 caracteres), ícone, valor desejado em centavos (inteiro maior que zero), prazo opcional, valor acumulado inicial opcional e, opcionalmente, vínculos (`links`) com contas e investimentos. Excluir uma meta MUST apagar os aportes e os vínculos dela. A resposta MUST NOT expor `raw` nem ids do Pluggy dos itens vinculados. Criar uma meta com `links` e com valor inicial maior que zero MUST ser recusado.
 
@@ -124,11 +122,19 @@ A área "Metas" (`/metas`) MUST aparecer no menu lateral e listar as metas com �
 - **THEN** a tela pede confirmação antes de apagar
 
 ### Requirement: Meta vinculada
-`POST /api/v1/goals` e `PUT /api/v1/goals/:id` MUST aceitar `links`: itens `{ type, id }`, sem limite de quantidade, com `type` `account` (conta `checking` ou `savings`) ou `investment`, de bancos ativos. Cartão de crédito, a conta "Dinheiro", itens de banco arquivado, ids inexistentes e itens repetidos MUST ser recusados com 400 `VALIDATION_ERROR` e `links` em `details`. No `PUT`, `links` ausente MUST manter os vínculos e `links: []` MUST desvincular a meta. `GET /api/v1/goals` MUST trazer `isLinked`, `links` (cada um com `type`, `id`, `name`, `institutionName`, `balanceCents` e `isArchived`) e `manualSavedCents`. O valor acumulado `savedCents` de uma meta vinculada MUST ser `max(0, soma dos saldos atuais dos itens de bancos ativos)`; um item de banco arquivado MUST continuar listado e MUST contar zero. `goals.saved_cents` MUST NOT ser alterado enquanto a meta é vinculada, e os aportes já registrados MUST ser mantidos e voltar a valer na desvinculação. Progresso, valor restante e situação MUST usar o valor acumulado calculado.
+`POST /api/v1/goals` e `PUT /api/v1/goals/:id` MUST aceitar `links`: itens `{ type, id }`, sem limite de quantidade, com `type` `account` (conta `checking` ou `savings`) ou `investment` (de banco ativo ou **posição manual**), de bancos ativos. Cartão de crédito, a conta "Dinheiro", itens de banco arquivado, ids inexistentes e itens repetidos MUST ser recusados com 400 `VALIDATION_ERROR` e `links` em `details`. No `PUT`, `links` ausente MUST manter os vínculos e `links: []` MUST desvincular a meta. `GET /api/v1/goals` MUST trazer `isLinked`, `links` (cada um com `type`, `id`, `name`, `institutionName`, `balanceCents` e `isArchived`) e `manualSavedCents`. O valor acumulado `savedCents` de uma meta vinculada MUST ser `max(0, soma dos saldos atuais dos itens de bancos ativos e das posições manuais)`; um item de banco arquivado MUST continuar listado e MUST contar zero, e uma posição manual MUST NOT ser considerada arquivada. `goals.saved_cents` MUST NOT ser alterado enquanto a meta é vinculada, e os aportes já registrados MUST ser mantidos e voltar a valer na desvinculação. Progresso, valor restante e situação MUST usar o valor acumulado calculado.
 
 #### Scenario: Soma de dois itens
 - **WHEN** a meta está vinculada a um CDB de R$ 10.000,00 e a uma conta poupança de R$ 2.500,00
 - **THEN** `savedCents` é `1250000` e `isLinked` é verdadeiro
+
+#### Scenario: Posição manual vinculada
+- **WHEN** a meta está vinculada a uma posição manual "Fundo INCO" de R$ 25.000,00 da instituição "INCO"
+- **THEN** `savedCents` é `2500000`, o vínculo traz `institutionName` `INCO` e `isArchived` falso
+
+#### Scenario: Atualizar o valor manual muda a meta
+- **WHEN** o usuário atualiza a posição manual vinculada para R$ 26.000,00
+- **THEN** o `savedCents` da meta passa a ser `2600000` sem nenhuma outra ação
 
 #### Scenario: Atualiza sozinha
 - **WHEN** a sincronização muda o saldo do CDB para R$ 10.300,00
@@ -145,6 +151,14 @@ A área "Metas" (`/metas`) MUST aparecer no menu lateral e listar as metas com �
 #### Scenario: Banco arquivado depois do vínculo
 - **WHEN** o banco de um item vinculado é arquivado
 - **THEN** o item continua em `links` com `isArchived` verdadeiro e não soma no `savedCents`
+
+#### Scenario: Banco arquivado não afeta posição manual
+- **WHEN** um banco é arquivado e a meta também está vinculada a uma posição manual
+- **THEN** a posição manual continua somando no `savedCents`
+
+#### Scenario: Excluir a posição manual vinculada
+- **WHEN** o usuário exclui a posição manual vinculada
+- **THEN** o vínculo some da meta, a meta continua existindo e os aportes dela continuam no histórico
 
 #### Scenario: Saldo negativo
 - **WHEN** a única conta vinculada está no cheque especial com `−R$ 200,00`
@@ -219,3 +233,4 @@ O formulário de meta MUST oferecer "Eu informo" e "Vinculada". Em "Vinculada", 
 #### Scenario: Celular estreito
 - **WHEN** a largura é 320 px e o nome do investimento é longo
 - **THEN** o nome é truncado, o saldo continua visível e não há rolagem horizontal
+

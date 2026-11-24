@@ -9,7 +9,7 @@ Não é um produto comercial e não vai ter outros usuários. Isso simplifica mu
 ## Princípios
 
 - **Seus dados, no seu servidor.** Tudo fica num PostgreSQL rodando em casa. O Pluggy só abastece esse banco uma vez por dia.
-- **Automático primeiro.** Quase tudo vem do Open Finance, sem digitar nada. O lançamento manual existe só para o que o Open Finance não traz: dinheiro em espécie e alguma transação que faltou (veja [Lançamento manual](#lançamento-manual)).
+- **Automático primeiro.** Quase tudo vem do Open Finance, sem digitar nada. O lançamento manual existe só para o que o Open Finance não traz: dinheiro em espécie, alguma transação que faltou e os investimentos de instituições fora dele (veja [Lançamento manual](#lançamento-manual)).
 - **Previsível.** Categorias, alertas e projeções saem de regras escritas no código, não de IA. A mesma entrada dá sempre o mesmo resultado.
 - **Só leitura.** O app nunca movimenta dinheiro: nada de pagamento, Pix ou transferência.
 - **Qualidade de fintech.** O visual segue o [guia de identidade](design/identidade-visual.md) e o [Design System](06-design-system.md). Não pode parecer um sistema administrativo nem uma planilha.
@@ -57,15 +57,17 @@ Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele n
 | | Meta vinculada a um investimento ou conta, que se atualiza sozinha | v3 |
 | **Alertas** | Cobrança duplicada, assinatura nova, orçamento perto do limite ou estourado, conexão com banco caída | v2 |
 | **Investimentos** | Posição de cada investimento e o total | v3 |
+| | Investimentos manuais: INCO, Binance e corretoras fora do Open Finance, com valor informado à mão ([regras](#posições-manuais)) | v3 |
 | | Patrimônio no topo da tela: contas + investimentos − faturas em aberto, a variação no mês e a evolução mês a mês ([regras](#patrimônio)) | v3 |
 | **Relatórios** | Evolução financeira, histórico de receitas e despesas, análise por categoria, evolução do patrimônio, todos com período e "Ver em tabela" ([regras](#relatórios)) | v3 |
 
 ## Lançamento manual
 
-O Open Finance traz quase tudo, mas não tudo. O lançamento manual cobre duas situações:
+O Open Finance traz quase tudo, mas não tudo. O lançamento manual cobre três situações:
 
 1. **Dinheiro em espécie.** Você recebeu algo em dinheiro e gastou em dinheiro. A entrada e a saída são lançadas à mão, na conta **"Dinheiro"**.
 2. **Uma transação que o Open Finance não trouxe.** Ela é lançada à mão na conta ou no cartão em que aconteceu.
+3. **Um investimento de uma instituição fora do Open Finance**, como um fundo da INCO ou criptomoedas na Binance. Você cadastra a posição e informa o valor ([regras](#posições-manuais)).
 
 Regras:
 
@@ -149,14 +151,26 @@ Em vez de informar aportes, você pode **vincular a meta a contas e investimento
 
 ## Investimentos
 
-A tela **Investimentos** mostra a posição de cada investimento dos seus bancos e corretoras, agrupada por tipo, e o total. É só leitura: o Valora não compra nem resgata nada.
+A tela **Investimentos** mostra a posição de cada investimento dos seus bancos e corretoras, mais as [posições manuais](#posições-manuais), agrupada por tipo, e o total. O Valora não compra nem resgata nada.
 
-- **O que entra:** as posições de bancos **ativos**. Um banco arquivado sai da tela e do total, mas as fotos dele continuam guardadas ([regras](#remover-um-banco-do-valora)).
-- **Agrupamento:** pelo tipo do Pluggy: Renda fixa, Fundos, Ações, ETFs, Títulos e previdência, COE e Outros. O subtipo (CDB, Tesouro Direto, fundo multimercado...) e a instituição aparecem em cada linha.
+- **O que entra:** as posições de bancos **ativos** e todas as posições manuais (que não têm banco para arquivar). Um banco arquivado sai da tela e do total, mas as fotos dele continuam guardadas ([regras](#remover-um-banco-do-valora)).
+- **Agrupamento:** pelo tipo do Pluggy: Renda fixa, Fundos, Ações, ETFs, Títulos e previdência, COE, Criptomoedas e Outros. O subtipo (CDB, Tesouro Direto, fundo multimercado...) e a instituição aparecem em cada linha.
 - **Percentuais:** a fatia de cada tipo e de cada posição no total, com uma casa decimal.
 - **Posições zeradas** (resgatadas, ou que o banco deixou de devolver) ficam fora da lista e aparecem só como "N posições zeradas não aparecem na lista".
 - **Não é o saldo total:** o "Saldo total" do Início continua sendo só corrente e poupança. Investimentos entram no [patrimônio](#patrimônio).
 - **Não mostra rentabilidade.** O Valora guarda só a posição, e a variação dela mistura aporte e rendimento.
+
+### Posições manuais
+
+Para o que o Open Finance não traz: fundos da INCO, criptomoedas na Binance, corretoras sem conector no Meu Pluggy. O botão **"Adicionar investimento"** cadastra a posição; ela aparece na tela, no [patrimônio](#patrimônio) e pode ser vinculada a uma [meta](#meta-vinculada).
+
+- **O que você informa:** nome, instituição (texto livre), tipo (Renda fixa, Fundos, Ações, ETFs, Criptomoedas ou Outros) e o **valor atual em reais**. Não há cotação, quantidade nem conversão de moeda: se for cripto, informe quanto vale em reais hoje.
+- **Atualizar o valor** é feito à mão, quando você quiser. A linha mostra o selo "Manual" e "Atualizado em dd/mm/aaaa". Passados **30 dias** sem atualizar, a linha diz "Desatualizado" em texto, na cor normal (vermelho é só para estouro, erro e saldo negativo).
+- **Encerrar a posição** zera o valor e guarda o histórico; ela sai da lista e passa a contar em "N posições zeradas", por isso a tela pede confirmação. **Excluir** apaga a posição, as fotos dela e os vínculos com metas (a meta e os aportes ficam); a tela pede confirmação e avisa que o histórico sai do patrimônio.
+- **Foto diária:** cada sincronização grava a foto do dia de todas as posições manuais, repetindo o último valor informado, **mesmo que algum banco tenha falhado**. Sem isso a posição sairia do patrimônio depois de 7 dias.
+- **A sincronização nunca altera, zera nem apaga** uma posição manual.
+- **Sem histórico retroativo:** a curva do patrimônio começa no dia em que a posição foi cadastrada. Quem entra no meio do mês aparece na variação do mês como aumento, porque o Valora não separa aporte de rendimento.
+- **Não é uma carteira de dinheiro com saldo** ([fora do escopo](#fora-do-escopo)): é só a posição de um investimento que já existe em outra instituição.
 
 ## Patrimônio
 
@@ -164,10 +178,10 @@ O **patrimônio** é quanto você tem de fato: `contas + investimentos − fatur
 
 - **O que entra:**
   - contas corrente e poupança não ocultas (o mesmo [saldo total](#saldo-total));
-  - todos os investimentos;
+  - todos os investimentos, inclusive as posições manuais;
   - as faturas atuais dos cartões não ocultos, que **descontam**.
-  - Só de bancos **ativos**. A conta "Dinheiro" não tem saldo e fica de fora.
-- **O que não entra:** gastos no cartão que ainda não estão numa fatura fechada (o Pluggy só informa a fatura), financiamentos, empréstimos, imóveis, veículos e outros bens que não vêm do Open Finance. A tela avisa isso numa nota fixa.
+  - Contas e faturas só de bancos **ativos**. A conta "Dinheiro" não tem saldo e fica de fora. A posição manual não tem banco e nunca é "arquivada".
+- **O que não entra:** gastos no cartão que ainda não estão numa fatura fechada (o Pluggy só informa a fatura), financiamentos, empréstimos, imóveis, veículos e outros bens que não são investimentos (a [posição manual](#posições-manuais) de investimento entra). A tela avisa isso numa nota fixa.
 - **Hoje x passado:** o total de hoje vem das posições atuais, então confere com o que Contas e Investimentos mostram. A curva vem das **fotos diárias**.
 - **Foto que faltou:** cada conta e cada investimento vale a foto mais recente de até 7 dias antes do dia calculado. Uma falha curta da sincronização não abre um buraco no gráfico; depois de 7 dias sem foto, o item sai do total daquele dia.
 - **Um ponto por mês:** o último dia do mês com foto (hoje, no mês atual). Mês sem nenhuma foto fica sem ponto, sem zero inventado.

@@ -10,6 +10,8 @@ import type { InvestmentGroup, InvestmentItem } from '@/lib/api/investments';
 import { formatPercent } from '@/lib/format';
 
 import { investmentSubtypeLabel, investmentTypeInfo } from './investment-labels';
+import type { RankedPosition } from './investment-view';
+import { describeManualUpdate } from './manual-investment-values';
 
 const FULL_PERCENT = 100;
 /** Quantas posições aparecem antes de "Mostrar mais": a lista não vira um muro de linhas. */
@@ -20,8 +22,48 @@ function describeOrigin(item: InvestmentItem): string {
   return `${investmentSubtypeLabel(item.subtype)} · ${item.institutionName}`;
 }
 
+interface InvestmentRowProps {
+  item: InvestmentItem;
+  type: string;
+  today: string;
+  onSelectManual: (position: RankedPosition) => void;
+}
+
+function ManualBadge() {
+  return (
+    <span className="shrink-0 rounded-full border px-2 text-xs font-medium text-muted-foreground">
+      Manual
+    </span>
+  );
+}
+
+// "Desatualizado" é texto na cor normal: vermelho é só para estouro, erro e saldo negativo.
+function InvestmentRow({ item, type, today, onSelectManual }: InvestmentRowProps) {
+  const common = {
+    title: item.name,
+    subtitle: describeOrigin(item),
+    value: <Money cents={item.balanceCents} />,
+    share: formatPercent(item.percent / FULL_PERCENT),
+  };
+  if (item.source !== 'manual') return <ValueRow {...common} />;
+  const update = describeManualUpdate(item.balanceUpdatedOn, today);
+  return (
+    <ValueRow
+      {...common}
+      badge={<ManualBadge />}
+      detail={update.isStale ? `${update.text} · Desatualizado` : update.text}
+      selectLabel={`Editar ${item.name}`}
+      onSelect={() => onSelectManual({ ...item, type })}
+    />
+  );
+}
+
 interface InvestmentGroupCardProps {
   group: InvestmentGroup;
+  /** AAAA-MM-DD de hoje: decide quando uma posição manual está desatualizada. */
+  today: string;
+  /** Abre a posição manual para editar; posição do Open Finance não tem ação. */
+  onSelectManual: (position: RankedPosition) => void;
   /** A mesma cor do tipo na barra de composição: liga o cartão à legenda. */
   color: string;
 }
@@ -30,7 +72,12 @@ interface InvestmentGroupCardProps {
  * Nível 2: um tipo. O título é pequeno (o que é), o total é o maior texto (o que importa) e as
  * posições são o nível 3: linhas sem moldura, com no máximo cinco à vista.
  */
-export function InvestmentGroupCard({ group, color }: InvestmentGroupCardProps) {
+export function InvestmentGroupCard({
+  group,
+  today,
+  onSelectManual,
+  color,
+}: InvestmentGroupCardProps) {
   const listId = useId();
   const [isExpanded, setIsExpanded] = useState(false);
   const hiddenCount = Math.max(0, group.items.length - COLLAPSED_ROW_COUNT);
@@ -53,12 +100,12 @@ export function InvestmentGroupCard({ group, color }: InvestmentGroupCardProps) 
       />
       <ul id={listId} className="divide-y border-t">
         {visibleItems.map((item) => (
-          <ValueRow
+          <InvestmentRow
             key={item.id}
-            title={item.name}
-            subtitle={describeOrigin(item)}
-            value={<Money cents={item.balanceCents} />}
-            share={formatPercent(item.percent / FULL_PERCENT)}
+            item={item}
+            type={group.type}
+            today={today}
+            onSelectManual={onSelectManual}
           />
         ))}
       </ul>

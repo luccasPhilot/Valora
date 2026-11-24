@@ -23,6 +23,7 @@ export const TEST_CONFIG: Config = {
   // Os mesmos itens das fixtures em test/fixtures/pluggy/.
   pluggyItemIds: ['item-1', 'item-2', 'item-3'],
   syncCron: '0 7 * * *',
+  healthcheckSyncUrl: null,
 };
 
 export type LogLine = Record<string, unknown>;

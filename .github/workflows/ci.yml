@@ -38,6 +38,15 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  infra:
+    name: Infra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Testes dos scripts do servidor (backup, retenção, restore-check, avisos), em bash puro.
+      - run: bash infra/scripts/tests/run-tests.sh
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest

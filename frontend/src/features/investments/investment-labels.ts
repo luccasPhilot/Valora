@@ -1,5 +1,6 @@
 import {
   ChartPie,
+  Coins,
   Ellipsis,
   FileText,
   Layers,
@@ -23,6 +24,7 @@ const TYPES: Readonly<Record<string, TypeInfo>> = {
   ETF: { label: 'ETFs', icon: Layers },
   SECURITY: { label: 'Títulos e previdência', icon: ShieldCheck },
   COE: { label: 'COE', icon: FileText },
+  CRYPTO: { label: 'Criptomoedas', icon: Coins },
 };
 
 const OTHER_TYPE: TypeInfo = { label: OTHER_TYPE_LABEL, icon: Ellipsis };

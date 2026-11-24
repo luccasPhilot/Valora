@@ -165,16 +165,21 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
-| `connection_id` | uuid | → `connections` |
-| `pluggy_investment_id` | text | único |
+| `source` | text | `open_finance` (padrão) ou `manual` |
+| `connection_id` | uuid | → `connections`; nulo na posição manual |
+| `pluggy_investment_id` | text | único; nulo na posição manual |
+| `institution_name` | text | só na posição manual: a instituição que você informou |
 | `name` | text | |
-| `type` | text | tipo de investimento como o Pluggy informa (`FIXED_INCOME`, `MUTUAL_FUND`, `EQUITY`, `ETF`, `SECURITY`, `COE`) |
+| `type` | text | tipo de investimento como o Pluggy informa (`FIXED_INCOME`, `MUTUAL_FUND`, `EQUITY`, `ETF`, `SECURITY`, `COE`); a posição manual usa `FIXED_INCOME`, `MUTUAL_FUND`, `EQUITY`, `ETF`, `CRYPTO` (do Valora, o Pluggy não tem tipo de cripto) ou `OTHER` |
 | `subtype` | text | subtipo do Pluggy (`CDB`, `TREASURY`, `MULTIMARKET_FUND`...); pode ser nulo. A migration preencheu as linhas antigas com `raw->>'subtype'` |
 | `balance_cents` | bigint | posição atual |
-| `raw` | jsonb | |
+| `balance_updated_on` | date | só na posição manual: o dia do último valor informado |
+| `raw` | jsonb | nulo na posição manual |
 | `updated_at` | timestamptz | |
 
 **Posição que sumiu = posição zerada.** Quando um banco sincroniza com sucesso e deixa de devolver um investimento (resgatado e removido), a sincronização grava `balance_cents = 0` nele e a foto do dia `0`, inclusive se a lista vier vazia. Sem isso o último saldo ficaria somando para sempre. Se o investimento voltar, o upsert restaura a posição. Banco com erro não tem investimentos alterados.
+
+**Posição manual** (`source = 'manual'`): cadastrada por você para o que o Open Finance não traz (INCO, Binance, corretoras sem conector). Um `CHECK` (`investments_source_shape_check`) garante as duas formas: `open_finance` tem `connection_id` e `pluggy_investment_id` e não tem `institution_name` nem `balance_updated_on`; `manual` é o contrário e não tem `raw`. A sincronização nunca altera, zera nem apaga uma posição manual, e grava a foto diária dela no fim de cada execução, repetindo o último valor informado. Excluir a posição apaga as fotos e os `goal_links` dela (`ON DELETE CASCADE`).
 
 **`investment_snapshots`**: foto diária de cada investimento.
 
