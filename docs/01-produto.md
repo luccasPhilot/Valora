@@ -28,6 +28,17 @@ O **saldo total** é a soma do saldo das contas **corrente e poupança** que voc
 
 Cheque especial entra como número negativo e reduz o total. O Início e a tela de Contas usam a mesma definição, calculada pela API.
 
+A **evolução do saldo** no Início soma, em cada dia com foto, as mesmas contas, cada uma pela sua foto mais recente até o dia (no máximo 7 dias), como o patrimônio. Um banco que não gravou a foto do dia 1 entra com a do dia 31 do mês anterior, e não vira "ganho" no resto do mês. A variação "no mês" só existe no mês atual.
+
+### Receita, despesa e estorno
+
+A mesma definição vale no Início, nos relatórios e no resumo e no filtro de tipo de Transações. As transferências internas (categorias do tipo transferência, como o pagamento da fatura) ficam fora das duas.
+
+- **Despesa:** toda transação numa **categoria de despesa**, qualquer que seja o sinal, e toda saída sem categoria. O **estorno** (uma entrada numa categoria de despesa) **reduz a despesa** e não conta como receita: uma compra de R$ 200 com estorno de R$ 50 dá R$ 150 de despesa, o mesmo número dos gastos por categoria. O resultado do mês (receitas − despesas) não muda com essa regra; só a divisão entre as duas.
+- **Receita:** toda entrada numa categoria de receita ou sem categoria.
+- **Saída numa categoria de receita** (por exemplo, a devolução de um salário pago a mais) continua despesa, pelo sinal.
+- O total de despesas do mês **não tem mínimo de zero**, para o resultado continuar sendo a soma de tudo que não é transferência. Por isso ele pode ficar abaixo da soma da lista de gastos por categoria num mês em que uma categoria só tem estornos (o estorno de uma compra do mês anterior): na lista, cada categoria tem mínimo de zero.
+
 ### Remover um banco do Valora
 
 Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele não some sozinho: fica parado com o aviso "não sincroniza desde…". O botão **"Remover do Valora"**, no aviso e em cada banco da tela Contas, **arquiva** o banco inteiro, com confirmação:
@@ -202,7 +213,7 @@ A área **Relatórios** (`/relatorios`) reúne as telas para olhar o passado com
 
 Receitas, despesas e resultado (receitas − despesas) mês a mês, e os três números do período.
 
-- **A mesma regra do Início:** sem transferências internas, com lançamentos manuais e transações pendentes, e uma despesa sem categoria conta como despesa. O mês do relatório mostra exatamente o número do Início.
+- **A mesma regra do Início** ([receita, despesa e estorno](#receita-despesa-e-estorno)): sem transferências internas, com lançamentos manuais e transações pendentes, uma despesa sem categoria conta como despesa e o estorno reduz a despesa. O mês do relatório mostra exatamente o número do Início.
 - **Começa na primeira transação:** meses anteriores à primeira transação guardada não aparecem (um período de 24 meses não vem com 12 meses vazios de antes de o app existir). Mês sem movimento no meio do período aparece com zero.
 - **Sem transações:** a tela diz "Ainda não há transações neste período" e leva ao filtro de período.
 
