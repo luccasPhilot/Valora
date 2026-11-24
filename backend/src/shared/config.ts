@@ -34,6 +34,16 @@ const itemIdsSchema = z
       .refine((itemIds) => new Set(itemIds).size === itemIds.length),
   );
 
+const HTTPS_PROTOCOL = /^https$/;
+
+// Vazia (a linha do .env.example vem vazia, e o Compose a repassa assim) ou ausente desliga o aviso.
+const optionalHttpsUrlSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : null))
+  .pipe(z.url({ protocol: HTTPS_PROTOCOL }).nullable());
+
 const configSchema = z.object({
   DATABASE_URL: z.url(),
   HOST: z.string().min(1).default('127.0.0.1'),
@@ -43,6 +53,7 @@ const configSchema = z.object({
   PLUGGY_CLIENT_SECRET: z.string().trim().min(1),
   PLUGGY_ITEM_IDS: itemIdsSchema,
   SYNC_CRON: z.string().trim().default(DEFAULT_SYNC_CRON).refine(isValidCronPattern),
+  HEALTHCHECK_SYNC_URL: optionalHttpsUrlSchema,
 });
 
 export interface Config {
@@ -54,6 +65,8 @@ export interface Config {
   readonly pluggyClientSecret: string;
   readonly pluggyItemIds: readonly string[];
   readonly syncCron: string;
+  /** URL de ping do healthchecks.io para a sincronização agendada; `null` desliga o aviso. */
+  readonly healthcheckSyncUrl: string | null;
 }
 
 export class ConfigError extends Error {
@@ -79,5 +92,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     pluggyClientSecret: parsed.data.PLUGGY_CLIENT_SECRET,
     pluggyItemIds: parsed.data.PLUGGY_ITEM_IDS,
     syncCron: parsed.data.SYNC_CRON,
+    healthcheckSyncUrl: parsed.data.HEALTHCHECK_SYNC_URL,
   };
 }

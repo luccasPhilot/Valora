@@ -18,6 +18,16 @@ describe('GET /api/v1/health', () => {
     expect(response.json()).toEqual({ status: 'ok', database: 'ok' });
   });
 
+  it('should_not_log_health_when_status_is_200', async () => {
+    // Arrange
+    const { app, logLines } = buildTestApp(connectTestDatabase());
+    // Act
+    await app.inject({ method: 'GET', url: API_HEALTH_URL });
+    await app.close();
+    // Assert
+    expect(logLines.filter((line) => line.msg === 'request completed')).toEqual([]);
+  });
+
   it('should_answer_503_when_database_is_down', async () => {
     // Arrange
     const unreachableDatabase = createDatabase('postgres://valora:valora@127.0.0.1:1/valora');

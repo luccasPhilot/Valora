@@ -33,7 +33,7 @@ import { GoalsRepository } from './modules/goals/goals.repository.js';
 import { goalsRoutes } from './modules/goals/goals.routes.js';
 import { GoalsService } from './modules/goals/goals.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
-import { healthRoutes } from './modules/health/health.routes.js';
+import { HEALTH_ROUTE, healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
 import { InvestmentsRepository } from './modules/investments/investments.repository.js';
 import { investmentsRoutes } from './modules/investments/investments.routes.js';
@@ -89,7 +89,7 @@ export function buildApp(deps: AppDependencies): ValoraApp {
   });
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
-  registerRequestLog(app);
+  registerRequestLog(app, { quietPath: `${API_PREFIX}${HEALTH_ROUTE}` });
   registerErrorHandlers(app);
   app.addHook('onClose', async () => {
     await deps.database.pool.end();

@@ -11,7 +11,11 @@ import {
   transactions,
 } from '../../src/db/schema.js';
 import type { SyncService } from '../../src/modules/sync/sync.service.js';
-import type { SyncRunRecord, SyncTrigger } from '../../src/modules/sync/sync-runs.repository.js';
+import type {
+  FinishedSyncRunStatus,
+  SyncRunRecord,
+  SyncTrigger,
+} from '../../src/modules/sync/sync-runs.repository.js';
 import type { Config } from '../../src/shared/config.js';
 import {
   FakePluggySdk,
@@ -58,7 +62,7 @@ export function buildSyncHarness(options: HarnessOptions = {}): SyncHarness {
 export async function startRun(
   syncService: SyncService,
   trigger: SyncTrigger = 'manual',
-): Promise<{ readonly finished: Promise<void> }> {
+): Promise<{ readonly finished: Promise<FinishedSyncRunStatus> }> {
   const started = await syncService.start(trigger);
   if (started.status !== 'started') throw new Error('Teste: já havia uma sincronização rodando');
   return { finished: started.finished };
