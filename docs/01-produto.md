@@ -252,7 +252,7 @@ Estes itens ficam de fora, inclusive no futuro:
 
 ## Alertas
 
-O sino no topo de cada tela lista os alertas ativos, com um contador de não lidos. Cada alerta nasce **uma vez** por situação e **não volta se você o dispensou**. Os de orçamento e conexão somem sozinhos quando a situação acaba; os de cobrança duplicada e assinatura são avisos de um fato e ficam até você dispensar.
+O sino no topo de cada tela lista os alertas ativos, com um contador de não lidos. Cada alerta nasce **uma vez** por situação e **não volta se você o dispensou**. Os de orçamento, conexão e foto de 31/12 do próprio dia somem sozinhos quando a situação acaba; os de cobrança duplicada, assinatura e 31/12 sem foto são avisos de um fato e ficam até você dispensar.
 
 | Alerta | Quando nasce | Quando some |
 |---|---|---|
@@ -261,6 +261,8 @@ O sino no topo de cada tela lista os alertas ativos, com um contador de não lid
 | Conexão com banco caída | a conexão fica com erro ou com o consentimento expirado | a conexão volta ao normal |
 | Cobrança duplicada | uma saída postada de uma conta repete a descrição e o valor de outra da mesma conta, com até 3 dias de diferença (só cobranças dos últimos 7 dias); o alerta é da mais recente | só quando você dispensa |
 | Assinatura detectada | 3 ou mais cobranças de mesmo valor e descrição em sequência, com 25 a 35 dias entre elas, a última com até 45 dias | só quando você dispensa |
+| Foto de 31/12 pendente | em 31/12, ao fim de uma sincronização, alguma conta ou posição de investimento ainda está sem a foto do dia | uma sincronização completa as fotos, ou o dia acaba |
+| 31/12 sem foto | de 1º a 31 de janeiro, ao fim de uma sincronização, 31/12 do ano anterior terminou sem a foto de alguma conta ou posição | só quando você dispensa; não volta para o mesmo ano |
 
 - Os percentuais (80% e 100%) são fixos e as mensagens não mostram valores.
 - A faixa de aviso de banco fora do ar continua; o sino é um aviso a mais.
@@ -268,6 +270,7 @@ O sino no topo de cada tela lista os alertas ativos, com um contador de não lid
 - Descrição e valor precisam ser exatamente iguais; assinatura com valor que muda só é detectada depois de 3 cobranças no novo valor. Cobrança duplicada não compara contas diferentes.
 - Na primeira sincronização depois de ativar, cada assinatura em andamento gera um alerta de uma vez só ("Marcar todos como lidos" zera o contador).
 - "Ver transações" abre a lista do dia da cobrança, pesquisando pela descrição.
+- A foto de 31/12 é a base dos bens e direitos no IR e só pode ser gravada naquele dia. Contam as contas de banco ativo (inclusive as ocultas dos totais, menos a conta "Dinheiro", que não tem foto) e as posições de investimento de banco ativo ou manuais com saldo diferente de zero. Em janeiro, só conta o que já existia em 31/12. Os dois alertas dizem só quantas contas e posições faltam e levam para Contas.
 
 ## Referência: Pierre
 

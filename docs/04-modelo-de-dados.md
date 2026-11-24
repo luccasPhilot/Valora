@@ -67,6 +67,7 @@ O que sai quando `archived_at` está preenchido: as contas (e o saldo, as fatura
 | `available_limit_cents` | bigint | só cartão |
 | `is_hidden` | boolean | conta que você não quer ver nos totais |
 | `raw` | jsonb | |
+| `created_at` | timestamptz | quando a conta entrou no Valora; as contas anteriores à migration ficaram com a data dela. Usado no alerta de 31/12 sem foto |
 | `updated_at` | timestamptz | |
 
 **`balance_snapshots`**: foto diária do saldo de cada conta. Base da evolução do patrimônio.
@@ -175,6 +176,7 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `balance_cents` | bigint | posição atual |
 | `balance_updated_on` | date | só na posição manual: o dia do último valor informado |
 | `raw` | jsonb | nulo na posição manual |
+| `created_at` | timestamptz | quando a posição entrou no Valora; as anteriores à migration ficaram com a data dela. Usado no alerta de 31/12 sem foto |
 | `updated_at` | timestamptz | |
 
 **Posição que sumiu = posição zerada, só com coleta completa.** Quando o Pluggy diz que a coleta de investimentos do item terminou (`UPDATED` com `executionStatus = SUCCESS`, ou `PARTIAL_SUCCESS` com `statusDetail.investments.isUpdated = true`) e um investimento deixou de vir (resgatado e removido), a sincronização grava `balance_cents = 0` nele e a foto do dia `0`, inclusive se a lista vier vazia. Numa coleta parcial ou em andamento, a posição ausente fica como estava, sem foto do dia. Sem isso o último saldo ficaria somando para sempre. Se o investimento voltar, o upsert restaura a posição. Banco com erro não tem investimentos alterados.
@@ -295,13 +297,13 @@ Exatamente uma entre `account_id` e `investment_id` é preenchida (`CHECK`). Ín
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
-| `type` | text | `duplicate_charge`, `subscription_detected`, `budget_warning`, `budget_exceeded`, `connection_error` |
+| `type` | text | `duplicate_charge`, `subscription_detected`, `budget_warning`, `budget_exceeded`, `connection_error`, `year_end_snapshot_pending`, `year_end_snapshot_missing` |
 | `transaction_id` | uuid | pode ser nulo |
 | `category_id` | uuid | pode ser nulo |
 | `connection_id` | uuid | pode ser nulo |
 | `message` | text | |
 | `created_at` | timestamptz | |
-| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>` |
-| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento e conexão; `duplicate_charge` e `subscription_detected` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
+| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>`, `year_end_snapshot_pending:AAAA`, `year_end_snapshot_missing:AAAA` (o ano de 31/12) |
+| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento, conexão e `year_end_snapshot_pending`; `duplicate_charge`, `subscription_detected` e `year_end_snapshot_missing` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
 
-`type` tem `CHECK` com os cinco tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.
+`type` tem `CHECK` com os sete tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.

@@ -34,12 +34,14 @@
 
 ### 2. O que deveria ter foto
 
-Função de repository `findMissingSnapshots(date)` que devolve só **contagens** (`{ accounts, investments }`):
+Função de repository `countMissingSnapshots(date)` que devolve só **contagens** (`{ accounts, investments }`):
 
 - **contas:** `accounts` de banco ativo (`accountIsOfActiveConnection`), exceto `type = 'cash'`, sem linha em `balance_snapshots` naquela data. As contas ocultas dos totais entram: o IR pede todos os saldos;
 - **investimentos:** `investments` de banco ativo ou manuais (`investmentIsOfActiveConnection`), com `balance_cents <> 0`, sem linha em `investment_snapshots` naquela data. A posição zerada (resgatada) fica de fora: ela não vai para o IR, e a falta da foto `0` dela não é problema.
 
-**Por que o saldo atual e não o de 31/12 nas posições:** no dia 31/12 é o mesmo. Na avaliação de janeiro, uma posição aberta em janeiro não tinha foto em 31/12 e não deveria contar. Para evitar esse falso positivo, em janeiro só contam as posições com `created_at` até 31/12 e as contas com `created_at` até 31/12.
+**Por que o saldo atual e não o de 31/12 nas posições:** no dia 31/12 é o mesmo. Na avaliação de janeiro, uma posição aberta em janeiro não tinha foto em 31/12 e não deveria contar. Para evitar esse falso positivo, só contam as contas e posições criadas até a data da foto (`created_at`, no fuso de São Paulo). Em 31/12 o filtro não tira ninguém; em janeiro, tira o que foi criado depois da virada.
+
+**`created_at` novo em `accounts` e `investments`:** as duas tabelas só tinham `updated_at`, que muda a cada sincronização. A migration cria `created_at timestamptz not null default now()`; as linhas que já existem ficam com a data do deploy, que é antes de 31/12/2026, então contam corretamente. A sincronização grava pelo id do Pluggy com `on conflict do update`, que não mexe no `created_at`. Alternativa descartada: considerar que existia em 31/12 quem tem alguma foto antes dessa data, sem coluna nova (decisão do usuário em 24/11/2026).
 
 ### 3. Textos
 
@@ -55,7 +57,7 @@ Sem valores, nomes de conta nem descrições, como os outros alertas. `connectio
 
 - "Hoje" sai do `now` injetado no `AlertEvaluator`, por `todayInSaoPaulo`. Duas funções puras decidem: `yearEndCheckFor(today)` devolve `{ kind: 'pending', date: 'AAAA-12-31' }` em 31/12, `{ kind: 'missing', date: '(AAAA-1)-12-31' }` em janeiro e `null` no resto do ano.
 - `evaluateAll` ganha `evaluateYearEndSnapshots()`, no mesmo `Promise.allSettled`: uma falha nela não impede as outras avaliações nem falha a sincronização (o comportamento de hoje).
-- Fora de 31/12 e de janeiro, a avaliação não consulta o banco.
+- Fora de 31/12 e de janeiro, a avaliação não conta fotos. Ela só resolve um `year_end_snapshot_pending` que tenha sobrado (um `update` que normalmente não acha nada), para o alerta do dia não ficar ativo se a API passar janeiro inteiro desligada.
 
 ### 5. Destino e interface
 
@@ -64,7 +66,7 @@ Sem valores, nomes de conta nem descrições, como os outros alertas. `connectio
 
 ### 6. Migration
 
-`alerts_type_check` passa a aceitar `year_end_snapshot_pending` e `year_end_snapshot_missing`, com migration nova gerada por `npm run db:generate`. `ALERT_TYPES` ganha os dois. Nenhuma coluna nova.
+`alerts_type_check` passa a aceitar `year_end_snapshot_pending` e `year_end_snapshot_missing`, com migration nova gerada por `npm run db:generate`. `ALERT_TYPES` ganha os dois. A mesma migration cria `created_at` em `accounts` e `investments` (decisão 2).
 
 ## Risks / Trade-offs
 

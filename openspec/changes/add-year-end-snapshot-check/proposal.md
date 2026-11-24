@@ -10,7 +10,7 @@ A foto de saldo e de investimentos de 31/12 é a base dos bens e direitos na dec
 - **Alerta depois da virada (`year_end_snapshot_missing`):** de 1º a 31 de janeiro, ao fim de cada sincronização, se 31/12 do ano anterior terminou sem foto de alguma conta ou posição, nasce um alerta: "31/12/2026 terminou sem a foto de 2 contas. Confira esses saldos nos informes de rendimentos dos bancos." É um alerta de evento: fica até ser dispensado e não volta.
 - **O que deveria ter foto:** contas de banco ativo (a conta "Dinheiro" não tem saldo nem foto) e posições de investimento de banco ativo ou manuais com saldo diferente de zero. As contas ocultas dos totais entram, porque o IR pede todas.
 - **Interface:** os dois tipos ganham ícone e rótulo no sino ("Foto de 31/12"). Nenhuma tela nova.
-- **Banco:** a constraint `alerts_type_check` aceita os dois tipos novos (migration).
+- **Banco:** a constraint `alerts_type_check` aceita os dois tipos novos, e `accounts` e `investments` ganham `created_at`, para a checagem de janeiro não contar o que foi criado depois de 31/12 (migration).
 
 Os textos não levam valores nem descrições, como os outros alertas.
 
@@ -42,9 +42,9 @@ Nenhuma.
 
 ## Impact
 
-- **Backend:** `modules/alerts/` (`alert-situations.ts`, `alert-evaluator.ts`, `alert-target.ts`), um repository de leitura das fotos que faltam num dia (contas e investimentos ativos), `db/schema.ts` e uma migration nova para `alerts_type_check`.
+- **Backend:** `modules/alerts/` (`alert-situations.ts`, `alert-evaluator.ts`, `alert-target.ts`), um repository de leitura das fotos que faltam num dia (contas e investimentos ativos), `db/schema.ts` e uma migration nova (`alerts_type_check` e `created_at` em `accounts` e `investments`).
 - **Frontend:** `features/alerts/alert-presentation.ts` (ícone e rótulo dos dois tipos).
 - **Testes:** unitários das funções puras (datas, contagem e textos); integração da avaliação com fotos reais no banco; teste de apresentação no front.
 - **API:** o contrato de `GET /alerts` não muda (o `type` já é texto livre no front).
-- **Documentação:** `docs/01-produto.md` (alertas), `docs/04-modelo-de-dados.md` (tipos de alerta) e `docs/08-revisao-e-proximas-fases.md`.
+- **Documentação:** `docs/01-produto.md` (alertas), `docs/04-modelo-de-dados.md` (tipos de alerta e `created_at`) e `docs/08-revisao-e-proximas-fases.md`.
 - **Dependências:** nenhuma nova.
