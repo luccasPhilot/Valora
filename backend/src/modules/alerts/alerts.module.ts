@@ -7,6 +7,7 @@ import { AlertsRepository } from './alerts.repository.js';
 import { AlertsService } from './alerts.service.js';
 import { type AlertsLogger, BudgetAlertRefresher } from './budget-alert-refresher.js';
 import { ConnectionAlertRefresher } from './connection-alert-refresher.js';
+import { YearEndSnapshotsRepository } from './year-end-snapshots.repository.js';
 
 export interface AlertsModuleDependencies {
   readonly database: Database;
@@ -29,6 +30,7 @@ export function createAlertsModule(deps: AlertsModuleDependencies): AlertsModule
     budgets: new BudgetsRepository(db),
     connections: new ConnectionsRepository(db),
     charges: new AlertChargesRepository(db),
+    yearEndSnapshots: new YearEndSnapshotsRepository(db),
     now: deps.now,
   });
   return {

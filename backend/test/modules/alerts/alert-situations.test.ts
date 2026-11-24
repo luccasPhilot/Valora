@@ -5,6 +5,9 @@ import {
   budgetSituations,
   connectionDedupeKey,
   connectionSituations,
+  type MissingSnapshotCounts,
+  yearEndCheckFor,
+  yearEndSnapshotSituation,
 } from '../../../src/modules/alerts/alert-situations.js';
 import type { BudgetRecord } from '../../../src/modules/budgets/budgets.repository.js';
 import type {
@@ -205,5 +208,158 @@ describe('budgetDedupeKey', () => {
     const key = budgetDedupeKey('budget_warning', MARKET_ID, month);
     // Assert
     expect(key).toBe(`budget_warning:${MARKET_ID}:2026-11`);
+  });
+});
+
+describe('yearEndCheckFor', () => {
+  it('should_return_null_when_today_is_december_30', () => {
+    // Arrange
+    const today = '2026-12-30';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toBeNull();
+  });
+
+  it('should_return_pending_for_the_same_day_when_today_is_december_31', () => {
+    // Arrange
+    const today = '2026-12-31';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'pending', date: '2026-12-31' });
+  });
+
+  it('should_return_missing_for_the_previous_year_when_today_is_january_1', () => {
+    // Arrange
+    const today = '2027-01-01';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'missing', date: '2026-12-31' });
+  });
+
+  it('should_return_missing_for_the_previous_year_when_today_is_january_31', () => {
+    // Arrange
+    const today = '2027-01-31';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'missing', date: '2026-12-31' });
+  });
+
+  it('should_return_null_when_today_is_february_1', () => {
+    // Arrange
+    const today = '2027-02-01';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toBeNull();
+  });
+
+  it('should_return_the_leap_year_december_31_when_today_is_in_the_following_january', () => {
+    // Arrange
+    const today = '2029-01-15';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'missing', date: '2028-12-31' });
+  });
+});
+
+describe('yearEndSnapshotSituation', () => {
+  const PENDING = { kind: 'pending', date: '2026-12-31' } as const;
+  const MISSING = { kind: 'missing', date: '2026-12-31' } as const;
+
+  function counts(accounts: number, investments: number): MissingSnapshotCounts {
+    return { accounts, investments };
+  }
+
+  it('should_return_null_when_nothing_is_missing', () => {
+    // Arrange
+    const missing = counts(0, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation).toBeNull();
+  });
+
+  it('should_return_the_pending_situation_when_one_account_is_missing', () => {
+    // Arrange
+    const missing = counts(1, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation).toEqual({
+      type: 'year_end_snapshot_pending',
+      dedupeKey: 'year_end_snapshot_pending:2026',
+      message:
+        'Ainda falta a foto de 31/12 de 1 conta. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+      categoryId: null,
+      connectionId: null,
+      transactionId: null,
+    });
+  });
+
+  it('should_use_the_plural_when_two_accounts_are_missing', () => {
+    // Arrange
+    const missing = counts(2, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation?.message).toBe(
+      'Ainda falta a foto de 31/12 de 2 contas. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+    );
+  });
+
+  it('should_name_the_investment_when_only_one_investment_is_missing', () => {
+    // Arrange
+    const missing = counts(0, 1);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation?.message).toBe(
+      'Ainda falta a foto de 31/12 de 1 investimento. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+    );
+  });
+
+  it('should_join_accounts_and_investments_when_both_are_missing', () => {
+    // Arrange
+    const missing = counts(2, 1);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation?.message).toBe(
+      'Ainda falta a foto de 31/12 de 2 contas e 1 investimento. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+    );
+  });
+
+  it('should_return_the_missing_situation_with_the_year_when_checking_after_new_year', () => {
+    // Arrange
+    const missing = counts(2, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(MISSING, missing);
+    // Assert
+    expect(situation).toEqual({
+      type: 'year_end_snapshot_missing',
+      dedupeKey: 'year_end_snapshot_missing:2026',
+      message:
+        '31/12/2026 terminou sem a foto de 2 contas. Confira esses saldos nos informes de rendimentos dos bancos.',
+      categoryId: null,
+      connectionId: null,
+      transactionId: null,
+    });
+  });
+
+  it('should_never_carry_money_values_in_the_message', () => {
+    // Arrange
+    const missing = counts(3, 4);
+    // Act
+    const messages = [
+      yearEndSnapshotSituation(PENDING, missing)?.message,
+      yearEndSnapshotSituation(MISSING, missing)?.message,
+    ].join(' ');
+    // Assert
+    expect(messages).not.toMatch(/R\$|\d+,\d{2}/);
   });
 });

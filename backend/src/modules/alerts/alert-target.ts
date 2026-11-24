@@ -21,12 +21,19 @@ export interface AlertTargetSource {
   readonly transaction: AlertTransaction | null;
 }
 
+// Contas é onde ficam o status da sincronização e o botão de sincronizar.
+const ACCOUNTS_ALERT_TYPES: readonly AlertType[] = [
+  'connection_error',
+  'year_end_snapshot_pending',
+  'year_end_snapshot_missing',
+];
+
 // O mês do orçamento vai no fim da chave de deduplicação (`budget_warning:<categoria>:AAAA-MM`).
 const MONTH_PATTERN = /:(\d{4}-\d{2})$/;
 
 /** Tela relacionada ao alerta, ou `null` para tipos que ainda não têm uma. */
 export function alertTarget(alert: AlertTargetSource): AlertTarget | null {
-  if (alert.type === 'connection_error') return { screen: 'accounts' };
+  if (ACCOUNTS_ALERT_TYPES.includes(alert.type)) return { screen: 'accounts' };
   if (alert.type === 'duplicate_charge' || alert.type === 'subscription_detected') {
     return transactionTarget(alert.transaction);
   }

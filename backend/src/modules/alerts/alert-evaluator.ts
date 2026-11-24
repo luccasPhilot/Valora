@@ -9,17 +9,23 @@ import {
   budgetSituations,
   CONNECTION_ALERT_TYPES,
   connectionSituations,
+  YEAR_END_PENDING_ALERT_TYPES,
+  type YearEndCheck,
+  yearEndCheckFor,
+  yearEndSnapshotSituation,
 } from './alert-situations.js';
 import type { AlertsRepository } from './alerts.repository.js';
 import { PATTERN_LOOKBACK_MONTHS } from './detectors/charge-row.js';
 import { detectDuplicateCharges } from './detectors/duplicate-charges.js';
 import { detectSubscriptions } from './detectors/subscriptions.js';
+import type { YearEndSnapshotsRepository } from './year-end-snapshots.repository.js';
 
 export interface AlertEvaluatorDependencies {
   readonly alerts: AlertsRepository;
   readonly budgets: Pick<BudgetsRepository, 'findForMonth'>;
   readonly connections: Pick<ConnectionsRepository, 'findActive'>;
   readonly charges: Pick<AlertChargesRepository, 'findOutflowsSince'>;
+  readonly yearEndSnapshots: Pick<YearEndSnapshotsRepository, 'countMissingSnapshots'>;
   readonly now: () => Date;
 }
 
@@ -36,6 +42,7 @@ export class AlertEvaluator {
       this.evaluateBudgets(),
       this.evaluateConnections(),
       this.evaluateTransactionPatterns(),
+      this.evaluateYearEndSnapshots(),
     ]);
     const failure = results.find((result) => result.status === 'rejected');
     if (failure) throw failure.reason;
@@ -66,6 +73,28 @@ export class AlertEvaluator {
       ...detectDuplicateCharges(rows, today),
       ...detectSubscriptions(rows, today),
     ]);
+  }
+
+  /**
+   * Foto de 31/12. No próprio dia, o alerta é reconciliado: some quando uma sincronização completa as
+   * fotos. Em janeiro, a foto que faltou não pode mais ser gravada, então o alerta é de evento. Fora
+   * desses dias, só resolve o alerta do dia que tenha sobrado, sem contar fotos.
+   */
+  async evaluateYearEndSnapshots(): Promise<void> {
+    const check = yearEndCheckFor(todayInSaoPaulo(this.deps.now()));
+    if (check?.kind === 'pending') {
+      await this.reconcile(YEAR_END_PENDING_ALERT_TYPES, await this.yearEndSituations(check));
+      return;
+    }
+    // O alerta do dia acaba com o dia, mesmo que a primeira avaliação depois dele seja em fevereiro.
+    await this.reconcile(YEAR_END_PENDING_ALERT_TYPES, []);
+    if (check) await this.deps.alerts.createIgnoringConflict(await this.yearEndSituations(check));
+  }
+
+  private async yearEndSituations(check: YearEndCheck): Promise<AlertSituation[]> {
+    const counts = await this.deps.yearEndSnapshots.countMissingSnapshots(check.date);
+    const situation = yearEndSnapshotSituation(check, counts);
+    return situation ? [situation] : [];
   }
 
   private async reconcile(
