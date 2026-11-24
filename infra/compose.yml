@@ -5,11 +5,20 @@
 # presa ao 127.0.0.1; o app é publicado para a sua rede por `tailscale serve --bg 3000`.
 name: valora
 
+# Rotação dos logs dos containers: sem ela o json-file cresce sem limite, e disco cheio derruba o
+# PostgreSQL. Até 5 arquivos de 10 MB por serviço.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
 services:
   db:
     # Mesma imagem do infra/compose.dev.yml e dos testes de integração: trocou a versão, troque nos três.
     image: postgres:18-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: valora
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no infra/.env}
@@ -28,6 +37,7 @@ services:
   backend:
     build: ../backend
     restart: unless-stopped
+    logging: *default-logging
     env_file: .env
     environment:
       HOST: 0.0.0.0
@@ -52,6 +62,7 @@ services:
   frontend:
     build: ../frontend
     restart: unless-stopped
+    logging: *default-logging
     environment:
       TZ: America/Sao_Paulo
     # A única porta publicada, e só no próprio servidor: nem a rede de casa enxerga o Valora.

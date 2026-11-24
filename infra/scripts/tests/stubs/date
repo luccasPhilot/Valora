@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# `date` de mentira para os testes: fixa "agora" e "hoje" e repassa o resto ao date de verdade
+# (as contas com `date -d` continuam reais).
+#
+#   STUB_NOW    resposta de `date +%F_%H%M%S` (nome do backup)
+#   STUB_TODAY  resposta de `date +%F` (hoje, para a retenção)
+set -euo pipefail
+
+real_date() {
+  local candidate
+  for candidate in /usr/bin/date /bin/date; do
+    [[ -x "$candidate" ]] && exec "$candidate" "$@"
+  done
+  echo "date de verdade não encontrado" >&2
+  exit 1
+}
+
+if [[ "$*" == "+%F_%H%M%S" && -n "${STUB_NOW:-}" ]]; then
+  echo "$STUB_NOW"
+elif [[ "$*" == "+%F" && -n "${STUB_TODAY:-}" ]]; then
+  echo "$STUB_TODAY"
+else
+  real_date "$@"
+fi

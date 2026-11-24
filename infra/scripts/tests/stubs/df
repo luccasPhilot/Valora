@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# `df -P <caminho>` de mentira para os testes.
+#
+#   STUB_DISK_USAGE  percentuais por caminho, "caminho=percentual" separados por espaço
+#                    (ex.: "/=60 /tmp/x/backups=86"); caminho sem valor usa 10
+set -euo pipefail
+
+readonly DEFAULT_PERCENT=10
+
+usage_for() {
+  local target="$1"
+  local entry
+  for entry in ${STUB_DISK_USAGE:-}; do
+    if [[ "${entry%=*}" == "$target" ]]; then
+      echo "${entry##*=}"
+      return
+    fi
+  done
+  echo "$DEFAULT_PERCENT"
+}
+
+main() {
+  local target="${*: -1}"
+  local percent
+  percent="$(usage_for "$target")"
+  echo "Filesystem 1024-blocks Used Available Capacity Mounted on"
+  echo "/dev/stub 1000 $((percent * 10)) $((1000 - percent * 10)) ${percent}% $target"
+}
+
+main "$@"

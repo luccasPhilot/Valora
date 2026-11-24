@@ -45,7 +45,7 @@ backup_if_database_is_running() {
     return
   fi
   log "backup antes de atualizar (as migrations rodam quando o backend inicia)"
-  infra/scripts/backup.sh
+  infra/scripts/backup.sh predeploy
 }
 
 start_stack() {
@@ -54,7 +54,7 @@ start_stack() {
   fi
   compose ps || true
   compose logs --tail 30 backend || true
-  fail "os containers não ficaram saudáveis. Voltar o código não desfaz migrations já aplicadas: se o banco mudou, restaure o backup mais recente (docs/05-deploy.md)"
+  fail "os containers não ficaram saudáveis. Voltar o código não desfaz migrations já aplicadas: se o banco mudou, restaure o backup valora-predeploy-… feito agora há pouco (docs/05-deploy.md)"
 }
 
 checkout_target() {

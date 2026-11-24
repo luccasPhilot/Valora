@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# `curl` de mentira para os testes: registra os argumentos e não sai da máquina.
+#
+#   STUB_CURL_FAILS=1  sai com 7 (falha de conexão)
+#   STUB_CALLS         arquivo onde cada chamada é registrada
+set -euo pipefail
+
+readonly CONNECTION_FAILED_EXIT_CODE=7
+
+[[ -z "${STUB_CALLS:-}" ]] || echo "curl $*" >>"$STUB_CALLS"
+[[ "${STUB_CURL_FAILS:-0}" != "1" ]] || exit "$CONNECTION_FAILED_EXIT_CODE"

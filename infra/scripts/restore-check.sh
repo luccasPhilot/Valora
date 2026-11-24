@@ -7,10 +7,17 @@
 #   BACKUP_DIR  pasta dos backups (padrão: /mnt/hdd/valora)
 set -euo pipefail
 
+readonly SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly BACKUP_DIR="${BACKUP_DIR:-/mnt/hdd/valora}"
-readonly COMPOSE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/compose.yml"
+readonly COMPOSE_FILE="$SCRIPTS_DIR/../compose.yml"
 readonly CHECK_DATABASE="valora_restore_check"
-readonly CHECKED_TABLES=(transactions accounts categories)
+# As fotos diárias e as posições são o histórico que não volta pelo Open Finance.
+readonly CHECKED_TABLES=(
+  transactions accounts categories balance_snapshots investment_snapshots investments
+)
+
+# shellcheck source=lib/backup-files.sh
+source "$SCRIPTS_DIR/lib/backup-files.sh"
 
 log() {
   echo "[restore-check] $*"
@@ -27,9 +34,10 @@ count_rows() {
   database_psql -d "$database" -c "SELECT count(*) FROM $table"
 }
 
+# O mais novo pela data e hora do nome, de qualquer origem (weekly, predeploy, manual ou antigo).
 latest_backup() {
   local latest
-  latest="$(find "$BACKUP_DIR" -maxdepth 1 -name 'valora-*.dump' | sort | tail -n 1)"
+  latest="$(list_backups "$BACKUP_DIR" | tail -n 1 | cut -d ' ' -f 3-)"
   # No stderr: a saída desta função é capturada por main.
   [[ -n "$latest" ]] || { log "ERRO: nenhum backup em $BACKUP_DIR" >&2; exit 1; }
   echo "$latest"
