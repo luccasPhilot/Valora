@@ -23,4 +23,4 @@
 ## 5. Documentação
 
 - [x] 5.1 `docs/01-produto.md`: receita e despesa com a regra do estorno; `docs/03-arquitetura.md`: `type` de `GET /transactions` e linha nova na tabela "Decisões" (estorno reduz a despesa; total do mês sem mínimo de zero; curva do saldo com a tolerância do patrimônio)
-- [ ] 5.2 Ao arquivar: marcar D1, D2, D6 e D9 como resolvidos e tirar a D2 de "Decisões que dependem de você" em `docs/08-revisao-e-proximas-fases.md`
+- [x] 5.2 Ao arquivar: marcar D1, D2, D6 e D9 como resolvidos e tirar a D2 de "Decisões que dependem de você" em `docs/08-revisao-e-proximas-fases.md`

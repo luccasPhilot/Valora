@@ -2,9 +2,7 @@
 
 ## Purpose
 Área Relatórios: período compartilhado, "Ver em tabela", marca do mês em andamento e o relatório de receitas e despesas (histórico mensal).
-
 ## Requirements
-
 ### Requirement: Área Relatórios
 A área "Relatórios" (`/relatorios`) MUST aparecer no menu lateral, depois de "Investimentos", com o item ativo em qualquer `/relatorios/*` e o título "Relatórios" no topo. `/relatorios` MUST abrir o primeiro relatório (`/relatorios/receitas-e-despesas`). Um endereço desconhecido dentro de `/relatorios` MUST mostrar a página "não encontrado". A navegação entre relatórios MUST listar só os relatórios que existem e MUST aparecer só quando houver 2 ou mais.
 
@@ -74,7 +72,7 @@ O mês atual MUST ser marcado como parcial em todo relatório mensal: na tabela 
 - **THEN** o tooltip diz que o mês está em andamento
 
 ### Requirement: Histórico de receitas e despesas
-`GET /api/v1/reports/income-expense?from=&to=` MUST devolver `months` (cada um com `month` `AAAA-MM`, `incomeCents`, `expenseCents` positivo e `resultCents` igual a receitas menos despesas) e `totals` (`incomeCents`, `expenseCents`, `resultCents` do período). MUST usar a mesma regra de receitas e despesas do Início: sem transferências internas, com lançamentos manuais e pendentes, e uma despesa sem categoria contando como despesa. A lista MUST começar no mês da primeira transação guardada quando ela for posterior a `from`, MUST trazer zeros nos meses sem movimento dentro do período e MUST vir do mês mais antigo para o mais recente. `from` e `to` MUST seguir as regras de intervalo (padrão 12 meses, máximo 60, 400 `VALIDATION_ERROR` com o campo em `details`).
+`GET /api/v1/reports/income-expense?from=&to=` MUST devolver `months` (cada um com `month` `AAAA-MM`, `incomeCents`, `expenseCents` positivo e `resultCents` igual a receitas menos despesas) e `totals` (`incomeCents`, `expenseCents`, `resultCents` do período). MUST usar a mesma regra de receitas e despesas do Início: sem transferências internas, com lançamentos manuais e pendentes, uma despesa sem categoria contando como despesa e uma entrada numa categoria de despesa (estorno) reduzindo a despesa, nunca como receita. A lista MUST começar no mês da primeira transação guardada quando ela for posterior a `from`, MUST trazer zeros nos meses sem movimento dentro do período e MUST vir do mês mais antigo para o mais recente. `from` e `to` MUST seguir as regras de intervalo (padrão 12 meses, máximo 60, 400 `VALIDATION_ERROR` com o campo em `details`).
 
 #### Scenario: Mesmo número do Início
 - **WHEN** o Início mostra receitas de R$ 5.000,00 e despesas de R$ 3.200,00 em outubro
@@ -83,6 +81,10 @@ O mês atual MUST ser marcado como parcial em todo relatório mensal: na tabela 
 #### Scenario: Transferência fora
 - **WHEN** há um pagamento de fatura de R$ 1.000,00 em outubro
 - **THEN** ele não entra nas receitas nem nas despesas
+
+#### Scenario: Estorno reduz a despesa
+- **WHEN** outubro tem R$ 3.200,00 de despesas e um estorno de R$ 200,00 em "Compras"
+- **THEN** o mês tem `expenseCents` `300000`, a receita não muda e `resultCents` é o mesmo que seria com o estorno como receita
 
 #### Scenario: Mês sem movimento
 - **WHEN** não há nenhuma transação em agosto, e há em julho e setembro
@@ -321,3 +323,4 @@ O relatório `/relatorios/patrimonio` ("Patrimônio" na navegação entre relat�
 #### Scenario: Erro
 - **WHEN** a API falha
 - **THEN** a tela mostra o erro em linguagem simples com "Tentar de novo"
+
