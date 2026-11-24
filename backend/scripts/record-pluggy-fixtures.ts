@@ -171,12 +171,24 @@ function sampleTransactions(transactions: readonly Transaction[]): Transaction[]
   return [...picked];
 }
 
+// Só se cada produto foi lido e quando: os `warnings` têm texto da instituição.
+function anonymizeStatusDetail(statusDetail: Item['statusDetail']): object | null {
+  if (!statusDetail) return null;
+  return Object.fromEntries(
+    Object.entries(statusDetail).map(([product, state]) => [
+      product,
+      state ? { isUpdated: state.isUpdated, lastUpdatedAt: state.lastUpdatedAt } : null,
+    ]),
+  );
+}
+
 // O conector (MeuPluggy) é público e igual para todos os itens; o banco aparece no nome da conta.
 function anonymizeItem(item: Item, fakeIds: FakeIds): object {
   return {
     id: fakeIds.for('item', item.id),
     status: item.status,
     executionStatus: item.executionStatus,
+    statusDetail: anonymizeStatusDetail(item.statusDetail),
     error: item.error ? { code: item.error.code, message: 'Erro anonimizado' } : null,
     consentExpiresAt: item.consentExpiresAt,
     lastUpdatedAt: item.lastUpdatedAt,

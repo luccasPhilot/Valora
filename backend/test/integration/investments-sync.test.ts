@@ -50,6 +50,28 @@ function firstFundedInvestmentId(pluggyItemId: string): string {
   return funded.id;
 }
 
+const MS_PER_DAY = 86_400_000;
+
+/** O item passa a vir com outra situação de coleta no Pluggy. */
+function setItemCollection(pluggyItemId: string, collection: Record<string, unknown>): void {
+  Object.assign(fixtureOf(harness.fixtures, pluggyItemId).item, collection);
+}
+
+const PARTIAL_WITHOUT_INVESTMENTS = {
+  executionStatus: 'PARTIAL_SUCCESS',
+  statusDetail: { investments: { isUpdated: false, lastUpdatedAt: null } },
+};
+
+async function positionOf(pluggyItemId: string, pluggyInvestmentId: string) {
+  const investment = (await investmentsOfItem(pluggyItemId)).find(
+    (row) => row.pluggyInvestmentId === pluggyInvestmentId,
+  );
+  if (!investment) throw new Error(`Teste: investimento ${pluggyInvestmentId} não existe`);
+  const today = todayInSaoPaulo(harness.clock.now);
+  const todaySnapshot = (await snapshotsOf(investment.id)).find(({ date }) => date === today);
+  return { balance: investment.balanceCents, todaySnapshot: todaySnapshot?.balanceCents };
+}
+
 function removeInvestment(pluggyItemId: string, investmentId: string): void {
   const fixture = fixtureOf(harness.fixtures, pluggyItemId);
   fixture.investments = fixture.investments.filter((investment) => investment.id !== investmentId);
@@ -130,6 +152,66 @@ describe('investimento que sumiu da resposta do banco', () => {
     expect(after.map(({ balanceCents }) => balanceCents)).toEqual(
       before.map(({ balanceCents }) => balanceCents),
     );
+  });
+
+  it('should_not_zero_vanished_positions_when_investments_collection_is_partial', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    const vanishedId = firstFundedInvestmentId('item-1');
+    const { balance } = await positionOf('item-1', vanishedId);
+    removeInvestment('item-1', vanishedId);
+    setItemCollection('item-1', PARTIAL_WITHOUT_INVESTMENTS);
+    harness.clock.now = new Date(harness.clock.now.getTime() + MS_PER_DAY);
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await positionOf('item-1', vanishedId)).toEqual({ balance, todaySnapshot: undefined });
+  });
+
+  it('should_not_zero_vanished_positions_when_item_is_updating', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    const before = await investmentsOfItem('item-1');
+    fixtureOf(harness.fixtures, 'item-1').investments = [];
+    setItemCollection('item-1', { status: 'UPDATING', executionStatus: 'INVESTMENTS_IN_PROGRESS' });
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    const after = await investmentsOfItem('item-1');
+    expect(after.map(({ balanceCents }) => balanceCents)).toEqual(
+      before.map(({ balanceCents }) => balanceCents),
+    );
+  });
+
+  it('should_zero_vanished_positions_when_partial_success_collected_investments', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    const vanishedId = firstFundedInvestmentId('item-1');
+    removeInvestment('item-1', vanishedId);
+    setItemCollection('item-1', {
+      executionStatus: 'PARTIAL_SUCCESS',
+      statusDetail: { investments: { isUpdated: true, lastUpdatedAt: null } },
+    });
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await positionOf('item-1', vanishedId)).toEqual({ balance: 0, todaySnapshot: 0 });
+  });
+
+  it('should_save_zero_snapshot_when_pluggy_returns_total_withdrawal_during_partial_collection', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    const withdrawnId = firstFundedInvestmentId('item-1');
+    const withdrawn = fixtureOf(harness.fixtures, 'item-1').investments.find(
+      ({ id }) => id === withdrawnId,
+    );
+    if (!withdrawn) throw new Error('Teste: investimento não existe');
+    Object.assign(withdrawn, { balance: 0, status: 'TOTAL_WITHDRAWAL' });
+    setItemCollection('item-1', PARTIAL_WITHOUT_INVESTMENTS);
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await positionOf('item-1', withdrawnId)).toEqual({ balance: 0, todaySnapshot: 0 });
   });
 
   it('should_not_change_investments_when_the_bank_sync_fails', async () => {

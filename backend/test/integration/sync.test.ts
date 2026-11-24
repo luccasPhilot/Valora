@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { accounts, balanceSnapshots, transactions } from '../../src/db/schema.js';
+import { ConnectionsRepository } from '../../src/modules/connections/connections.repository.js';
+import { SyncRunsRepository } from '../../src/modules/sync/sync-runs.repository.js';
 import { subtractDays, todayInSaoPaulo } from '../../src/shared/dates.js';
 import { TEST_CONFIG } from '../helpers/test-app.js';
 import { insertCategory, transactionValues } from './fixtures.js';
@@ -13,6 +15,7 @@ import {
   fixtureOf,
   newestTransaction,
   runSync,
+  startRun,
   type SyncHarness,
   totalFixtureCounts,
   withoutTransaction,
@@ -21,6 +24,12 @@ import { connectTestDatabase, truncateAllTables } from './test-database.js';
 
 let harness: SyncHarness;
 
+const MS_PER_DAY = 86_400_000;
+
+function addDaysTo(instant: Date, days: number): Date {
+  return new Date(instant.getTime() + days * MS_PER_DAY);
+}
+
 beforeEach(async () => {
   const database = connectTestDatabase();
   await truncateAllTables(database);
@@ -28,6 +37,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await harness.app.close();
 });
 
@@ -141,6 +151,25 @@ describe('sincronização seguinte', () => {
     // Assert
     expect(new Set(harness.sdk.requestedWindows.map((window) => window.from))).toEqual(
       new Set([subtractDays(today, 30)]),
+    );
+  });
+
+  it('should_fetch_since_last_sync_when_bank_was_down_for_more_than_30_days', async () => {
+    // Arrange: o consentimento vence, o banco fica 70 dias sem ler nada e depois é renovado.
+    const firstSync = harness.clock.now;
+    await runSync(harness.syncService);
+    const items = harness.fixtures.map((fixture) => fixture.item);
+    for (const item of items) item.consentExpiresAt = firstSync.toISOString();
+    harness.clock.now = addDaysTo(firstSync, 30);
+    await runSync(harness.syncService);
+    for (const item of items) item.consentExpiresAt = '2028-01-01T00:00:00.000Z';
+    harness.clock.now = addDaysTo(firstSync, 70);
+    harness.sdk.requestedWindows.length = 0;
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(new Set(harness.sdk.requestedWindows.map((window) => window.from))).toEqual(
+      new Set([subtractDays(todayInSaoPaulo(firstSync), 7)]),
     );
   });
 });
@@ -314,6 +343,68 @@ describe('falhas isoladas por banco', () => {
     await runSync(harness.syncService);
     // Assert
     expect((await connectionOf(harness.database, 'item-3')).status).toBe('ok');
+  });
+});
+
+describe('falhas do banco de dados fora da gravação do item', () => {
+  it('should_sync_following_banks_when_database_fails_while_ensuring_a_connection', async () => {
+    // Arrange
+    const ensure = ConnectionsRepository.prototype.ensure;
+    vi.spyOn(ConnectionsRepository.prototype, 'ensure').mockImplementation(function (
+      this: ConnectionsRepository,
+      itemId,
+      placeholderName,
+    ) {
+      if (itemId === 'item-2') return Promise.reject(new TypeError('db down'));
+      return ensure.call(this, itemId, placeholderName);
+    });
+    // Act
+    const run = await runSync(harness.syncService);
+    // Assert
+    expect({
+      run: run.status,
+      first: (await connectionOf(harness.database, 'item-1')).status,
+      third: (await connectionOf(harness.database, 'item-3')).status,
+    }).toEqual({ run: 'partial', first: 'ok', third: 'ok' });
+  });
+
+  it('should_sync_following_banks_when_database_fails_while_updating_connection_status', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    const failingId = (await connectionOf(harness.database, 'item-2')).id;
+    const updateStatus = ConnectionsRepository.prototype.updateStatus;
+    vi.spyOn(ConnectionsRepository.prototype, 'updateStatus').mockImplementation(function (
+      this: ConnectionsRepository,
+      connectionId,
+      update,
+    ) {
+      if (connectionId === failingId) return Promise.reject(new TypeError('db down'));
+      return updateStatus.call(this, connectionId, update);
+    });
+    harness.clock.now = new Date(harness.clock.now.getTime() + 3_600_000);
+    // Act
+    const run = await runSync(harness.syncService);
+    // Assert
+    expect({
+      run: run.status,
+      thirdSyncedAt: (await connectionOf(harness.database, 'item-3')).lastSyncedAt,
+    }).toEqual({ run: 'partial', thirdSyncedAt: harness.clock.now });
+  });
+
+  it('should_keep_real_stats_when_only_finishing_the_run_fails', async () => {
+    // Arrange
+    const finish = vi
+      .spyOn(SyncRunsRepository.prototype, 'finish')
+      .mockRejectedValueOnce(new TypeError('db down'));
+    // Act
+    const { finished } = await startRun(harness.syncService);
+    const status = await finished;
+    // Assert
+    expect({
+      status,
+      finishedWith: finish.mock.calls.map(([, outcome]) => outcome.status),
+      notClosedLog: harness.logLines.find((line) => line.msg === 'sync run not closed')?.errorType,
+    }).toEqual({ status: 'success', finishedWith: ['success'], notClosedLog: 'TypeError' });
   });
 });
 

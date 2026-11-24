@@ -63,6 +63,28 @@ describe('PluggyClient.getItem', () => {
     expect(overview.connection.status).toBe('ok');
   });
 
+  it('should_report_complete_investments_collection_when_item_is_updated_with_success', async () => {
+    // Arrange
+    const client = buildClient();
+    // Act
+    const overview = await client.getItem('item-1');
+    // Assert
+    expect(overview.investmentsCollection).toBe('complete');
+  });
+
+  it('should_report_incomplete_investments_collection_when_partial_success_missed_investments', async () => {
+    // Arrange
+    const fixtures = loadPluggyFixtures();
+    Object.assign(fixtureAt(fixtures, 0).item, {
+      executionStatus: 'PARTIAL_SUCCESS',
+      statusDetail: { investments: { isUpdated: false, lastUpdatedAt: null } },
+    });
+    // Act
+    const overview = await buildClient(fixtures).getItem('item-1');
+    // Assert
+    expect(overview.investmentsCollection).toBe('incomplete');
+  });
+
   it('should_hide_the_connector_logo_when_connector_is_meu_pluggy', async () => {
     // Arrange
     const client = buildClient();
