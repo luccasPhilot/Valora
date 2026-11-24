@@ -88,7 +88,7 @@ valora/
 │   │   ├── components/              componentes do Valora (saldo, item de transação...)
 │   │   ├── features/                uma pasta por área (dashboard, transactions...)
 │   │   ├── hooks/                   consultas do TanStack Query
-│   │   ├── lib/                     formatação BRL/datas, cliente da API
+│   │   ├── lib/                     formatação BRL/datas, cliente da API, chaves das consultas
 │   │   │   └── api/                 schemas Zod das respostas da API
 │   │   └── styles/                  tokens do Design System
 │   ├── package.json, package-lock.json, tsconfig.json, eslint.config.js, vitest.config.ts
@@ -293,6 +293,9 @@ Uma falha fora da gravação (criar a conexão, gravar o status dela) também fi
 | Fotos diárias de saldo e investimentos desde a Fase 1 | O Open Finance devolve a posição atual; a evolução só existe se for guardada |
 | PWA em vez de app nativo | Uma base de código; instala no celular pelo navegador |
 | Cache de leitura da API, sem fila de escrita | O service worker (`vite-plugin-pwa`, `generateSW`) guarda o app e as respostas `GET /api/v1/*` (menos `sync-runs` e `health`) com `NetworkFirst`: com rede usa a rede; sem rede ou acima de 5 s, mostra a última resposta, e o cabeçalho `X-Valora-Cached-At` diz de quando ela é. Escritas nunca são guardadas nem reenviadas: as mutações usam `networkMode: 'always'` e falham na hora, para um lançamento nunca ser enviado horas depois sem o usuário perceber. A versão nova do app espera o toque em "Atualizar" (`registerType: 'prompt'`) |
+| Chaves e invalidações do front num lugar só | `frontend/src/lib/query-keys.ts` tem todas as chaves do TanStack Query e o mapa "o que foi gravado → o que muda" (`invalidationsAfter`, com um teste por mudança). Toda mutation invalida por `useInvalidateAfter(mudança)`; um teste falha se uma `useMutation` nova não usar o mapa nem disser por quê. Salvar regra ou mapeamento (`categorization`) invalida tudo que uma transação invalida, porque o backend recategoriza tudo. Arquivar banco e o fim da sincronização continuam com `invalidateQueries()` sem filtro. Descartado invalidar tudo em toda gravação: refaria até os relatórios de 60 meses a cada categoria trocada |
+| Repetir consulta só em rede e 5xx | Uma consulta que falha é repetida uma vez só quando a falha é de rede ou 5xx (`isRetryable` em `app/query-client.ts`). Um 4xx ou uma resposta fora do contrato dá o mesmo resultado na segunda vez, então o erro aparece na hora. Os testes usam `createQueryClient({ retry: false })` |
+| Erro de tela por rota, com recarga automática do arquivo que não carrega | `errorElement` numa rota sem caminho em volta das áreas (o erro aparece dentro do shell, com o menu), no `AppShell` e na `*` (em tela cheia): "Algo deu errado nesta tela" e "Tentar de novo", que recarrega a página, sem nada técnico na tela. Um import dinâmico que falha (versão nova publicada com a aba aberta) recarrega a página sozinho uma vez, com uma marca em `sessionStorage`; se falhar de novo em 30 s, mostra o erro. Descartado `react-error-boundary`: o React Router já tem o mecanismo |
 | Página "não encontrado" em tela cheia | Rota coringa (`*`) **fora** do `AppShell`, depois da rota do shell: sem menu nem topo, só a mensagem e um botão para o Início. Não usa `errorElement`, que também pegaria erros de renderização e de carregamento. O nginx continua respondendo 200 com o app para endereços desconhecidos |
 | React + shadcn/ui em vez de Angular | Caminho mais curto para um visual caprichado e totalmente ajustável |
 | Fontes servidas pelo próprio app | Funciona sem internet e não faz requisição para terceiros |

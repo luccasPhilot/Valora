@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
-import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router';
+import { MemoryRouter } from 'react-router';
 import { vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
 import { HideValuesProvider } from '@/components/hide-values-provider';
 
+import { renderApp as renderAppAt } from '../../../test/helpers/render-app';
+import { SHELL_ROUTES } from '../../../test/helpers/stub-routes';
 import { NewTransactionProvider } from './new-transaction/new-transaction-provider';
 import { Component as TransactionsPage } from './transactions-page';
 
@@ -162,6 +162,7 @@ function isDuplicateCount(url: URL): boolean {
 /** Responde pelo método e caminho (sem query); a query é lida pelo próprio handler. */
 export function stubApi(overrides: Record<string, Handler> = {}) {
   const routes: Record<string, Handler> = {
+    ...SHELL_ROUTES,
     'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
     'GET /api/v1/accounts': () => accountsResponse([CASH_ACCOUNT, ACCOUNT]),
     'GET /api/v1/transactions': () => pageResponse(DEFAULT_PAGE),
@@ -207,10 +208,5 @@ export function renderPage(path = '/transacoes') {
 
 /** O app inteiro (menu, topo, painéis), para testar o que depende do botão "Nova transação" do topo. */
 export function renderApp(path = '/transacoes') {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
-  return render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
+  return renderAppAt(path);
 }

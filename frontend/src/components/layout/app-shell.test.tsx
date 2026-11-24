@@ -1,25 +1,22 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+// Carrega a tela na importação do arquivo: o primeiro teste não paga a transformação dela.
+import '@/features/dashboard/dashboard-page';
+import '@/features/budgets/budgets-page';
+
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
-
 import { stubViewport } from '../../../test/helpers/match-media';
+import { renderApp as renderAppAt } from '../../../test/helpers/render-app';
+import { stubRoutes } from '../../../test/helpers/stub-routes';
 
 const MOBILE_WIDTH = 390;
 const DESKTOP_WIDTH = 1440;
 
 function renderApp(initialPath: string, viewportWidth: number) {
   stubViewport({ viewportWidth });
-  const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  const renderResult = render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
-  return { ...renderResult, router };
+  stubRoutes({});
+  return renderAppAt(initialPath);
 }
 
 function getMenuOverlay(): Element {

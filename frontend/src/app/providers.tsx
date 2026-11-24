@@ -1,4 +1,4 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 
 import { HideValuesProvider } from '@/components/hide-values-provider';
@@ -9,13 +9,15 @@ import { createQueryClient } from './query-client';
 
 interface AppProvidersProps {
   children: ReactNode;
+  /** Os testes passam um cliente sem repetição; o app cria o dele. */
+  queryClient?: QueryClient;
 }
 
-export function AppProviders({ children }: AppProvidersProps) {
-  const [queryClient] = useState(createQueryClient);
+export function AppProviders({ children, queryClient }: AppProvidersProps) {
+  const [client] = useState(() => queryClient ?? createQueryClient());
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={client}>
       <ThemeProvider>
         <HideValuesProvider>
           <TooltipProvider>{children}</TooltipProvider>

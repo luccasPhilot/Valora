@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import { useInvalidateAfter } from '@/hooks/use-invalidate-after';
 import { getAccountsOverview } from '@/lib/api/accounts';
 import type { Category } from '@/lib/api/categories';
 import {
@@ -25,20 +26,8 @@ import {
   type TransactionQuery,
   updateTransaction,
 } from '@/lib/api/transactions';
+import { queryKeys } from '@/lib/query-keys';
 
-import { ACCOUNTS_QUERY_KEY } from '../accounts/accounts-queries';
-import { ALERTS_QUERY_KEY } from '../alerts/alerts-queries';
-import { BUDGETS_QUERY_KEY } from '../budgets/budgets-queries';
-import { DASHBOARD_QUERY_KEY } from '../dashboard/dashboard-query-key';
-import { REPORTS_QUERY_KEY } from '../reports/reports-query-key';
-
-export const TRANSACTIONS_QUERY_KEY = ['transactions'] as const;
-// Fora de `TRANSACTIONS_QUERY_KEY` de propósito: as atualizações otimistas da lista trocam os dados
-// de toda consulta que começa por essa chave, e estas duas não têm o formato da lista paginada.
-const TRANSACTION_DETAIL_KEY = ['transaction-detail'] as const;
-const DUPLICATE_COUNT_KEY = ['possible-duplicate-count'] as const;
-const TRANSACTION_SUMMARY_KEY = ['transaction-summary'] as const;
-const CATEGORY_RULES_QUERY_KEY = ['category-rules'] as const;
 const FIRST_PAGE = 1;
 
 type TransactionPages = InfiniteData<TransactionPage, number>;
@@ -46,7 +35,7 @@ type TransactionPages = InfiniteData<TransactionPage, number>;
 /** Lista paginada: cada página pedida à API vira mais um pedaço da mesma lista na tela. */
 export function useTransactionList(query: TransactionQuery) {
   return useInfiniteQuery({
-    queryKey: [...TRANSACTIONS_QUERY_KEY, query],
+    queryKey: [...queryKeys.transactions, query],
     queryFn: ({ pageParam }) => listTransactions(query, pageParam),
     initialPageParam: FIRST_PAGE,
     getNextPageParam: ({ pagination }) =>
@@ -57,7 +46,7 @@ export function useTransactionList(query: TransactionQuery) {
 /** Resumo do filtro inteiro (não só das páginas carregadas); usa os mesmos parâmetros da lista. */
 export function useTransactionSummary(query: TransactionQuery) {
   return useQuery({
-    queryKey: [...TRANSACTION_SUMMARY_KEY, query],
+    queryKey: [...queryKeys.transactionSummary, query],
     queryFn: () => getTransactionSummary(query),
   });
 }
@@ -65,7 +54,7 @@ export function useTransactionSummary(query: TransactionQuery) {
 /** As mesmas contas da tela de Contas, só com o que o filtro e o formulário precisam. */
 export function useAccountOptions() {
   return useQuery({
-    queryKey: ACCOUNTS_QUERY_KEY,
+    queryKey: queryKeys.accounts,
     queryFn: getAccountsOverview,
     select: ({ items }): AccountOption[] =>
       items.map(({ id, name, type, connection }) => ({
@@ -116,15 +105,18 @@ function withNewCategory(
  */
 export function useChangeCategory() {
   const queryClient = useQueryClient();
+  const invalidateAfterCategory = useInvalidateAfter('transaction-category');
+  // "Aplicar sempre" cria uma regra, e o servidor recategoriza as outras transações com ela.
+  const invalidateAfterCategorization = useInvalidateAfter('categorization');
   return useMutation({
     mutationFn: ({ transaction, category, applyAlways }: CategoryChangeRequest) =>
       changeTransactionCategory(transaction.id, { categoryId: category.id, applyAlways }),
     onMutate: async (request) => {
-      await queryClient.cancelQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
+      await queryClient.cancelQueries({ queryKey: queryKeys.transactions });
       const previousLists = queryClient.getQueriesData<TransactionPages>({
-        queryKey: TRANSACTIONS_QUERY_KEY,
+        queryKey: queryKeys.transactions,
       });
-      queryClient.setQueriesData<TransactionPages>({ queryKey: TRANSACTIONS_QUERY_KEY }, (pages) =>
+      queryClient.setQueriesData<TransactionPages>({ queryKey: queryKeys.transactions }, (pages) =>
         pages ? withNewCategory(pages, request) : pages,
       );
       return { previousLists };
@@ -134,17 +126,9 @@ export function useChangeCategory() {
         queryClient.setQueryData(queryKey, pages);
       }
     },
+    // Pelo mapa (`useInvalidateAfter`, acima), sem esperar as telas: a lista já mostra a categoria nova.
     onSuccess: (_saved, request) => {
-      // Mudar a categoria move o gasto de um orçamento para outro, e o Início soma por categoria.
-      void queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
-      void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
-      // Passar uma transação para (ou de) uma categoria de transferência muda receitas e despesas.
-      void queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
-      void queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
-      void queryClient.invalidateQueries({ queryKey: TRANSACTION_SUMMARY_KEY });
-      if (!request.applyAlways) return;
-      void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
-      void queryClient.invalidateQueries({ queryKey: CATEGORY_RULES_QUERY_KEY });
+      void (request.applyAlways ? invalidateAfterCategorization() : invalidateAfterCategory());
     },
   });
 }
@@ -152,7 +136,7 @@ export function useChangeCategory() {
 /** Uma transação pelo id, por exemplo a manual que o banco pode ter repetido. */
 export function useTransaction(transactionId: string | null) {
   return useQuery({
-    queryKey: [...TRANSACTION_DETAIL_KEY, transactionId],
+    queryKey: [...queryKeys.transactionDetail, transactionId],
     queryFn: () => getTransaction(transactionId ?? ''),
     enabled: transactionId !== null,
   });
@@ -161,28 +145,9 @@ export function useTransaction(transactionId: string | null) {
 /** Quantas possíveis duplicatas esperam conferência, em qualquer período. */
 export function useDuplicateCount(today: string) {
   return useQuery({
-    queryKey: [...DUPLICATE_COUNT_KEY, today],
+    queryKey: [...queryKeys.duplicateCount, today],
     queryFn: () => countPossibleDuplicates(today),
   });
-}
-
-// Lançar, editar, excluir e resolver duplicatas mudam a lista, o resumo, os detalhes abertos, a contagem, o
-// gasto dos orçamentos (e os alertas deles) e os números do Início.
-function useRefreshTransactions() {
-  const queryClient = useQueryClient();
-  return () =>
-    Promise.all(
-      [
-        TRANSACTIONS_QUERY_KEY,
-        TRANSACTION_SUMMARY_KEY,
-        TRANSACTION_DETAIL_KEY,
-        DUPLICATE_COUNT_KEY,
-        BUDGETS_QUERY_KEY,
-        DASHBOARD_QUERY_KEY,
-        REPORTS_QUERY_KEY,
-        ALERTS_QUERY_KEY,
-      ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-    );
 }
 
 export interface TransactionSave {
@@ -192,19 +157,17 @@ export interface TransactionSave {
 }
 
 export function useSaveTransaction() {
-  const refresh = useRefreshTransactions();
   return useMutation({
     mutationFn: ({ transactionId, input }: TransactionSave) =>
       transactionId === null ? createTransaction(input) : updateTransaction(transactionId, input),
-    onSuccess: refresh,
+    onSuccess: useInvalidateAfter('transactions'),
   });
 }
 
 export function useDeleteTransaction() {
-  const refresh = useRefreshTransactions();
   return useMutation({
     mutationFn: (transaction: Transaction) => deleteTransaction(transaction.id),
-    onSuccess: refresh,
+    onSuccess: useInvalidateAfter('transactions'),
   });
 }
 
@@ -214,10 +177,9 @@ export interface DuplicateResolutionRequest {
 }
 
 export function useResolveDuplicate() {
-  const refresh = useRefreshTransactions();
   return useMutation({
     mutationFn: ({ transaction, action }: DuplicateResolutionRequest) =>
       resolveDuplicate(transaction.id, action),
-    onSuccess: refresh,
+    onSuccess: useInvalidateAfter('transactions'),
   });
 }

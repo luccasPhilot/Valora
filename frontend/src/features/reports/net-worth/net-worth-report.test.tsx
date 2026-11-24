@@ -1,13 +1,14 @@
-import { render, screen, within } from '@testing-library/react';
+// Carrega a tela na importação do arquivo: o primeiro teste não paga a transformação dela.
+import '@/features/reports/reports-layout';
+import '@/features/reports/net-worth/net-worth-report-page';
+
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
-
 import { netWorthBody } from '../../../../test/helpers/net-worth';
-import { errorResponse, stubRoutes } from '../../../../test/helpers/stub-routes';
+import { renderApp } from '../../../../test/helpers/render-app';
+import { errorResponse, requestedUrls, stubRoutes } from '../../../../test/helpers/stub-routes';
 
 const REPORT_PATH = '/relatorios/patrimonio';
 const NET_WORTH_ROUTE = 'GET /api/v1/net-worth';
@@ -56,16 +57,6 @@ function stubReport(body: unknown = reportBody()) {
   return stubRoutes({ [NET_WORTH_ROUTE]: () => Response.json(body) });
 }
 
-function renderApp(initialPath: string) {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
-  return router;
-}
-
 async function findFigure(name: string) {
   return screen.findByRole('region', { name });
 }
@@ -93,9 +84,9 @@ describe('Relatório de patrimônio — período', () => {
     renderApp(REPORT_PATH);
     await findFigure('Patrimônio hoje');
     // Assert
-    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(
+    expect(requestedUrls(fetchMock, '/api/v1/net-worth')).toEqual([
       '/api/v1/net-worth?from=2025-12&to=2026-11',
-    );
+    ]);
   });
 
   it('should_request_twenty_four_months_when_the_user_picks_that_period', async () => {
@@ -105,9 +96,9 @@ describe('Relatório de patrimônio — período', () => {
     // Act
     await findFigure('Patrimônio hoje');
     // Assert
-    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(
+    expect(requestedUrls(fetchMock, '/api/v1/net-worth')).toEqual([
       '/api/v1/net-worth?from=2024-12&to=2026-11',
-    );
+    ]);
   });
 });
 

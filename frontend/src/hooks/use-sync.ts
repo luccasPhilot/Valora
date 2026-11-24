@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/sync';
 import { ApiError } from '@/lib/api-client';
 import { isConnectionBroken } from '@/lib/connection-status';
+import { queryKeys } from '@/lib/query-keys';
 import {
   describeSyncOutcome,
   SYNC_START_FAILED_NOTICE,
@@ -19,8 +20,6 @@ import {
 
 import type { Notice } from './use-notice';
 
-const LATEST_SYNC_RUN_KEY = ['sync-runs', 'latest'] as const;
-const CONNECTIONS_KEY = ['connections'] as const;
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLING_MS = 2 * 60 * 1000;
 
@@ -35,7 +34,7 @@ function isPolling(run: SyncRun | null | undefined): boolean {
 
 /** Só a última execução, para telas que reagem a "nunca sincronizou" (o Início no primeiro uso). */
 export function useLatestSyncRun() {
-  return useQuery({ queryKey: LATEST_SYNC_RUN_KEY, queryFn: getLatestSyncRun });
+  return useQuery({ queryKey: queryKeys.latestSyncRun, queryFn: getLatestSyncRun });
 }
 
 /**
@@ -45,15 +44,16 @@ export function useLatestSyncRun() {
 export function useStartSync() {
   const queryClient = useQueryClient();
   return useMutation({
+    // Fora do mapa de invalidação: o fim da sincronização (`useSync`) recarrega todas as consultas.
     mutationFn: startSyncRun,
-    onSuccess: (run) => queryClient.setQueryData(LATEST_SYNC_RUN_KEY, run),
+    onSuccess: (run) => queryClient.setQueryData(queryKeys.latestSyncRun, run),
     // Já havia uma execução em andamento (ou o disparo falhou): volta a ler o estado real.
-    onError: () => queryClient.invalidateQueries({ queryKey: LATEST_SYNC_RUN_KEY }),
+    onError: () => queryClient.invalidateQueries({ queryKey: queryKeys.latestSyncRun }),
   });
 }
 
 export function useConnections() {
-  return useQuery({ queryKey: CONNECTIONS_KEY, queryFn: listConnections });
+  return useQuery({ queryKey: queryKeys.connections, queryFn: listConnections });
 }
 
 /** As conexões que pararam de sincronizar (erro ou consentimento expirado). */
@@ -73,19 +73,20 @@ export function useSync(onNotice: (notice: Notice) => void) {
   const previousStatus = useRef<SyncRun['status'] | null>(null);
 
   const latestRunQuery = useQuery({
-    queryKey: LATEST_SYNC_RUN_KEY,
+    queryKey: queryKeys.latestSyncRun,
     queryFn: getLatestSyncRun,
     refetchInterval: ({ state }) => (isPolling(state.data) ? POLL_INTERVAL_MS : false),
   });
   const latestRun = latestRunQuery.data ?? null;
 
   const startMutation = useMutation({
+    // Fora do mapa de invalidação: o fim da sincronização (efeito abaixo) recarrega todas as consultas.
     mutationFn: startSyncRun,
-    onSuccess: (run) => queryClient.setQueryData(LATEST_SYNC_RUN_KEY, run),
+    onSuccess: (run) => queryClient.setQueryData(queryKeys.latestSyncRun, run),
     onError: (error) => {
       if (error instanceof ApiError && error.code === SYNC_IN_PROGRESS_CODE) {
         // Já tem uma sincronização rodando (por exemplo, a agendada): passa a acompanhá-la.
-        void queryClient.invalidateQueries({ queryKey: LATEST_SYNC_RUN_KEY });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.latestSyncRun });
         return;
       }
       onNotice(SYNC_START_FAILED_NOTICE);

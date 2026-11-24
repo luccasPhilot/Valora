@@ -1,13 +1,15 @@
-import { render, screen, within } from '@testing-library/react';
+// Carrega a tela na importação do arquivo: o primeiro teste não paga a transformação dela.
+import '@/features/reports/reports-layout';
+import '@/features/reports/category-spending/category-spending-page';
+
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
 import type { CategorySeries } from '@/lib/api/reports';
 
-import { errorResponse, stubRoutes } from '../../../../test/helpers/stub-routes';
+import { renderApp } from '../../../../test/helpers/render-app';
+import { errorResponse, requestedUrls, stubRoutes } from '../../../../test/helpers/stub-routes';
 import { seriesColor } from './series-color';
 
 const REPORT_PATH = '/relatorios/categorias';
@@ -66,16 +68,6 @@ function stubReport(body: unknown = reportBody()) {
   return stubRoutes({ [REPORT_ROUTE]: () => Response.json(body) });
 }
 
-function renderApp(initialPath: string) {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
-  return router;
-}
-
 async function findChartCard() {
   return screen.findByRole('region', { name: 'Gasto por categoria e mês' });
 }
@@ -125,9 +117,9 @@ describe('Relatório por categoria', () => {
     renderApp(REPORT_PATH);
     await findChartCard();
     // Assert
-    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(
+    expect(requestedUrls(fetchMock, '/api/v1/reports/category-spending')).toEqual([
       '/api/v1/reports/category-spending?from=2025-12&to=2026-11',
-    );
+    ]);
   });
 
   it('should_list_the_series_names_in_the_legend_in_ranking_order_with_others_last', async () => {
