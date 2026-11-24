@@ -1,11 +1,10 @@
+import { percentWithOneDecimal } from '../../shared/percent.js';
 import { buildSpendingBreakdown, type SpendingItem } from '../dashboard/dashboard-calculations.js';
 import type {
   CategorySpending,
   MonthCategorySpending,
 } from '../transactions/transaction-totals.repository.js';
 
-const PERCENT_SCALE = 1000;
-const PERCENT_DECIMALS_DIVISOR = 10;
 const UNCATEGORIZED_KEY = 'uncategorized';
 const OTHER_KEY = 'other';
 
@@ -52,10 +51,6 @@ function sumPerCategory(rows: readonly MonthCategorySpending[]): CategorySpendin
   return [...perCategory.values()];
 }
 
-function percentOf(amountCents: number, totalCents: number): number {
-  return Math.round((amountCents * PERCENT_SCALE) / totalCents) / PERCENT_DECIMALS_DIVISOR;
-}
-
 function seriesKeyOf(item: SpendingItem): string {
   if (item.kind === 'category') return item.categoryId;
   return item.kind === 'uncategorized' ? UNCATEGORIZED_KEY : OTHER_KEY;
@@ -90,7 +85,7 @@ function toSeries(
     name: item.name,
     icon: item.kind === 'category' ? item.icon : null,
     totalCents: item.amountCents,
-    percent: percentOf(item.amountCents, totalCents),
+    percent: percentWithOneDecimal(item.amountCents, totalCents),
     monthlyCents,
   };
 }

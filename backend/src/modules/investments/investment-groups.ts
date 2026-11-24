@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-const PERCENT_SCALE = 1000;
-const PERCENT_DECIMALS_DIVISOR = 10;
+import { percentWithOneDecimal } from '../../shared/percent.js';
 
 export const investmentSourceSchema = z.enum(['open_finance', 'manual']);
 export type InvestmentSource = z.infer<typeof investmentSourceSchema>;
@@ -44,12 +43,6 @@ function sumBalances(positions: readonly InvestmentPosition[]): number {
   return positions.reduce((sum, { balanceCents }) => sum + balanceCents, 0);
 }
 
-// Uma casa decimal, em inteiros; total zero não divide.
-function percentOf(cents: number, totalCents: number): number {
-  if (totalCents === 0) return 0;
-  return Math.round((cents * PERCENT_SCALE) / totalCents) / PERCENT_DECIMALS_DIVISOR;
-}
-
 function compareItems(first: InvestmentPosition, second: InvestmentPosition): number {
   return (
     second.balanceCents - first.balanceCents ||
@@ -73,10 +66,11 @@ export function groupInvestments(positions: readonly InvestmentPosition[]): Inve
   const groups = [...groupByType(openPositions)].map(([type, members]) => ({
     type,
     totalCents: sumBalances(members),
-    percent: percentOf(sumBalances(members), totalCents),
-    items: [...members]
-      .sort(compareItems)
-      .map((member) => ({ ...member, percent: percentOf(member.balanceCents, totalCents) })),
+    percent: percentWithOneDecimal(sumBalances(members), totalCents),
+    items: [...members].sort(compareItems).map((member) => ({
+      ...member,
+      percent: percentWithOneDecimal(member.balanceCents, totalCents),
+    })),
   }));
   groups.sort(
     (first, second) =>

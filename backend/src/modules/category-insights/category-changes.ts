@@ -1,8 +1,8 @@
+import { percentWithOneDecimal } from '../../shared/percent.js';
 import {
   type CategoryDifference,
   type CategoryInsightItem,
   type CategoryKey,
-  percentOf,
   variationPercentOf,
 } from './category-insights-calculations.js';
 
@@ -138,7 +138,7 @@ function uncategorizedPoints(
     {
       type: 'uncategorized_high',
       spentCents: uncategorized.spentCents,
-      percent: percentOf(uncategorized.spentCents, totalCents),
+      percent: percentWithOneDecimal(uncategorized.spentCents, totalCents),
     },
   ];
 }
