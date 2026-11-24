@@ -148,7 +148,7 @@ O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration`, `d
 
 Sincronizar na hora, em desenvolvimento (com o `npm run dev` rodando): `curl -X POST http://127.0.0.1:3000/api/v1/sync-runs`. O resultado sai em `curl http://127.0.0.1:3000/api/v1/sync-runs/latest`. O frontend ainda tem `dev` (Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000`), `build`, `preview` e `check:tokens` (falha se achar cor em hex em `src/components` ou `src/features`; roda junto com o `lint`).
 
-**GitHub:** `main` é produção e o trabalho fica na `develop`. O CI (`.github/workflows/ci.yml`) roda `typecheck`, `lint`, `format:check`, `test` e `build` nas duas partes, em runner da GitHub. **Não há deploy pelo GitHub**: a produção é atualizada rodando `~/Valora/infra/scripts/deploy.sh` no servidor (backup, build e healthchecks). Nada de runner self-hosted. Detalhes em [docs/05-deploy.md](docs/05-deploy.md#atualizar-o-app).
+**GitHub:** `main` é produção e o trabalho fica na `develop`. O CI (`.github/workflows/ci.yml`) roda `typecheck`, `lint`, `format:check`, `test` e `build` nas duas partes, e o job `infra` roda os testes dos scripts do servidor, em runner da GitHub. **Não há deploy pelo GitHub**: a produção é atualizada rodando `~/Valora/infra/scripts/deploy.sh` no servidor (backup, build e healthchecks). Nada de runner self-hosted. Detalhes em [docs/05-deploy.md](docs/05-deploy.md#atualizar-o-app).
 
 Antes de dar uma tarefa por pronta, rode `typecheck`, `lint`, `format:check` e `test` **em cada parte que mudou**. Os testes de integração do backend precisam do Docker rodando.
 
@@ -160,8 +160,11 @@ Produção (no servidor, a partir de `~/Valora`; passo a passo em [docs/05-deplo
 |---|---|
 | `docker compose -f infra/compose.yml up -d --build` | Primeira subida (precisa do `infra/.env`) |
 | `infra/scripts/deploy.sh [ref]` | Atualiza: backup, troca de versão, build e healthchecks; com `ref` (commit ou tag) volta versão |
-| `infra/scripts/backup.sh` | Backup do banco (o cron roda aos domingos às 03:00); retenção de 30 dias |
-| `infra/scripts/restore-check.sh` | Restaura o último backup num banco temporário e compara as quantidades |
+| `infra/scripts/backup.sh [weekly\|predeploy\|manual]` | Backup do banco (padrão `manual`), sem sobrescrever; retenção: semanais 8 semanas e o primeiro de cada mês por 12 meses, `predeploy`/`manual` 30 dias, sempre os 3 mais recentes de cada origem |
+| `infra/scripts/weekly-backup.sh` | O que o cron roda aos domingos às 03:00: backup `weekly`, restore-check e aviso ao healthchecks.io |
+| `infra/scripts/restore-check.sh` | Restaura o backup mais recente num banco temporário e compara as quantidades de seis tabelas |
+| `infra/scripts/disk-check.sh` | Uso de `/` e do disco dos backups, com aviso acima de 85% (cron diário às 06:00) |
+| `bash infra/scripts/tests/run-tests.sh` | Testes dos scripts de `infra/` (Linux ou WSL) |
 
 ## Manter a documentação em dia
 

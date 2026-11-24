@@ -25,6 +25,7 @@ Seus bancos ──Open Finance──▶ Meu Pluggy (atualiza 1x/dia)
 │  db (PostgreSQL, dados num volume do disco)                   │
 │                                                               │
 │  backup semanal (pg_dump) ─────────────────────────────────────────▶ outro disco
+│  avisos de falha (backup, sincronização, disco) ──────────────────▶ healthchecks.io
 └───────────────────────────────────────────────────────────────┘
                      ▲
                      │ Tailscale (HTTPS, só os seus aparelhos)
@@ -214,6 +215,13 @@ Cada banco é gravado numa transação própria do banco de dados, e os dados de
 - **Integração (Vitest + Testcontainers):** repositories e a sincronização completa contra um PostgreSQL de verdade. O Pluggy é mockado com respostas gravadas e anonimizadas (fixtures em JSON).
 - **Front-end:** testes de componentes só onde houver lógica (formatação, filtros).
 
+## Segurança
+
+- **Entra só pela Tailscale.** Só o `frontend` (nginx) publica porta, presa ao `127.0.0.1`, e o app é publicado por `tailscale serve`. Backend e banco ficam só na rede interna do Compose. Nunca `tailscale funnel`.
+- **Sai do servidor só o necessário:** as chamadas ao Pluggy (`PluggyClient`) e o sinal de ok ou falha para o healthchecks.io ([avisos de falha](05-deploy.md#avisos-de-falha)), que não leva nenhum dado do banco. Nenhum dado financeiro sai da casa.
+- **Logs sem dados:** nunca registram valores, descrições de transações, tokens, credenciais nem a URL dos avisos.
+- **Segredos só nos `.env`**, ignorados pelo git. Os backups ficam no segundo disco com `chmod 600`.
+
 ## Decisões
 
 | Decisão | Motivo |
@@ -288,3 +296,4 @@ Cada banco é gravado numa transação própria do banco de dados, e os dados de
 | Front servido por nginx, em container próprio | Como no CellCare; o nginx entrega o front e repassa `/api` para o backend, que não publica porta |
 | npm em vez de pnpm | O npm já vem com o Node, inclusive no Docker; o Node 26 não traz mais o Corepack |
 | Menu lateral em vez de barra inferior | O app passa de dez áreas nas fases 2 e 3; o mesmo menu serve celular (abre por cima) e computador (fixo). Detalhes no [Design System](06-design-system.md#layout-e-navegação) |
+| Avisos de falha pelo healthchecks.io | Um dead-man's switch gratuito: avisa quando o backup, a sincronização agendada ou o disco falham **e** quando o sinal esperado não chega (servidor desligado). Sai só o sinal de ok ou falha, sem dado do banco; cada aviso é opcional (sem a URL, nada é enviado) e nunca derruba o que monitora. No backend, quem avisa é o agendamento: o `SyncService` não sabe que o monitoramento existe e o botão "Sincronizar agora" não avisa |
