@@ -7,6 +7,12 @@ export const pluggyItemSchema = z.object({
   id: z.string().min(1),
   status: z.string().min(1),
   executionStatus: z.string().nullish(),
+  // Só o que decide se a coleta de investimentos terminou; `warnings` têm texto da instituição.
+  statusDetail: z
+    .object({
+      investments: z.object({ isUpdated: z.boolean().nullish() }).nullish(),
+    })
+    .nullish(),
   error: z.object({ code: z.string() }).nullish(),
   consentExpiresAt: z.coerce.date().nullish(),
   connector: z.object({

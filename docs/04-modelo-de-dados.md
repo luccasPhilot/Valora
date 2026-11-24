@@ -177,7 +177,7 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `raw` | jsonb | nulo na posição manual |
 | `updated_at` | timestamptz | |
 
-**Posição que sumiu = posição zerada.** Quando um banco sincroniza com sucesso e deixa de devolver um investimento (resgatado e removido), a sincronização grava `balance_cents = 0` nele e a foto do dia `0`, inclusive se a lista vier vazia. Sem isso o último saldo ficaria somando para sempre. Se o investimento voltar, o upsert restaura a posição. Banco com erro não tem investimentos alterados.
+**Posição que sumiu = posição zerada, só com coleta completa.** Quando o Pluggy diz que a coleta de investimentos do item terminou (`UPDATED` com `executionStatus = SUCCESS`, ou `PARTIAL_SUCCESS` com `statusDetail.investments.isUpdated = true`) e um investimento deixou de vir (resgatado e removido), a sincronização grava `balance_cents = 0` nele e a foto do dia `0`, inclusive se a lista vier vazia. Numa coleta parcial ou em andamento, a posição ausente fica como estava, sem foto do dia. Sem isso o último saldo ficaria somando para sempre. Se o investimento voltar, o upsert restaura a posição. Banco com erro não tem investimentos alterados.
 
 **Posição manual** (`source = 'manual'`): cadastrada por você para o que o Open Finance não traz (INCO, Binance, corretoras sem conector). Um `CHECK` (`investments_source_shape_check`) garante as duas formas: `open_finance` tem `connection_id` e `pluggy_investment_id` e não tem `institution_name` nem `balance_updated_on`; `manual` é o contrário e não tem `raw`. A sincronização nunca altera, zera nem apaga uma posição manual, e grava a foto diária dela no fim de cada execução, repetindo o último valor informado. Excluir a posição apaga as fotos e os `goal_links` dela (`ON DELETE CASCADE`).
 
@@ -249,6 +249,7 @@ A previsão não grava uma linha por mês: as **ocorrências são calculadas** a
 - **Pular o mês** (`status = 'skipped'`, sem transação).
 - **Desfazer** apaga a linha e a ocorrência volta a pendente.
 - Excluir a transação vinculada deixa a ocorrência `realized`, sem vínculo. Editar a previsão vale para todos os meses, inclusive os já realizados.
+- Se a transação vinculada é uma pendente do Open Finance que vira postada com outro id, a sincronização passa o `transaction_id` para a postada equivalente (a mesma regra que leva a categoria: [sincronização](03-arquitetura.md#sincronização)), a menos que a postada já realize outra ocorrência. Não há coluna nova: é a mesma linha, apontando para a transação que substituiu a pendente.
 
 **`goals`**: metas.
 

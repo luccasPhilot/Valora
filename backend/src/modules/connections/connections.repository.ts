@@ -1,8 +1,9 @@
-import { asc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
 import { accounts, connections } from '../../db/schema.js';
+import { APP_TIMEZONE } from '../../shared/timezone.js';
 import { connectionIsActive } from './active-connection.js';
 
 /** Única lista de status de conexão do backend: o repository, as rotas e as contas usam esta. */
@@ -99,6 +100,25 @@ export class ConnectionsRepository {
         updatedAt: update.syncedAt,
       })
       .where(eq(connections.id, connectionId));
+  }
+
+  /**
+   * Dos `pluggyItemIds`, os que não precisam ser lidos de novo hoje: sincronizados com sucesso no dia
+   * `today` (em São Paulo) ou arquivados. Id sem conexão nunca está aqui.
+   */
+  async findUpToDateItemIds(pluggyItemIds: readonly string[], today: string): Promise<string[]> {
+    if (pluggyItemIds.length === 0) return [];
+    const syncedOnDay = sql`(${connections.lastSyncedAt} at time zone ${APP_TIMEZONE})::date`;
+    const rows = await this.db
+      .select({ pluggyItemId: connections.pluggyItemId })
+      .from(connections)
+      .where(
+        and(
+          inArray(connections.pluggyItemId, [...pluggyItemIds]),
+          or(isNotNull(connections.archivedAt), eq(syncedOnDay, today)),
+        ),
+      );
+    return rows.map(({ pluggyItemId }) => pluggyItemId);
   }
 
   /** Só os bancos ativos (não arquivados). É o que o avaliador de alertas olha. */

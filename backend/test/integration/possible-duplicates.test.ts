@@ -1,13 +1,14 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { categories, transactions } from '../../src/db/schema.js';
+import { accounts, categories, transactions } from '../../src/db/schema.js';
 import { DuplicateDetector } from '../../src/modules/transactions/duplicate-detector.js';
 import { PossibleDuplicatesRepository } from '../../src/modules/transactions/possible-duplicates.repository.js';
 import { buildTestApp, type TestApp } from '../helpers/test-app.js';
 import { insertAccount, transactionValues } from './fixtures.js';
 import {
   buildSyncHarness,
+  findTransaction,
   fixtureOf,
   newestTransaction,
   runSync,
@@ -259,6 +260,62 @@ describe('detecção na sincronização', () => {
       description: after?.description,
       marked: after?.possibleDuplicateOfId,
     }).toEqual({ description: 'Descrição que o banco corrigiu', marked: null });
+  });
+});
+
+describe('detecção na troca de pendente por postada', () => {
+  let harness: SyncHarness;
+
+  beforeEach(() => {
+    harness = buildSyncHarness({ database });
+  });
+
+  /** Transação do cartão do item-2 no formato do Pluggy, a partir de uma das fixtures. */
+  function addCardTransaction(id: string, options: { date: string; status: 'PENDING' | 'POSTED' }) {
+    const card = fixtureOf(harness.fixtures, 'item-2');
+    const [template] = card.transactions.filter((tx) => tx.accountId === 'acc-3');
+    if (!template) throw new Error('Teste: cartão sem transação nas fixtures');
+    card.transactions.push({
+      ...structuredClone(template),
+      id,
+      date: `${options.date}T15:00:00.000Z`,
+      type: 'DEBIT',
+      amount: 45,
+      amountInAccountCurrency: null,
+      status: options.status,
+      creditCardMetadata: null,
+    });
+  }
+
+  it('should_mark_posted_as_possible_duplicate_when_it_replaces_a_pending_with_another_id', async () => {
+    // Arrange: a pendente do dia 3 fica marcada como duplicata da manual do dia 2.
+    harness.clock.now = new Date('2026-11-03T15:00:00Z');
+    await runSync(harness.syncService);
+    const [card] = await database.db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(eq(accounts.pluggyAccountId, 'acc-3'));
+    const manualId = await insertTransaction({
+      accountId: card?.id,
+      source: 'manual',
+      categorySource: 'user',
+      date: '2026-11-02',
+    });
+    addCardTransaction('tx-pending', { date: '2026-11-03', status: 'PENDING' });
+    await runSync(harness.syncService);
+    const card2 = fixtureOf(harness.fixtures, 'item-2');
+    card2.transactions = card2.transactions.filter((tx) => tx.id !== 'tx-pending');
+    addCardTransaction('tx-posted', { date: '2026-11-04', status: 'POSTED' });
+    harness.clock.now = new Date('2026-11-04T15:00:00Z');
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    const posted = await findTransaction(database, 'tx-posted');
+    expect({
+      pending: await findTransaction(database, 'tx-pending'),
+      postedMark: posted?.possibleDuplicateOfId,
+      manualStillThere: await database.db.$count(transactions, eq(transactions.id, manualId)),
+    }).toEqual({ pending: undefined, postedMark: manualId, manualStillThere: 1 });
   });
 });
 

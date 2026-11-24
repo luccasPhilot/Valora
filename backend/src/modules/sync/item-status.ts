@@ -58,3 +58,27 @@ export function mapItemStatus(item: PluggyItemStatusInput, now: Date): ItemConne
   if (item.errorCode !== null && CONSENT_ERROR_CODES.has(item.errorCode)) return CONSENT_EXPIRED;
   return STATES_BY_PLUGGY_STATUS[item.status] ?? UNKNOWN_STATUS;
 }
+
+/** `complete` só quando o Pluggy diz que leu os investimentos do item até o fim. */
+export type InvestmentsCollection = 'complete' | 'incomplete';
+
+export interface PluggyCollectionInput {
+  readonly status: string;
+  readonly executionStatus: string | null;
+  /** O SDK diz que só vem em `PARTIAL_SUCCESS`; `investments` é nulo se o produto não foi pedido. */
+  readonly statusDetail: {
+    readonly investments?: { readonly isUpdated?: boolean | null } | null;
+  } | null;
+}
+
+/**
+ * Só uma coleta completa permite zerar o investimento que sumiu da resposta. Qualquer outro caso,
+ * inclusive `executionStatus` ausente ou desconhecido, é incompleto: na dúvida, não zerar.
+ */
+export function investmentsCollectionOf(item: PluggyCollectionInput): InvestmentsCollection {
+  if (item.status !== 'UPDATED') return 'incomplete';
+  if (item.executionStatus === 'SUCCESS') return 'complete';
+  const hasCollectedInvestments = item.statusDetail?.investments?.isUpdated === true;
+  if (item.executionStatus === 'PARTIAL_SUCCESS' && hasCollectedInvestments) return 'complete';
+  return 'incomplete';
+}

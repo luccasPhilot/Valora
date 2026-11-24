@@ -98,6 +98,10 @@ O histórico vai até **12 meses** para trás. Por isso **o banco de dados do Va
 
 No Valora, quem consulta o Open Finance é o Meu Pluggy, uma vez por dia. O Valora consulta a API do Pluggy, que devolve o que o Meu Pluggy já trouxe.
 
+**Janela de transações no Valora:** na primeira sincronização de um banco, os 365 dias. Depois, a busca começa no dia da última sincronização bem-sucedida dele menos 7 dias de margem, com pelo menos 30 dias e no máximo 365. Um banco que ficou parado (consentimento vencido, erro, arquivado e reativado) volta buscando desde onde parou, até o limite dos 12 meses. A janela maior só ajuda se o Meu Pluggy tiver o período: renovar o consentimento como um item novo é outro caso, ainda em aberto.
+
+**Coleta parcial de investimentos:** o item do Pluggy diz se a última coleta terminou (`status` e `executionStatus`) e, em `PARTIAL_SUCCESS`, quais produtos foram lidos (`statusDetail`, com `investments.isUpdated`). O Valora só zera o investimento que sumiu da resposta quando a coleta de investimentos foi completa: `UPDATED` com `SUCCESS`, ou `PARTIAL_SUCCESS` com `investments.isUpdated = true`. Em qualquer outro caso, inclusive `executionStatus` ausente ou desconhecido, a posição ausente fica como estava, sem foto `0`. O que vem com saldo zero (`status = TOTAL_WITHDRAWAL`) é gravado sempre. Os valores reais de `executionStatus` e `statusDetail` no MeuPluggy ainda não foram vistos: as fixtures só têm `UPDATED`/`SUCCESS`.
+
 ## Consentimento
 
 Até agora o consentimento valia no máximo 12 meses, e renovar exigia refazer todo o processo. O Banco Central aprovou a **Resolução Conjunta nº 7**, noticiada pelo Finsiders:

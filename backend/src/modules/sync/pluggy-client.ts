@@ -2,7 +2,12 @@ import type { z } from 'zod';
 
 import { toSaoPauloDate } from '../../shared/dates.js';
 import { normalizeDescription } from '../../shared/text.js';
-import { type ItemConnectionState, mapItemStatus } from './item-status.js';
+import {
+  type InvestmentsCollection,
+  investmentsCollectionOf,
+  type ItemConnectionState,
+  mapItemStatus,
+} from './item-status.js';
 import {
   type PluggyAccount,
   pluggyAccountSchema,
@@ -41,6 +46,8 @@ export class PluggyResponseError extends Error {
 
 export interface PluggyItemOverview {
   readonly connection: ItemConnectionState;
+  /** Só com coleta completa o investimento que sumiu da resposta é zerado. */
+  readonly investmentsCollection: InvestmentsCollection;
   readonly connectorName: string;
   readonly institutionLogoUrl: string | null;
 }
@@ -140,8 +147,14 @@ export class PluggyClient {
       },
       this.now(),
     );
+    const investmentsCollection = investmentsCollectionOf({
+      status: item.status,
+      executionStatus: item.executionStatus ?? null,
+      statusDetail: item.statusDetail ?? null,
+    });
     return {
       connection,
+      investmentsCollection,
       connectorName: item.connector.name,
       institutionLogoUrl: isMeuPluggy ? null : (item.connector.imageUrl ?? null),
     };

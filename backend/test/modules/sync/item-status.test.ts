@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mapItemStatus } from '../../../src/modules/sync/item-status.js';
+import { investmentsCollectionOf, mapItemStatus } from '../../../src/modules/sync/item-status.js';
 
 const NOW = new Date('2026-11-04T12:00:00Z');
 const HEALTHY_ITEM = { status: 'UPDATED', errorCode: null, consentExpiresAt: null };
@@ -97,5 +97,97 @@ describe('mapItemStatus', () => {
     const state = mapItemStatus(item, NOW);
     // Assert
     expect(state).toMatchObject({ status: 'error', canReadData: false });
+  });
+});
+
+describe('investmentsCollectionOf', () => {
+  const COMPLETE_ITEM = { status: 'UPDATED', executionStatus: 'SUCCESS', statusDetail: null };
+
+  it('should_be_complete_when_item_is_updated_with_success', () => {
+    // Arrange
+    const item = COMPLETE_ITEM;
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('complete');
+  });
+
+  it('should_be_complete_when_partial_success_collected_investments', () => {
+    // Arrange
+    const item = {
+      ...COMPLETE_ITEM,
+      executionStatus: 'PARTIAL_SUCCESS',
+      statusDetail: { investments: { isUpdated: true } },
+    };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('complete');
+  });
+
+  it('should_be_incomplete_when_partial_success_did_not_collect_investments', () => {
+    // Arrange
+    const item = {
+      ...COMPLETE_ITEM,
+      executionStatus: 'PARTIAL_SUCCESS',
+      statusDetail: { investments: { isUpdated: false } },
+    };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('incomplete');
+  });
+
+  it('should_be_incomplete_when_partial_success_has_no_status_detail', () => {
+    // Arrange
+    const item = { ...COMPLETE_ITEM, executionStatus: 'PARTIAL_SUCCESS', statusDetail: null };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('incomplete');
+  });
+
+  it('should_be_incomplete_when_partial_success_has_no_investments_detail', () => {
+    // Arrange
+    const item = {
+      ...COMPLETE_ITEM,
+      executionStatus: 'PARTIAL_SUCCESS',
+      statusDetail: { investments: null },
+    };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('incomplete');
+  });
+
+  it('should_be_incomplete_when_item_is_updating_investments', () => {
+    // Arrange
+    const item = {
+      ...COMPLETE_ITEM,
+      status: 'UPDATING',
+      executionStatus: 'INVESTMENTS_IN_PROGRESS',
+    };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('incomplete');
+  });
+
+  it('should_be_incomplete_when_execution_status_is_missing', () => {
+    // Arrange
+    const item = { ...COMPLETE_ITEM, executionStatus: null };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('incomplete');
+  });
+
+  it('should_be_incomplete_when_execution_status_is_unknown', () => {
+    // Arrange
+    const item = { ...COMPLETE_ITEM, executionStatus: 'SOMETHING_NEW' };
+    // Act
+    const collection = investmentsCollectionOf(item);
+    // Assert
+    expect(collection).toBe('incomplete');
   });
 });

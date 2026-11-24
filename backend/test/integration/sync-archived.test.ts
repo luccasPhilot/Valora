@@ -2,15 +2,18 @@ import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { connections } from '../../src/db/schema.js';
+import { subtractDays, todayInSaoPaulo } from '../../src/shared/dates.js';
 import {
   buildSyncHarness,
   connectionOf,
   countRows,
+  fixtureOf,
   runSync,
   type SyncHarness,
 } from './sync-harness.js';
 import { connectTestDatabase, truncateAllTables } from './test-database.js';
 
+const MS_PER_DAY = 86_400_000;
 const REMOVED_MESSAGE = 'Este banco foi removido do Meu Pluggy. Remova-o do Valora.';
 
 let harness: SyncHarness;
@@ -94,6 +97,29 @@ describe('banco arquivado', () => {
     await runSync(harness.syncService);
     // Assert
     expect(fetchItem.mock.calls.map(([itemId]) => itemId)).toContain('item-3');
+  });
+
+  it('should_fetch_since_last_sync_when_bank_is_reactivated_after_months', async () => {
+    // Arrange: arquivado logo depois da primeira leitura e reativado 5 meses depois.
+    const firstSync = harness.clock.now;
+    await runSync(harness.syncService);
+    await archive('item-3');
+    harness.clock.now = new Date(firstSync.getTime() + 150 * MS_PER_DAY);
+    await harness.database.db
+      .update(connections)
+      .set({ archivedAt: null })
+      .where(eq(connections.pluggyItemId, 'item-3'));
+    const item3AccountIds = new Set(
+      fixtureOf(harness.fixtures, 'item-3').accounts.map(({ id }) => id),
+    );
+    const fetchAll = vi.spyOn(harness.sdk, 'fetchAllTransactions');
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    const item3Windows = fetchAll.mock.calls
+      .filter(([accountId]) => item3AccountIds.has(accountId))
+      .map(([, window]) => window.from);
+    expect(new Set(item3Windows)).toEqual(new Set([subtractDays(todayInSaoPaulo(firstSync), 7)]));
   });
 
   it('should_keep_the_history_of_an_archived_bank', async () => {

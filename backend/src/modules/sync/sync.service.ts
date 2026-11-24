@@ -1,4 +1,4 @@
-import { subtractDays, todayInSaoPaulo } from '../../shared/dates.js';
+import { addDays, subtractDays, todayInSaoPaulo } from '../../shared/dates.js';
 import type { AlertEvaluator } from '../alerts/alert-evaluator.js';
 import type {
   ConnectionRecord,
@@ -6,6 +6,12 @@ import type {
 } from '../connections/connections.repository.js';
 import type { InvestmentsService } from '../investments/investments.service.js';
 import type { ItemConnectionState } from './item-status.js';
+import {
+  matchVanishedPending,
+  PENDING_MATCH_DAYS_AFTER,
+  PENDING_MATCH_DAYS_BEFORE,
+  type PendingReplacementPlan,
+} from './pending-replacement.js';
 import type { PluggyAccountList, PluggyClient, PluggyItemOverview } from './pluggy-client.js';
 import { PluggyItemNotFoundError } from './pluggy-errors.js';
 import type {
@@ -25,9 +31,9 @@ import type {
   SyncStats,
   SyncTrigger,
 } from './sync-runs.repository.js';
+import { transactionWindowFor } from './transaction-window.js';
+import type { VanishedPending, VanishedPendingScope } from './transactions.repository.js';
 
-const FIRST_SYNC_DAYS = 365;
-const FOLLOW_UP_SYNC_DAYS = 30;
 const PLACEHOLDER_INSTITUTION_NAME = 'Banco não identificado';
 const UNEXPECTED_FAILURE_MESSAGE = 'Erro inesperado na sincronização. Tente de novo mais tarde.';
 const INTERRUPTED_RUN_MESSAGE = 'A sincronização foi interrompida porque a API reiniciou.';
@@ -76,8 +82,25 @@ export type StartSyncResult =
     }
   | { readonly status: 'already_running' };
 
-/** Resultado de um disparo do agendamento: `skipped` quando outra sincronização já rodava. */
-export type ScheduledSyncResult = FinishedSyncRunStatus | 'skipped';
+export interface StartSyncOptions {
+  /** Bancos desta execução; sem a lista, todos os do `PLUGGY_ITEM_IDS`. */
+  readonly itemIds?: readonly string[];
+}
+
+/**
+ * Resultado de um disparo do agendamento: `skipped` quando outra sincronização já rodava e
+ * `nothing_due` quando todos os bancos já tinham sincronizado hoje (nenhuma execução foi criada).
+ */
+export type ScheduledSyncResult = FinishedSyncRunStatus | 'skipped' | 'nothing_due';
+
+export interface ScheduledSyncReport {
+  readonly result: ScheduledSyncResult;
+  /** Bancos ativos ainda sem sincronização bem-sucedida hoje, depois do disparo. */
+  readonly pendingItemCount: number;
+}
+
+const SKIPPED_REPORT: ScheduledSyncReport = { result: 'skipped', pendingItemCount: 0 };
+const NOTHING_DUE_REPORT: ScheduledSyncReport = { result: 'nothing_due', pendingItemCount: 0 };
 
 interface ItemData {
   readonly accountList: PluggyAccountList;
@@ -86,6 +109,12 @@ interface ItemData {
   readonly billsByAccount: ReadonlyMap<string, readonly SyncedCreditCardBill[]>;
   /** Cartões cujas faturas não puderam ser lidas: o banco sincroniza mesmo assim. */
   readonly billsFailed: number;
+}
+
+interface RunExecution {
+  readonly runId: string;
+  readonly lock: SyncLockHandle;
+  readonly itemIds: readonly string[];
 }
 
 interface ItemSave {
@@ -99,6 +128,12 @@ function errorTypeOf(error: unknown): string {
   return error instanceof Error ? error.name : 'unknown';
 }
 
+const UNEXPECTED_FAILURE_OUTCOME: SyncRunOutcome = {
+  status: 'failed',
+  stats: EMPTY_STATS,
+  errorMessage: UNEXPECTED_FAILURE_MESSAGE,
+};
+
 const FAILED_ITEM: ItemOutcome = { status: 'failed' };
 const SKIPPED_ITEM: ItemOutcome = { status: 'skipped' };
 
@@ -106,26 +141,62 @@ export class SyncService {
   constructor(private readonly deps: SyncServiceDependencies) {}
 
   /** Começa uma sincronização em segundo plano, ou avisa que já existe uma em andamento. */
-  async start(trigger: SyncTrigger): Promise<StartSyncResult> {
+  async start(
+    trigger: SyncTrigger,
+    { itemIds = this.deps.itemIds }: StartSyncOptions = {},
+  ): Promise<StartSyncResult> {
     const lock = await this.deps.lock.tryAcquire();
     if (!lock) return { status: 'already_running' };
     try {
       const run = await this.deps.syncRuns.create(trigger);
-      return { status: 'started', run, finished: this.execute(run.id, lock) };
+      return { status: 'started', run, finished: this.execute({ runId: run.id, lock, itemIds }) };
     } catch (error) {
       await lock.release();
       throw error;
     }
   }
 
-  /** Disparo do agendamento: se já houver uma sincronização rodando, só registra que pulou. */
-  async runScheduled(): Promise<ScheduledSyncResult> {
-    const started = await this.start('schedule');
+  /** Disparo do cron: todos os bancos. Se já houver uma sincronização rodando, só registra que pulou. */
+  runScheduled(): Promise<ScheduledSyncReport> {
+    return this.runScheduledFor(this.deps.itemIds);
+  }
+
+  /**
+   * Recuperação do dia (ao subir a API e na segunda tentativa): só os bancos ativos ainda sem
+   * sincronização bem-sucedida hoje. Sem nenhum, não cria execução.
+   */
+  async catchUpToday(): Promise<ScheduledSyncReport> {
+    const dueItemIds = await this.itemIdsDueToday();
+    if (dueItemIds.length === 0) return NOTHING_DUE_REPORT;
+    return this.runScheduledFor(dueItemIds);
+  }
+
+  private async runScheduledFor(itemIds: readonly string[]): Promise<ScheduledSyncReport> {
+    const started = await this.start('schedule', { itemIds });
     if (started.status === 'already_running') {
       this.deps.logger.info({}, 'scheduled sync skipped: another sync is running');
-      return 'skipped';
+      return SKIPPED_REPORT;
     }
-    return started.finished;
+    const result = await started.finished;
+    return { result, pendingItemCount: await this.countItemsDueToday() };
+  }
+
+  /** Bancos do `PLUGGY_ITEM_IDS` sem conexão ou ativos sem sincronização bem-sucedida hoje. */
+  private async itemIdsDueToday(): Promise<string[]> {
+    const today = todayInSaoPaulo(this.deps.now());
+    const upToDateIds = await this.deps.connections.findUpToDateItemIds(this.deps.itemIds, today);
+    const upToDate = new Set(upToDateIds);
+    return this.deps.itemIds.filter((itemId) => !upToDate.has(itemId));
+  }
+
+  // Sem a contagem, não há segunda tentativa: a execução já terminou e o resultado dela vale.
+  private async countItemsDueToday(): Promise<number> {
+    try {
+      return (await this.itemIdsDueToday()).length;
+    } catch (error) {
+      this.deps.logger.error({ errorType: errorTypeOf(error) }, 'pending banks count failed');
+      return 0;
+    }
   }
 
   findLatestRun(): Promise<SyncRunRecord | null> {
@@ -137,22 +208,40 @@ export class SyncService {
     return this.deps.syncRuns.failInterrupted(INTERRUPTED_RUN_MESSAGE);
   }
 
-  private async execute(runId: string, lock: SyncLockHandle): Promise<FinishedSyncRunStatus> {
+  private async execute({ runId, lock, itemIds }: RunExecution): Promise<FinishedSyncRunStatus> {
     try {
-      const itemsOutcome = await this.syncAllItems();
-      await this.snapshotManualInvestments();
-      const outcome = await this.evaluateAlerts(itemsOutcome);
-      await this.deps.syncRuns.finish(runId, outcome);
-      this.deps.logger.info({ runId, status: outcome.status, ...outcome.stats }, 'sync finished');
+      const outcome = await this.computeOutcome(itemIds);
+      await this.recordFinish(runId, outcome);
       return outcome.status;
-    } catch (error) {
-      this.deps.logger.error({ runId, errorType: errorTypeOf(error) }, 'sync failed unexpectedly');
-      await this.finishAsUnexpectedFailure(runId);
-      return 'failed';
     } finally {
       await lock.release().catch((error: unknown) => {
         this.deps.logger.error({ errorType: errorTypeOf(error) }, 'sync lock release failed');
       });
+    }
+  }
+
+  private async computeOutcome(itemIds: readonly string[]): Promise<SyncRunOutcome> {
+    try {
+      const itemsOutcome = await this.syncAllItems(itemIds);
+      await this.snapshotManualInvestments();
+      return await this.evaluateAlerts(itemsOutcome);
+    } catch (error) {
+      this.deps.logger.error({ errorType: errorTypeOf(error) }, 'sync failed unexpectedly');
+      return UNEXPECTED_FAILURE_OUTCOME;
+    }
+  }
+
+  /**
+   * Se só o registro do fim falhar, o resultado calculado vale mesmo assim: regravar como `failed`
+   * trocaria um resultado verdadeiro por um falso. A execução que ficou `running` é fechada por
+   * `failInterruptedRuns` na próxima subida.
+   */
+  private async recordFinish(runId: string, outcome: SyncRunOutcome): Promise<void> {
+    try {
+      await this.deps.syncRuns.finish(runId, outcome);
+      this.deps.logger.info({ runId, status: outcome.status, ...outcome.stats }, 'sync finished');
+    } catch (error) {
+      this.deps.logger.error({ runId, errorType: errorTypeOf(error) }, 'sync run not closed');
     }
   }
 
@@ -182,28 +271,50 @@ export class SyncService {
     }
   }
 
-  private async finishAsUnexpectedFailure(runId: string): Promise<void> {
-    const outcome: SyncRunOutcome = {
-      status: 'failed',
-      stats: EMPTY_STATS,
-      errorMessage: UNEXPECTED_FAILURE_MESSAGE,
-    };
-    await this.deps.syncRuns.finish(runId, outcome).catch((error: unknown) => {
-      this.deps.logger.error({ runId, errorType: errorTypeOf(error) }, 'sync run not closed');
-    });
-  }
-
-  private async syncAllItems(): Promise<SyncRunOutcome> {
+  private async syncAllItems(itemIds: readonly string[]): Promise<SyncRunOutcome> {
     const itemOutcomes: ItemOutcome[] = [];
     // Um banco de cada vez: o Meu Pluggy tem no máximo 5, e assim cada um usa uma conexão só.
-    for (const itemId of this.deps.itemIds) {
-      itemOutcomes.push(await this.syncItem(itemId));
+    for (const itemId of itemIds) {
+      itemOutcomes.push(await this.syncItemSafely(itemId));
     }
     return summarizeRun(itemOutcomes);
   }
 
-  private async syncItem(itemId: string): Promise<ItemOutcome> {
-    const connection = await this.deps.connections.ensure(itemId, PLACEHOLDER_INSTITUTION_NAME);
+  /**
+   * Isola o banco inteiro, inclusive as gravações fora dos estágios (criar a conexão, gravar o
+   * status): um erro do banco de dados aqui vira falha deste banco, e os outros seguem.
+   */
+  private async syncItemSafely(itemId: string): Promise<ItemOutcome> {
+    let connection: ConnectionRecord | null = null;
+    try {
+      connection = await this.deps.connections.ensure(itemId, PLACEHOLDER_INSTITUTION_NAME);
+      return await this.syncConnection(connection);
+    } catch (error) {
+      this.deps.logger.warn(
+        { connectionId: connection?.id ?? null, errorType: errorTypeOf(error) },
+        'bank sync failed unexpectedly',
+      );
+      if (connection) await this.markAsUnexpectedFailure(connection);
+      return FAILED_ITEM;
+    }
+  }
+
+  private async markAsUnexpectedFailure(connection: ConnectionRecord): Promise<void> {
+    try {
+      await this.deps.connections.updateStatus(connection.id, {
+        status: 'error',
+        statusDetail: UNEXPECTED_FAILURE_MESSAGE,
+      });
+    } catch (error) {
+      this.deps.logger.error(
+        { connectionId: connection.id, errorType: errorTypeOf(error) },
+        'bank status not saved',
+      );
+    }
+  }
+
+  private async syncConnection(connection: ConnectionRecord): Promise<ItemOutcome> {
+    const itemId = connection.pluggyItemId;
     // Banco arquivado: nenhuma chamada ao Pluggy e nenhuma mudança de status, mesmo com o id no `.env`.
     if (connection.archivedAt !== null) return SKIPPED_ITEM;
     const overview = await this.attempt(connection, 'fetch_item', () =>
@@ -267,11 +378,8 @@ export class SyncService {
     }
   }
 
-  /** 365 dias na primeira sincronização do banco; 30 nas seguintes. */
   private windowFor(connection: ConnectionRecord): TransactionWindow {
-    const today = todayInSaoPaulo(this.deps.now());
-    const days = connection.lastSyncedAt === null ? FIRST_SYNC_DAYS : FOLLOW_UP_SYNC_DAYS;
-    return { from: subtractDays(today, days), to: today };
+    return transactionWindowFor(connection.lastSyncedAt, this.deps.now());
   }
 
   // Busca tudo antes de abrir a transação do banco: uma resposta inválida não deixa nada gravado.
@@ -316,13 +424,20 @@ export class SyncService {
         data,
         today,
       });
-      const transactionStats = await saveTransactions(repositories, { accountIds, data, window });
-      await repositories.categorizer.categorizeConnection(connection.id);
-      const investmentCount = await repositories.investments.upsertWithSnapshots(
-        connection.id,
-        data.investments,
+      const transactionStats = await saveTransactions(repositories, {
+        accountIds,
+        data,
+        window,
         today,
-      );
+        logger: this.deps.logger,
+      });
+      await repositories.categorizer.categorizeConnection(connection.id);
+      const investmentCount = await saveInvestments(repositories, {
+        connectionId: connection.id,
+        overview,
+        data,
+        today,
+      });
       const billCount = await saveBills(repositories, { accountIds, data });
       await repositories.connections.markSynced(connection.id, {
         institutionName: data.accountList.institutionName ?? overview.connectorName,
@@ -351,6 +466,8 @@ interface TransactionsSave {
   readonly accountIds: ReadonlyMap<string, string>;
   readonly data: ItemData;
   readonly window: TransactionWindow;
+  readonly today: string;
+  readonly logger: SyncLogger;
 }
 
 function idOf(accountIds: ReadonlyMap<string, string>, pluggyAccountId: string): string {
@@ -374,6 +491,30 @@ async function saveAccounts(
   return accountIds;
 }
 
+interface InvestmentsSave {
+  readonly connectionId: string;
+  readonly overview: PluggyItemOverview;
+  readonly data: ItemData;
+  readonly today: string;
+}
+
+/** Zera o que sumiu só com coleta completa: numa parcial, a ausência não quer dizer resgate. */
+async function saveInvestments(
+  repositories: ItemRepositories,
+  { connectionId, overview, data, today }: InvestmentsSave,
+): Promise<number> {
+  const investmentCount = await repositories.investments.upsertWithSnapshots(
+    connectionId,
+    data.investments,
+    today,
+  );
+  if (overview.investmentsCollection === 'complete') {
+    const returnedIds = data.investments.map(({ pluggyInvestmentId }) => pluggyInvestmentId);
+    await repositories.investments.zeroVanishedWithSnapshots(connectionId, returnedIds, today);
+  }
+  return investmentCount;
+}
+
 async function saveBills(
   repositories: ItemRepositories,
   { accountIds, data }: Pick<TransactionsSave, 'accountIds' | 'data'>,
@@ -390,20 +531,18 @@ async function saveBills(
 
 async function saveTransactions(
   repositories: ItemRepositories,
-  { accountIds, data, window }: TransactionsSave,
+  { accountIds, data, window, today, logger }: TransactionsSave,
 ): Promise<SyncStats> {
   let stats = EMPTY_STATS;
   for (const [pluggyAccountId, transactions] of data.transactionsByAccount) {
     const accountId = idOf(accountIds, pluggyAccountId);
     const counts = await repositories.transactions.upsertMany(accountId, transactions);
+    const returnedPluggyIds = transactions.map((transaction) => transaction.pluggyTransactionId);
+    const scope = { accountId, window, returnedPluggyIds };
+    const removed = await removeVanishedPending(repositories, { scope, today, logger });
+    // Depois de apagar as pendentes, para a manual que uma delas apontava valer para a postada nova.
     // Só as linhas novas: atualizar uma transação que já existia nunca gera aviso de duplicata.
     await repositories.duplicateDetector.markPossibleDuplicates(counts.insertedIds);
-    const returnedIds = transactions.map((transaction) => transaction.pluggyTransactionId);
-    const removed = await repositories.transactions.deleteMissingPending(
-      accountId,
-      window,
-      returnedIds,
-    );
     stats = addStats(stats, {
       ...EMPTY_STATS,
       transactionsInserted: counts.inserted,
@@ -412,4 +551,77 @@ async function saveTransactions(
     });
   }
   return stats;
+}
+
+interface VanishedPendingRemoval {
+  readonly scope: VanishedPendingScope;
+  readonly today: string;
+  readonly logger: SyncLogger;
+}
+
+/** Leva a decisão do usuário das pendentes que sumiram para a postada equivalente e apaga as pendentes. */
+async function removeVanishedPending(
+  repositories: ItemRepositories,
+  { scope, today, logger }: VanishedPendingRemoval,
+): Promise<number> {
+  const { transactions } = repositories;
+  const vanishedPendings = await transactions.findVanishedPendingWithDecision(scope);
+  const plan = await planReplacements(transactions, {
+    vanishedPendings,
+    accountId: scope.accountId,
+    today,
+  });
+  await carryDecisions(transactions, { vanishedPendings, plan });
+  const counts = {
+    carried: plan.replacements.length,
+    kept: plan.keptPendingIds.length,
+    ties: plan.ties,
+  };
+  if (vanishedPendings.length > 0) {
+    logger.info({ accountId: scope.accountId, ...counts }, 'vanished pending decisions handled');
+  }
+  return transactions.deleteMissingPending(scope, plan.keptPendingIds);
+}
+
+interface DecisionsCarry {
+  readonly vanishedPendings: readonly VanishedPending[];
+  readonly plan: PendingReplacementPlan;
+}
+
+/** Antes de apagar a pendente: a categoria (se era sua) e o vínculo com a previsão vão para a postada. */
+async function carryDecisions(
+  transactions: ItemRepositories['transactions'],
+  { vanishedPendings, plan }: DecisionsCarry,
+): Promise<void> {
+  const categoryByPendingId = new Map(
+    vanishedPendings.map((pending) => [pending.id, pending.userCategoryId]),
+  );
+  for (const { pendingId, postedId } of plan.replacements) {
+    const categoryId = categoryByPendingId.get(pendingId);
+    if (categoryId) await transactions.carryUserCategory(postedId, categoryId);
+    await transactions.moveOccurrenceLink(pendingId, postedId);
+  }
+}
+
+interface ReplacementPlanning {
+  readonly vanishedPendings: readonly VanishedPending[];
+  readonly accountId: string;
+  readonly today: string;
+}
+
+const NO_REPLACEMENTS: PendingReplacementPlan = { replacements: [], keptPendingIds: [], ties: 0 };
+
+async function planReplacements(
+  transactions: ItemRepositories['transactions'],
+  { vanishedPendings, accountId, today }: ReplacementPlanning,
+): Promise<PendingReplacementPlan> {
+  const dates = vanishedPendings.map((pending) => pending.date).sort();
+  const [earliest] = dates;
+  const latest = dates.at(-1);
+  if (!earliest || !latest) return NO_REPLACEMENTS;
+  const postedCandidates = await transactions.findPostedInRange(accountId, {
+    from: subtractDays(earliest, PENDING_MATCH_DAYS_BEFORE),
+    to: addDays(latest, PENDING_MATCH_DAYS_AFTER),
+  });
+  return matchVanishedPending({ vanishedPendings, postedCandidates, today });
 }

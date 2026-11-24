@@ -8,9 +8,8 @@ export class InvestmentsRepository {
   constructor(private readonly db: DbExecutor) {}
 
   /**
-   * Grava ou atualiza pelo id do Pluggy e guarda a foto do dia de cada investimento. O que o banco
-   * deixou de devolver foi resgatado: a posição vai a zero (com a foto do dia), senão o último valor
-   * ficaria somando para sempre. Devolve quantos investimentos vieram do Pluggy.
+   * Grava ou atualiza pelo id do Pluggy e guarda a foto do dia de cada investimento que veio, inclusive
+   * os de saldo zero (resgate total informado pelo Pluggy). Devolve quantos vieram.
    */
   async upsertWithSnapshots(
     connectionId: string,
@@ -18,12 +17,21 @@ export class InvestmentsRepository {
     date: string,
   ): Promise<number> {
     const savedRows = await this.upsert(connectionId, syncedInvestments);
-    const vanishedRows = await this.zeroVanished(
-      connectionId,
-      syncedInvestments.map(({ pluggyInvestmentId }) => pluggyInvestmentId),
-    );
-    await this.saveSnapshots([...savedRows, ...vanishedRows], date);
+    await this.saveSnapshots(savedRows, date);
     return savedRows.length;
+  }
+
+  /**
+   * O que o banco deixou de devolver numa coleta completa foi resgatado: a posição vai a zero, com
+   * a foto do dia, senão o último valor ficaria somando para sempre.
+   */
+  async zeroVanishedWithSnapshots(
+    connectionId: string,
+    returnedPluggyIds: readonly string[],
+    date: string,
+  ): Promise<void> {
+    const vanishedRows = await this.zeroVanished(connectionId, returnedPluggyIds);
+    await this.saveSnapshots(vanishedRows, date);
   }
 
   private async upsert(

@@ -1,7 +1,8 @@
-import { and, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, isNotNull, lte, ne, type SQL, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/database.js';
-import { transactions } from '../../db/schema.js';
+import { plannedEntryOccurrences, transactions } from '../../db/schema.js';
+import type { ReplacementTransaction } from './pending-replacement.js';
 import type { SyncedTransaction, TransactionWindow } from './sync.types.js';
 
 // Bem abaixo do limite de parâmetros do PostgreSQL (65535) com ~12 colunas por linha.
@@ -24,6 +25,41 @@ const HAS_CHANGED = sql`(
   excluded.amount_cents, excluded.status, excluded.pluggy_category,
   excluded.installment_number, excluded.installment_total, excluded.raw
 )`;
+
+/** Pendente que sumiu com decisão do usuário: o que a troca compara e o que ela leva. */
+export interface VanishedPending extends ReplacementTransaction {
+  /** Nula quando a decisão é só o vínculo com a previsão. */
+  readonly userCategoryId: string | null;
+}
+
+/** Pendentes que sumiram: pendentes do Open Finance da conta, na janela, com id que não voltou. */
+export interface VanishedPendingScope {
+  readonly accountId: string;
+  readonly window: TransactionWindow;
+  readonly returnedPluggyIds: readonly string[];
+}
+
+function vanishedPendingFilter({
+  accountId,
+  window,
+  returnedPluggyIds,
+}: VanishedPendingScope): SQL | undefined {
+  return and(
+    eq(transactions.accountId, accountId),
+    eq(transactions.source, 'open_finance'),
+    eq(transactions.status, 'pending'),
+    gte(transactions.date, window.from),
+    lte(transactions.date, window.to),
+    sql`${transactions.pluggyTransactionId} <> all(${sql.param([...returnedPluggyIds])}::text[])`,
+  );
+}
+
+const REPLACEMENT_COLUMNS = {
+  id: transactions.id,
+  date: transactions.date,
+  amountCents: transactions.amountCents,
+  createdAt: transactions.createdAt,
+};
 
 export class TransactionsRepository {
   constructor(private readonly db: DbExecutor) {}
@@ -52,25 +88,88 @@ export class TransactionsRepository {
     return { inserted: insertedIds.length, updated, insertedIds };
   }
 
+  /** Pendentes que sumiram com categoria escolhida pelo usuário ou com previsão vinculada. */
+  async findVanishedPendingWithDecision(scope: VanishedPendingScope): Promise<VanishedPending[]> {
+    const isUserCategory = eq(transactions.categorySource, 'user');
+    const hasOccurrence = sql`exists (
+      select 1 from ${plannedEntryOccurrences}
+      where ${plannedEntryOccurrences.transactionId} = ${transactions.id}
+    )`;
+    const rows = await this.db
+      .select({
+        ...REPLACEMENT_COLUMNS,
+        categoryId: transactions.categoryId,
+        categorySource: transactions.categorySource,
+      })
+      .from(transactions)
+      .where(and(vanishedPendingFilter(scope), sql`(${isUserCategory} or ${hasOccurrence})`));
+    return rows.map(({ categoryId, categorySource, ...row }) => ({
+      ...row,
+      userCategoryId: categorySource === 'user' ? categoryId : null,
+    }));
+  }
+
+  /** Postadas do Open Finance da conta no intervalo: as que podem ter substituído uma pendente. */
+  async findPostedInRange(
+    accountId: string,
+    range: TransactionWindow,
+  ): Promise<ReplacementTransaction[]> {
+    return this.db
+      .select(REPLACEMENT_COLUMNS)
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.accountId, accountId),
+          eq(transactions.source, 'open_finance'),
+          eq(transactions.status, 'posted'),
+          gte(transactions.date, range.from),
+          lte(transactions.date, range.to),
+        ),
+      )
+      .orderBy(asc(transactions.date), asc(transactions.id));
+  }
+
+  /** Leva a categoria do usuário para a postada, a menos que ela já tenha uma escolhida por ele. */
+  async carryUserCategory(postedId: string, categoryId: string): Promise<void> {
+    await this.db
+      .update(transactions)
+      .set({ categoryId, categorySource: 'user', updatedAt: sql`now()` })
+      .where(and(eq(transactions.id, postedId), ne(transactions.categorySource, 'user')));
+  }
+
   /**
-   * Apaga as pendentes do Open Finance da conta, dentro da janela, cujo id não voltou do Pluggy.
+   * Passa o vínculo da ocorrência de previsão da pendente para a postada. Se a postada já realiza
+   * outra ocorrência, nada muda aqui e o vínculo vira nulo quando a pendente for apagada.
+   */
+  async moveOccurrenceLink(pendingId: string, postedId: string): Promise<void> {
+    await this.db
+      .update(plannedEntryOccurrences)
+      .set({ transactionId: postedId })
+      .where(
+        and(
+          eq(plannedEntryOccurrences.transactionId, pendingId),
+          sql`not exists (
+            select 1 from ${plannedEntryOccurrences} as taken
+            where taken.transaction_id = ${postedId}
+          )`,
+        ),
+      );
+  }
+
+  /**
+   * Apaga as pendentes que sumiram, menos as que ainda esperam pela postada (`keptIds`).
    * O filtro `source = 'open_finance'` é o que protege as transações manuais.
    */
   async deleteMissingPending(
-    accountId: string,
-    window: TransactionWindow,
-    returnedPluggyIds: readonly string[],
+    scope: VanishedPendingScope,
+    keptIds: readonly string[],
   ): Promise<number> {
     const deleted = await this.db
       .delete(transactions)
       .where(
         and(
-          eq(transactions.accountId, accountId),
-          eq(transactions.source, 'open_finance'),
-          eq(transactions.status, 'pending'),
-          gte(transactions.date, window.from),
-          lte(transactions.date, window.to),
-          sql`${transactions.pluggyTransactionId} <> all(${sql.param([...returnedPluggyIds])}::text[])`,
+          vanishedPendingFilter(scope),
+          sql`${transactions.id} <> all(${sql.param([...keptIds])}::uuid[])`,
         ),
       )
       .returning({ id: transactions.id });

@@ -3,7 +3,7 @@ import { createDatabase } from './db/database.js';
 import { runMigrations } from './db/migrate.js';
 import { HealthcheckPinger } from './modules/sync/healthcheck-pinger.js';
 import { createPluggySdk } from './modules/sync/pluggy-sdk.js';
-import { startSyncSchedule } from './modules/sync/sync.schedule.js';
+import { recoverMissedSync, startSyncSchedule } from './modules/sync/sync.schedule.js';
 import { ConfigError, loadConfig } from './shared/config.js';
 
 async function main(): Promise<void> {
@@ -27,7 +27,15 @@ async function main(): Promise<void> {
     fetch: globalThis.fetch,
     logger: app.log,
   });
-  startSyncSchedule({ pattern: config.syncCron, sync: syncService, logger: app.log, heartbeat });
+  const scheduleOptions = {
+    pattern: config.syncCron,
+    sync: syncService,
+    logger: app.log,
+    heartbeat,
+  };
+  startSyncSchedule(scheduleOptions);
+  // Sem esperar: a API atende enquanto a sincronização do dia é recuperada.
+  void recoverMissedSync(scheduleOptions);
 }
 
 main().catch((error: unknown) => {
