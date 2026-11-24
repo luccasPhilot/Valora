@@ -1,4 +1,4 @@
-import { CopyX, Repeat } from 'lucide-react';
+import { CalendarX, CopyX, Repeat } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -146,6 +146,32 @@ describe('appearanceOf', () => {
     const { icon, label, tone } = appearanceOf(type);
     // Assert
     expect({ icon, label, tone }).toEqual({ icon: Repeat, label: 'Assinatura', tone: 'neutral' });
+  });
+
+  it('should_return_the_critical_calendar_when_the_year_end_snapshot_is_pending', () => {
+    // Arrange
+    const type = 'year_end_snapshot_pending';
+    // Act
+    const { icon, label, tone } = appearanceOf(type);
+    // Assert
+    expect({ icon, label, tone }).toEqual({
+      icon: CalendarX,
+      label: 'Foto de 31/12',
+      tone: 'critical',
+    });
+  });
+
+  it('should_return_the_warning_calendar_when_the_year_end_snapshot_is_missing', () => {
+    // Arrange
+    const type = 'year_end_snapshot_missing';
+    // Act
+    const { icon, label, tone } = appearanceOf(type);
+    // Assert
+    expect({ icon, label, tone }).toEqual({
+      icon: CalendarX,
+      label: 'Foto de 31/12',
+      tone: 'warning',
+    });
   });
 });
 

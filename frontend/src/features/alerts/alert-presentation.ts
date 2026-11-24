@@ -1,5 +1,6 @@
 import {
   Bell,
+  CalendarX,
   CircleAlert,
   CopyX,
   type LucideIcon,
@@ -31,6 +32,9 @@ const APPEARANCE_BY_TYPE: Readonly<Record<string, AlertAppearance>> = {
   connection_error: { icon: Unplug, label: 'Banco sem sincronizar', tone: 'critical' },
   duplicate_charge: { icon: CopyX, label: 'Cobrança duplicada', tone: 'warning' },
   subscription_detected: { icon: Repeat, label: 'Assinatura', tone: 'neutral' },
+  // No próprio dia ainda dá para sincronizar; depois da virada, só conferir nos informes.
+  year_end_snapshot_pending: { icon: CalendarX, label: 'Foto de 31/12', tone: 'critical' },
+  year_end_snapshot_missing: { icon: CalendarX, label: 'Foto de 31/12', tone: 'warning' },
 };
 
 // Tipo que a interface ainda não conhece (o backend pode ganhar tipos antes do front).
