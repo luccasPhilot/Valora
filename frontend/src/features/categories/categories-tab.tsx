@@ -13,6 +13,7 @@ import { useArchiveCategory, useCategories, useSaveCategory } from './categories
 import { CategoryForm } from './category-form';
 import { CategoryBadgeIcon } from './category-icons';
 import { describeError, KIND_LABELS, KIND_ORDER } from './category-labels';
+import { EditableRow } from './editable-row';
 
 const TRANSFER_NOTE =
   'Transferências não entram nos totais de receitas e despesas. Um saque chega do banco como despesa, na categoria “Saque”. Se você também lançar à mão o que gastou com esse dinheiro, troque o saque para uma transferência, para não contar duas vezes.';
@@ -28,26 +29,24 @@ interface CategoryRowProps {
 
 function CategoryRow({ category, onEdit, onArchive }: CategoryRowProps) {
   return (
-    <li className="flex items-center gap-1 py-1">
-      <button
-        type="button"
-        aria-label={`Editar ${category.name}`}
-        onClick={onEdit}
-        className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <CategoryBadgeIcon name={category.icon} />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">{category.name}</span>
-      </button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="rounded-full"
-        aria-label={`Arquivar ${category.name}`}
-        onClick={onArchive}
-      >
-        <Archive className="size-5" aria-hidden="true" />
-      </Button>
-    </li>
+    <EditableRow
+      editLabel={`Editar categoria ${category.name}`}
+      onEdit={onEdit}
+      action={
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          aria-label={`Arquivar ${category.name}`}
+          onClick={onArchive}
+        >
+          <Archive className="size-5" aria-hidden="true" />
+        </Button>
+      }
+    >
+      <CategoryBadgeIcon name={category.icon} />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{category.name}</span>
+    </EditableRow>
   );
 }
 

@@ -1,9 +1,11 @@
 import { FormPanel } from '@/components/form-panel';
+import { useHideValues } from '@/components/hide-values-provider';
 import { ErrorState } from '@/components/states/error-state';
 import { RowsSkeleton } from '@/components/states/skeletons';
 import type { Transaction, TransactionInput } from '@/lib/api/transactions';
 import { ApiError } from '@/lib/api-client';
 import { todayInSaoPaulo } from '@/lib/dates';
+import { editAmountField, NEW_AMOUNT_FIELD } from '@/lib/hidden-amount';
 
 import { useCategories } from '../../categories/categories-queries';
 import { describeError } from '../../categories/category-labels';
@@ -60,6 +62,7 @@ function PanelBody({ session, onSaved }: PanelBodyProps) {
   const save = useSaveTransaction();
   const today = todayInSaoPaulo();
   const { transaction } = session;
+  const { areValuesHidden } = useHideValues();
 
   if (categoriesQuery.isPending || accountsQuery.isPending) return <RowsSkeleton rowCount={4} />;
   if (!categoriesQuery.data || !accountsQuery.data) {
@@ -73,8 +76,11 @@ function PanelBody({ session, onSaved }: PanelBodyProps) {
     );
   }
 
+  const amountField = transaction
+    ? editAmountField({ cents: transaction.amountCents, areValuesHidden })
+    : NEW_AMOUNT_FIELD;
   const initialValues: TransactionFormValues = transaction
-    ? editTransactionValues(transaction, today)
+    ? { ...editTransactionValues(transaction, today), amountDigits: amountField.initialDigits }
     : newTransactionValues({ type: session.type, accounts: accountsQuery.data });
 
   async function submit(input: TransactionInput): Promise<SubmitOutcome> {
@@ -90,6 +96,7 @@ function PanelBody({ session, onSaved }: PanelBodyProps) {
   return (
     <TransactionForm
       initialValues={initialValues}
+      keptAmountDigits={amountField.keptDigits}
       categories={categoriesQuery.data}
       accounts={accountsQuery.data}
       today={today}

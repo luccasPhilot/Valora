@@ -16,8 +16,14 @@ interface TransactionListProps {
   layout: TransactionLayout;
   hasNextPage: boolean;
   isLoadingMore: boolean;
+  /** Com o filtro "Transferências", o total do dia seria sempre zero: o cabeçalho mostra a contagem. */
+  isTransferFilter: boolean;
   onLoadMore: () => void;
   onOpen: (transaction: Transaction) => void;
+}
+
+function transferCountLabel(count: number): string {
+  return count === 1 ? '1 transferência' : `${count} transferências`;
 }
 
 function useLoadMoreWhenVisible(isEnabled: boolean, onLoadMore: () => void) {
@@ -53,15 +59,14 @@ function ColumnTitles() {
   );
 }
 
-function DayGroupSection({
-  group,
-  layout,
-  onOpen,
-}: {
+interface DayGroupSectionProps {
   group: DayGroup;
   layout: TransactionLayout;
+  isTransferFilter: boolean;
   onOpen: (transaction: Transaction) => void;
-}) {
+}
+
+function DayGroupSection({ group, layout, isTransferFilter, onOpen }: DayGroupSectionProps) {
   const headingId = `day-${group.date}`;
   return (
     <section aria-labelledby={headingId} className="rounded-lg border bg-card p-2 shadow-card">
@@ -71,7 +76,11 @@ function DayGroupSection({
         </h2>
         <span className="text-sm font-medium text-muted-foreground tabular-nums whitespace-nowrap">
           <span className="sr-only">Total do dia: </span>
-          <Money cents={group.totalCents} isSigned />
+          {isTransferFilter ? (
+            transferCountLabel(group.transactions.length)
+          ) : (
+            <Money cents={group.totalCents} isSigned />
+          )}
         </span>
       </header>
       <ul className="divide-y divide-border">
@@ -93,6 +102,7 @@ export function TransactionList({
   layout,
   hasNextPage,
   isLoadingMore,
+  isTransferFilter,
   onLoadMore,
   onOpen,
 }: TransactionListProps) {
@@ -101,7 +111,13 @@ export function TransactionList({
     <div className="space-y-4">
       {layout === 'columns' ? <ColumnTitles /> : null}
       {groupByDay(transactions).map((group) => (
-        <DayGroupSection key={group.date} group={group} layout={layout} onOpen={onOpen} />
+        <DayGroupSection
+          key={group.date}
+          group={group}
+          layout={layout}
+          isTransferFilter={isTransferFilter}
+          onOpen={onOpen}
+        />
       ))}
       {hasNextPage ? (
         <div ref={sentinelRef} className="flex justify-center py-2">

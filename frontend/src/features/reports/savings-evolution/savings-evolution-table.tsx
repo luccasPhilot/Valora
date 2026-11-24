@@ -1,4 +1,5 @@
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { SavingsEvolutionReport } from '@/lib/api/reports';
 import { formatMonthYear, formatPercent } from '@/lib/format';
 
@@ -34,9 +35,7 @@ interface RowFigures {
 function toCells(figures: RowFigures): ReportTableRow['cells'] {
   const rate = figures.savingsRatePercent;
   return [
-    <span key="income" className="text-positive">
-      <Money cents={figures.incomeCents} isSigned />
-    </span>,
+    <TonedMoney key="income" cents={figures.incomeCents} kind="flow" isSigned />,
     <Money key="expense" cents={-figures.expenseCents} isSigned />,
     <ResultMoney key="result" cents={figures.resultCents} />,
     // O percentual não é valor em reais: continua visível com "Ocultar valores".

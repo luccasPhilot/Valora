@@ -66,8 +66,9 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
-            <XIcon className="size-4" />
+          // Mesmo botão do `Dialog`: 44 px de toque, que é o mínimo do Design System.
+          <SheetPrimitive.Close className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-full opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none">
+            <XIcon className="size-4" aria-hidden="true" />
             <span className="sr-only">Fechar</span>
           </SheetPrimitive.Close>
         )}

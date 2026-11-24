@@ -3,6 +3,7 @@ import { CreditCard, Wallet } from 'lucide-react';
 import { DataCard } from '@/components/cards/data-card';
 import { Metric } from '@/components/cards/metric';
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { AccountsOverview } from '@/lib/api/accounts';
 
 interface AccountsSummaryProps {
@@ -16,9 +17,8 @@ export function AccountsSummary({ totals }: AccountsSummaryProps) {
       <DataCard title="Saldo total" tier="hero" icon={Wallet} className="gap-2">
         <Metric
           size="display"
-          value={<Money cents={totals.totalBalanceCents} />}
+          value={<TonedMoney cents={totals.totalBalanceCents} kind="balance" />}
           caption="Contas correntes e poupanças"
-          isNegative={totals.totalBalanceCents < 0}
         />
       </DataCard>
       <DataCard title="Faturas em aberto" icon={CreditCard} className="gap-2">

@@ -105,6 +105,16 @@ describe('aba Categorias', () => {
     expect(within(sectionOf(heading)).getByText('Mercado')).toBeVisible();
   });
 
+  it('should_name_the_edit_button_with_the_category_and_keep_the_row_unlabeled', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    // Act
+    renderPage();
+    // Assert
+    const editButton = await screen.findByRole('button', { name: 'Editar categoria Mercado' });
+    expect(editButton.closest('li')).not.toHaveAttribute('aria-label');
+  });
+
   it('should_show_the_note_about_withdrawals_and_transfers', async () => {
     // Arrange
     stubApi(DEFAULT_ROUTES);
@@ -216,6 +226,35 @@ describe('aba Regras', () => {
     await openRulesTab();
     // Assert
     expect(await screen.findByText(/Alimentação · prioridade 2/)).toBeVisible();
+  });
+
+  it('should_keep_the_visible_rule_text_readable_and_name_only_the_action_button', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    // Act
+    await openRulesTab();
+    // Assert
+    const editButton = await screen.findByRole('button', { name: 'Editar regra IFOOD' });
+    const row = editButton.closest('li');
+    expect({
+      rowLabel: row?.getAttribute('aria-label') ?? null,
+      buttonHasRowText: editButton.textContent?.includes('IFOOD') ?? false,
+      rowText: row?.textContent,
+    }).toEqual({
+      rowLabel: null,
+      buttonHasRowText: false,
+      rowText: expect.stringContaining('Alimentação · prioridade 2'),
+    });
+  });
+
+  it('should_open_the_rule_form_when_the_edit_button_is_pressed', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    await openRulesTab();
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar regra IFOOD' }));
+    // Assert
+    expect(await screen.findByRole('dialog', { name: /regra/i })).toBeVisible();
   });
 
   it('should_show_the_empty_state_when_there_are_no_rules', async () => {

@@ -117,7 +117,7 @@ describe('AccountsPage summary', () => {
     renderPage();
     // Assert
     const balance = await screen.findByText('−R$ 200,00');
-    expect(balance.closest('p')).toHaveClass('text-destructive');
+    expect(balance.parentElement).toHaveClass('text-destructive');
   });
 });
 

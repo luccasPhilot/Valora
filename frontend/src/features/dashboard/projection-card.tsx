@@ -2,7 +2,7 @@ import { CalendarClock, CircleAlert } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { Metric } from '@/components/cards/metric';
-import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import { Button } from '@/components/ui/button';
 import type { DashboardProjection } from '@/lib/api/dashboard';
 
@@ -29,9 +29,8 @@ function ProjectionValue({ projection }: { projection: DashboardProjection }) {
   return (
     <div className="min-w-0 space-y-3">
       <Metric
-        value={<Money cents={projection.projectedBalanceCents} />}
+        value={<TonedMoney cents={projection.projectedBalanceCents} kind="balance" />}
         caption="Saldo projetado no fim do mês"
-        isNegative={projection.projectedBalanceCents < 0}
       />
       {negativeWarning ? (
         <p role="status" className="flex items-center gap-2 text-sm font-semibold text-destructive">

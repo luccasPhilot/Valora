@@ -13,6 +13,8 @@ import type {
   ManualInvestmentInput,
   ManualInvestmentType,
 } from '@/lib/api/investments';
+import { describedBy } from '@/lib/described-by';
+import { HIDDEN_AMOUNT_HINT } from '@/lib/hidden-amount';
 import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import {
@@ -53,12 +55,6 @@ interface ManualInvestmentPanelProps {
   onClose: (investment: EditableInvestment) => void;
   onRemove: (investment: EditableInvestment) => void;
   onDismiss: () => void;
-}
-
-/** Liga o campo à dica (quando houver) e à mensagem de erro, só enquanto ela aparece. */
-function describedBy(ids: readonly (string | false)[]): string | undefined {
-  const present = ids.filter((id): id is string => id !== false);
-  return present.length > 0 ? present.join(' ') : undefined;
 }
 
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
@@ -123,7 +119,7 @@ function ManualInvestmentForm({ target, isSaving, onCreate, onUpdate }: FormProp
           {isCreating
             ? 'Quanto vale hoje, em reais. O Valora guarda uma foto por dia.'
             : areValuesHidden
-              ? 'Valores ocultos. Deixe em branco para manter o valor atual.'
+              ? HIDDEN_AMOUNT_HINT
               : `${target.investment.updateText}. Deixe como está para manter o valor.`}
         </p>
         <FieldError id={`${fieldId}-balance-error`} message={errors.balance} />

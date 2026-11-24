@@ -1,4 +1,5 @@
 import { Money } from '@/components/money';
+import { useAmountTone } from '@/components/use-amount-tone';
 import type { Transaction } from '@/lib/api/transactions';
 import { formatDate } from '@/lib/format';
 
@@ -19,9 +20,10 @@ interface TransactionItemProps {
 }
 
 /** Receita em `positive`, despesa na cor normal e transferência esmaecida (Design System). */
-export function amountColorClass(transaction: Transaction): string {
+export function useTransactionAmountClass(transaction: Transaction): string {
+  const tone = useAmountTone(transaction.amountCents, 'flow');
   if (isTransfer(transaction)) return 'text-muted-foreground';
-  return transaction.amountCents > 0 ? 'text-positive' : 'text-foreground';
+  return tone || 'text-foreground';
 }
 
 function InstallmentBadge({ transaction }: { transaction: Transaction }) {
@@ -35,9 +37,10 @@ function InstallmentBadge({ transaction }: { transaction: Transaction }) {
 }
 
 function AmountText({ transaction }: { transaction: Transaction }) {
+  const amountClass = useTransactionAmountClass(transaction);
   return (
     <span
-      className={`shrink-0 text-right text-base font-semibold tabular-nums whitespace-nowrap ${amountColorClass(transaction)}`}
+      className={`shrink-0 text-right text-base font-semibold tabular-nums whitespace-nowrap ${amountClass}`}
     >
       <Money cents={transaction.amountCents} isSigned />
     </span>
@@ -72,7 +75,9 @@ function StackedRow({ transaction, onOpen }: Omit<TransactionItemProps, 'layout'
           <InstallmentBadge transaction={transaction} />
         </span>
         <span className="line-clamp-2 block text-sm text-muted-foreground">
-          {categoryLabel(transaction)} · {transaction.account.name}
+          {categoryLabel(transaction)}
+          {/* Abaixo de 360 px a conta sai: a linha fica só com a categoria. */}
+          <span className="max-[359px]:hidden"> · {transaction.account.name}</span>
         </span>
         {hasOriginBadges(transaction) ? (
           <span className="mt-1 flex flex-wrap items-center gap-1">

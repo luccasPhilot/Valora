@@ -4,7 +4,8 @@ import type {
   ManualInvestmentType,
 } from '@/lib/api/investments';
 import { formatDate } from '@/lib/format';
-import { centsToDigits, digitsToCents } from '@/lib/money-digits';
+import { editAmountField } from '@/lib/hidden-amount';
+import { digitsToCents } from '@/lib/money-digits';
 
 import { investmentTypeInfo } from './investment-labels';
 
@@ -90,7 +91,7 @@ export function formValuesOf(
     name: investment.name,
     institutionName: investment.institutionName,
     type: isManualType(investment.type) ? investment.type : DEFAULT_TYPE,
-    digits: areValuesHidden ? '' : centsToDigits(investment.balanceCents),
+    digits: editAmountField({ cents: investment.balanceCents, areValuesHidden }).initialDigits,
   };
 }
 

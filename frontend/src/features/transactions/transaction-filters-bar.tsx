@@ -28,7 +28,7 @@ import {
 import { CategorySelect } from '../categories/category-select';
 import {
   accountOptionLabel,
-  countPanelFilters,
+  activeFilterCount,
   describeActiveFilters,
   NO_FILTERS,
   PERIOD_LABELS,
@@ -39,6 +39,7 @@ import {
   type TransactionFilters,
   TYPE_LABELS,
   UNCATEGORIZED_LABEL,
+  withoutPanelFilters,
 } from './transaction-filters';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -55,8 +56,15 @@ interface TransactionFiltersBarProps {
   categories: readonly Category[];
   accounts: readonly AccountOption[];
   isPhone: boolean;
+  /** Quantas transações o filtro traz (do resumo); nulo enquanto carrega. */
+  resultCount: number | null;
   onChange: (filters: TransactionFilters) => void;
   handleRef?: Ref<FiltersBarHandle>;
+}
+
+function showResultsLabel(resultCount: number | null): string {
+  if (resultCount === null) return 'Ver transações';
+  return resultCount === 1 ? 'Ver 1 transação' : `Ver ${resultCount} transações`;
 }
 
 function findPeriod(value: string): PeriodPreset | undefined {
@@ -314,6 +322,7 @@ export function TransactionFiltersBar({
   categories,
   accounts,
   isPhone,
+  resultCount,
   onChange,
   handleRef,
 }: TransactionFiltersBarProps) {
@@ -323,7 +332,7 @@ export function TransactionFiltersBar({
     focusPeriod: () => (isPhone ? setIsPanelOpen(true) : periodRef.current?.focus()),
   }));
   const fieldProps = { filters, categories, accounts, onChange };
-  const activeCount = countPanelFilters(filters);
+  const activeCount = activeFilterCount(filters, { isPeriodInside: isPhone });
   const filtersLabel = `Filtros${activeCount > 0 ? ` (${activeCount})` : ''}`;
 
   return (
@@ -350,7 +359,7 @@ export function TransactionFiltersBar({
               <PeriodFields filters={filters} onChange={onChange} />
               <PanelFields {...fieldProps} />
               <Button className="w-full" onClick={() => setIsPanelOpen(false)}>
-                Ver resultados
+                {showResultsLabel(resultCount)}
               </Button>
             </div>
           </FormPanel>
@@ -379,6 +388,17 @@ export function TransactionFiltersBar({
             <PopoverContent aria-label="Filtros" className="w-[min(22rem,calc(100vw-2rem))] p-4">
               <div className="space-y-4">
                 <PanelFields {...fieldProps} />
+                {activeCount > 0 ? (
+                  <div className="border-t pt-3">
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => onChange(withoutPanelFilters(filters))}
+                    >
+                      Limpar filtros
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </PopoverContent>
           </Popover>

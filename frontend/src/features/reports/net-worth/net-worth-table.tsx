@@ -1,6 +1,5 @@
-import { cn } from 'cn';
-
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { NetWorthPoint } from '@/lib/api/net-worth';
 import { formatMonthYear } from '@/lib/format';
 
@@ -21,12 +20,12 @@ function toCells(point: NetWorthPoint): ReportTableRow['cells'] {
     <Money key="accounts" cents={point.accountsCents} />,
     <Money key="investments" cents={point.investmentsCents} />,
     <Money key="bills" cents={-point.openBillsCents} isSigned />,
-    <span
+    <TonedMoney
       key="net-worth"
-      className={cn('font-semibold', point.netWorthCents < 0 && 'text-destructive')}
-    >
-      <Money cents={point.netWorthCents} />
-    </span>,
+      cents={point.netWorthCents}
+      kind="balance"
+      className="font-semibold"
+    />,
   ];
 }
 

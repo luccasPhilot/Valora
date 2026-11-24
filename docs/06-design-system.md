@@ -100,6 +100,7 @@ Os números saem do teste `frontend/test/design-tokens.test.ts`, que também con
 - **Saldo negativo de conta** (cheque especial): `destructive`, com o sinal de menos.
 - **Transferências internas** (pagamento de fatura, entre contas suas): texto `muted-foreground`, com ícone de setas. Não entram nos totais.
 - Use o sinal de menos tipográfico (`−`, U+2212), não o hífen.
+- A cor de um valor sai de um lugar só: `useAmountTone` (ou `TonedMoney`, que já aplica a cor), em `frontend/src/components`. Com "Ocultar valores" ligado, ele devolve sempre a cor normal (veja [Ocultar valores](#ocultar-valores)).
 
 ### Status de orçamento
 
@@ -250,6 +251,8 @@ O logotipo do Valora tem o **símbolo** e o **nome**. O símbolo é um "V" de du
 - **Lucide**, traço 1,75 px.
 - Tamanhos: 16 px junto de texto pequeno, 20 px no padrão, 24 px na navegação.
 - Botão só com ícone sempre tem `aria-label`.
+- O `aria-label` fica no botão de ação, nunca numa linha inteira: ele substituiria o texto visível da linha. Numa lista em que tocar a linha abre a edição (Regras, Categorias), a linha é texto e o botão "Editar regra UBER" (ícone `pencil`) estica a área de toque pela linha toda (`after:absolute after:inset-0`). Esse botão não usa a escala do toque: qualquer valor de `scale` faz o `after` encolher no meio do toque e o clique se perde.
+- Ícones oferecidos para escolha (seletor de ícone de categoria e de meta) têm nome em pt-BR pelo que o desenho mostra ("Carrinho de compras"), nunca o nome do Lucide em inglês.
 
 ## Movimento
 
@@ -298,7 +301,7 @@ A navegação é um **menu lateral** com as áreas agrupadas. A estrutura é a m
 - 24 px, no mínimo, entre o grupo "Dia a dia" e o rodapé, e uma linha divisória (`border`) acima de Categorias e regras e Ajustes;
 - cabeçalho de 72 px, sem borda abaixo; só o item ativo tem fundo (`secondary`) e barra; o resto do menu fica sem fundo e sem borda (só o hover, em `muted`, e o foco aparecem por um instante).
 
-**Topo de cada tela:** altura de 56 px (72 px a partir de 1024 px, alinhado com o cabeçalho do menu), botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora; a área de toque tem 44 px de altura em qualquer largura, mesmo com o texto pequeno do celular), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**.
+**Topo de cada tela:** altura de 56 px (72 px a partir de 1024 px, alinhado com o cabeçalho do menu), botão de menu (só abaixo de 1024 px), título, status da sincronização (por exemplo, "Atualizado hoje, 07:02"; tocar sincroniza agora; a área de toque tem 44 px de altura em qualquer largura, mesmo com o texto pequeno do celular), botão de ocultar valores e, a partir da v2, o sino de alertas. Na tela de Transações, o topo também tem o botão **"Nova transação"**. No celular o status fica abaixo do título; abaixo de 360 px ele desce para uma linha própria, na largura toda do topo, para o título não dividir espaço com ele (os botões, o sino incluído, continuam na linha de cima). Título e status aparecem inteiros a 320 px.
 
 **Título da aba do navegador:** "Área | Valora" (por exemplo, "Orçamentos | Valora"); nos relatórios, "Relatório | Relatórios | Valora". Telas sem título próprio ficam só com "Valora".
 
@@ -493,8 +496,8 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Botão | `Button` | Variantes: primária, secundária (mint), contorno, fantasma, destrutiva. Altura padrão de 44 px, `radius-md`, fonte 600. Botões só com ícone (menu, ocultar valores) são redondos (`full`) |
 | Card de saldo | `Card` | Valor em `display`, variação, gráfico pequeno, botão de ocultar valores |
 | Card de resumo | `Card` | Título no estilo `label` com ícone em `primary`; valor em `value-lg` |
-| Item de transação | — | Bolinha com ícone da categoria; descrição; "categoria · conta" em `muted-foreground`; valor à direita com `tabular-nums`; parcela ("3/10") como badge; transação manual com o badge "Manual"; possível duplicata com o badge de aviso |
-| Cabeçalho de dia | — | "Hoje", "Ontem", "seg., 3 de nov." e o total do dia à direita |
+| Item de transação | — | Bolinha com ícone da categoria; descrição em até duas linhas (reticências só depois da segunda); "categoria · conta" em `muted-foreground` (abaixo de 360 px, só a categoria); valor à direita com `tabular-nums`; parcela ("3/10") como badge; transação manual com o badge "Manual"; possível duplicata com o badge de aviso |
+| Cabeçalho de dia | — | "Hoje", "Ontem", "seg., 3 de nov." e o total do dia à direita. Com o filtro "Transferências" (que daria sempre R$ 0,00), a quantidade do dia: "1 transferência", "3 transferências" |
 | Barra de orçamento | `Progress` | Trilho, preenchimento na cor do status, ícone e texto do status |
 | Lista de categorias | — | Barras horizontais numa cor só (veja acima) |
 | Progresso de meta (v2) | `Progress` | Valor acumulado / desejado, percentual, prazo estimado |
@@ -503,8 +506,8 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 | Painel de meta vinculada | `Sheet` / `Dialog` | No lugar de "Registrar aporte", "Registrar retirada" e do histórico, a seção "Itens vinculados" com o saldo de cada item. Item de banco arquivado leva ícone `archive` e o texto "Banco removido do Valora: não conta". Traz as notas "O valor acompanha o saldo e muda na sincronização diária" e "O ritmo vem da variação dos saldos… e mistura aporte e rendimento", e, havendo aportes guardados, uma linha com o valor deles. No formulário, o controle segmentado "Eu informo" / "Vinculada" mostra a lista de contas e investimentos com caixas de seleção, a "Soma atual" e o aviso do item que já está em outra meta; o valor inicial some |
 | Seletor (lista suspensa) | `Select` (`<select>` nativo + `Popover`) | O campo é sempre um `<select>` de 44 px, com `radius-md` e chevron que gira ao abrir. **Toque** (`pointer: coarse`): abre o seletor do sistema, o mais fácil com uma mão. **Mouse** (`hover: hover` e `pointer: fine`): abre a lista do Valora, porque a do navegador não segue tema, raio nem tipografia. A lista usa o `Popover` (`border`, fundo `popover`, sombra nível 2), tem a largura do campo (mínimo 224 px), 320 px de altura no máximo com rolagem, linhas de 40 px com `radius-sm`, ativa em `accent`, selecionada em `secondary` com ✓ em `primary`, e rótulos de grupo no estilo `label`. Com 8 opções ou mais aparece o campo "Buscar" (sem acento e sem diferenciar maiúsculas). Teclado: setas, Home, End, Enter, Esc, e Espaço, Enter ou seta abrem o campo. Categorias mostram o ícone ao lado do nome |
 | Filtro de período | `Popover` + `Calendar` | Atalhos: Este mês, Mês passado, Últimos 3 meses, Este ano, Personalizado |
-| Filtros | `Select`, `Popover`, `Badge` | À vista só a busca, o período e o botão "Filtros", que mostra quantos dos quatro filtros do painel (categoria, tipo, origem e conta) estão ativos ("Filtros (2)"). A partir de 768 px o painel é um `Popover` ancorado no botão, que devolve o foco a ele ao fechar; abaixo disso é o `Sheet` de baixo, com o período também. Filtros ativos continuam como chips removíveis abaixo da barra. Nenhum seletor mostra o texto cortado |
-| Resumo do filtro | texto (`p`) | Uma linha entre os chips e a lista, não um cartão: "N transações", receitas com `+` em `positive` e despesas com `−` na cor normal, sem transferências internas (valor zero não aparece). Valores ocultos viram `R$ ••••` e a contagem continua. Carregando: skeleton de uma linha. Erro: "Tentar de novo", sem derrubar a lista. Sem transações: some. Com o filtro "Transferências": só a contagem e a nota de que transferências não entram nos totais |
+| Filtros | `Select`, `Popover`, `Badge` | À vista só a busca, o período e o botão "Filtros", que mostra quantos filtros guarda ("Filtros (2)"): categoria, tipo, origem e conta, e, abaixo de 768 px, onde o período fica dentro do painel, também o período quando ele não é "Este mês". A partir de 768 px o painel é um `Popover` ancorado no botão, que devolve o foco a ele ao fechar, com "Limpar filtros" no rodapé (tira os quatro filtros; período e busca ficam); abaixo disso é o `Sheet` de baixo, com o período também, e o botão de confirmar diz quantas transações o filtro traz ("Ver 38 transações"; "Ver transações" enquanto a contagem carrega). Filtros ativos viram chips removíveis abaixo da barra, com o nome do filtro ("Categoria: Transporte", "Tipo: Despesas"); o período nunca vira chip. Nenhum seletor mostra o texto cortado |
+| Resumo do filtro | texto (`p`) numa `section` "Resumo do filtro" com `aria-live="polite"` | Uma linha entre os chips e a lista, não um cartão, no tamanho do texto do corpo: o período em negrito ("Novembro de 2026", "Setembro a novembro de 2026", "Ano de 2026" ou as datas do personalizado), "N transações" e os rótulos visíveis "Receitas" e "Despesas" em `muted-foreground` ao lado dos valores, receitas com `+` em `positive` e despesas com `−` na cor normal, sem transferências internas (valor zero não aparece). O leitor de tela anuncia o resumo quando o filtro muda, sem mover o foco; carregar mais páginas não muda o resumo. Valores ocultos viram `R$ ••••`, na cor normal, e a contagem continua. Carregando: skeleton de uma linha. Erro: "Tentar de novo", sem derrubar a lista. Sem transações: some. Com o filtro "Transferências": só a contagem e a nota de que transferências não entram nos totais |
 | Pesquisa | `Input` | Busca na descrição, com espera de 300 ms |
 | Detalhe de transação | `Sheet` (celular), `Dialog` (computador) | Mostra dados completos e permite trocar a categoria. Numa transação manual, também editar e excluir (exclusão pede confirmação) |
 | Nova transação | `Sheet` (celular), `Dialog` (computador) + `Form` | Veja [Nova transação](#nova-transação) |
@@ -523,6 +526,9 @@ A base é o shadcn/ui, com os tokens deste documento. Os componentes do Valora s
 ### Ocultar valores
 
 O ícone de olho (presente no moodboard) troca todos os valores por `R$ ••••`. A escolha fica salva no aparelho.
+
+- **Nenhuma cor revela o sinal.** Com os valores ocultos, entrada, saída, resultado e saldo negativo ficam na cor normal do texto: `useAmountTone` devolve a cor normal e o verde ou vermelho só volta quando os valores aparecem. O sinal fica oculto junto com o valor. Ícones que dizem o tipo (as setas da transferência) continuam.
+- **Formulários de edição: em branco mantém o valor.** O campo de valor de uma edição (limite do orçamento, transação manual, valor desejado da meta, previsão, posição manual de investimento) abre vazio, com o aviso "Valores ocultos. Deixe em branco para manter o valor atual.", e salvar com o campo em branco mantém o valor salvo (`frontend/src/lib/hidden-amount.ts`). Digitar um valor troca o valor, como sempre. Ao criar, o campo é obrigatório como antes.
 
 ### Nova transação
 
@@ -607,7 +613,7 @@ Toda a interface é em **português do Brasil**, com termos financeiros corretos
 
 - Contraste AA conferido para todos os pares de texto (tabela acima).
 - Foco visível em tudo o que é clicável.
-- Área de toque mínima de 44 × 44 px.
+- Área de toque mínima de 44 × 44 px, inclusive no botão "Fechar" de `Sheet` e `Dialog` (o mesmo botão redondo de 44 px nos dois).
 - Todo campo de formulário tem rótulo visível.
 - Informação nunca só na cor: status de orçamento com ícone e texto; receita e despesa com sinal.
 - `lang="pt-BR"` no documento.

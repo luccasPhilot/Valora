@@ -63,6 +63,24 @@ describe('lista de transações', () => {
     );
   });
 
+  it('should_show_the_transfer_count_instead_of_the_total_when_filtering_transfers', async () => {
+    // Arrange
+    const SECOND_BILL = fixture(5, {
+      description: 'PAGAMENTO FATURA 2',
+      amountCents: -50000,
+      category: CARD_BILL.category,
+      categorySource: 'pluggy',
+    });
+    stubApi({ 'GET /api/v1/transactions': () => pageResponse([CARD_BILL, SECOND_BILL]) });
+    // Act
+    renderPage('/transacoes?type=transfer');
+    // Assert
+    await screen.findByText('PAGAMENTO FATURA 2');
+    expect(within(daySection('Hoje')).getByText(/Total do dia/).parentElement).toHaveTextContent(
+      '2 transferências',
+    );
+  });
+
   it('should_show_income_in_positive_expense_in_normal_text_and_transfer_muted_when_listing', async () => {
     // Arrange
     stubApi();
@@ -81,6 +99,18 @@ describe('lista de transações', () => {
       expense: expect.stringContaining('text-foreground'),
       transfer: expect.stringContaining('text-muted-foreground'),
     });
+  });
+
+  it('should_show_the_income_in_the_normal_color_when_values_are_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    stubApi();
+    // Act
+    renderPage();
+    // Assert
+    await screen.findByText('SALÁRIO ACME');
+    const amount = within(rowOf('SALÁRIO ACME')).getByText('R$ ••••').parentElement;
+    expect(amount).not.toHaveClass('text-positive');
   });
 
   it('should_show_the_installment_badge_and_uncategorized_label_when_the_transaction_has_them', async () => {
@@ -214,13 +244,13 @@ describe('filtros', () => {
     // Act
     renderPage(`/transacoes?category=${TRANSPORT.id}&type=expense`);
     // Assert
-    await screen.findByRole('button', { name: 'Remover filtro Transporte' });
+    await screen.findByRole('button', { name: 'Remover filtro Categoria: Transporte' });
     const chips = screen.getByRole('list', { name: 'Filtros ativos' });
     expect(
       within(chips)
         .getAllByRole('button', { name: /Remover filtro/ })
         .map((button) => button.getAttribute('aria-label')),
-    ).toEqual(['Remover filtro Transporte', 'Remover filtro Despesas']);
+    ).toEqual(['Remover filtro Categoria: Transporte', 'Remover filtro Tipo: Despesas']);
   });
 
   it('should_remove_the_category_filter_and_reload_when_its_chip_is_removed', async () => {
@@ -228,7 +258,9 @@ describe('filtros', () => {
     const fetchMock = stubApi();
     renderPage(`/transacoes?category=${TRANSPORT.id}`);
     // Act
-    await userEvent.click(await screen.findByRole('button', { name: 'Remover filtro Transporte' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Remover filtro Categoria: Transporte' }),
+    );
     // Assert
     await waitFor(() => {
       expect(listQueries(fetchMock).map((query) => query.get('categoryId'))).toEqual([
@@ -321,15 +353,65 @@ describe('filtros', () => {
     expect(listQueries(fetchMock).at(-1)?.get('type')).toBe('expense');
   });
 
-  it('should_keep_chips_visible_and_not_count_the_period_when_the_popover_is_closed', async () => {
+  it('should_show_labeled_chips_without_a_period_chip_and_not_count_the_period_on_a_desktop', async () => {
     // Arrange
     stubApi();
     // Act
     renderPage(`/transacoes?period=last-month&category=${TRANSPORT.id}&type=expense`);
     // Assert
-    const chips = await screen.findByRole('list', { name: 'Filtros ativos' });
-    expect(within(chips).getAllByRole('button', { name: /Remover filtro/ })).toHaveLength(3);
-    expect(screen.getByRole('button', { name: 'Filtros (2)' })).toBeInTheDocument();
+    await screen.findByRole('button', { name: 'Remover filtro Categoria: Transporte' });
+    const chips = screen.getByRole('list', { name: 'Filtros ativos' });
+    expect({
+      chips: within(chips)
+        .getAllByRole('button', { name: /Remover filtro/ })
+        .map((button) => button.getAttribute('aria-label')),
+      filtersButton: screen.queryByRole('button', { name: 'Filtros (2)' }) !== null,
+    }).toEqual({
+      chips: ['Remover filtro Categoria: Transporte', 'Remover filtro Tipo: Despesas'],
+      filtersButton: true,
+    });
+  });
+
+  it('should_count_the_period_in_the_filters_button_when_on_a_phone', async () => {
+    // Arrange
+    stubViewport({ viewportWidth: 390 });
+    stubApi();
+    // Act
+    renderPage(`/transacoes?period=last-month&category=${TRANSPORT.id}`);
+    // Assert
+    expect(await screen.findByRole('button', { name: /Filtros \(2\)/ })).toBeInTheDocument();
+  });
+
+  it('should_say_how_many_transactions_the_filter_brings_in_the_phone_panel', async () => {
+    // Arrange
+    stubViewport({ viewportWidth: 390 });
+    stubApi();
+    renderPage();
+    await screen.findByText('FARMÁCIA SÃO JOÃO');
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    // Assert
+    const panel = await screen.findByRole('dialog', { name: 'Filtros' });
+    expect(within(panel).getByRole('button', { name: 'Ver 4 transações' })).toBeInTheDocument();
+  });
+
+  it('should_clear_the_panel_filters_and_keep_the_period_when_clear_is_clicked_in_the_popover', async () => {
+    // Arrange
+    const fetchMock = stubApi();
+    renderPage(`/transacoes?period=last-month&category=${TRANSPORT.id}&type=expense`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtros (2)' }));
+    const popover = await screen.findByRole('dialog', { name: 'Filtros' });
+    // Act
+    await userEvent.click(within(popover).getByRole('button', { name: 'Limpar filtros' }));
+    // Assert
+    await waitFor(() => {
+      const lastQuery = listQueries(fetchMock).at(-1);
+      expect({
+        from: lastQuery?.get('from'),
+        categoryId: lastQuery?.get('categoryId'),
+        type: lastQuery?.get('type'),
+      }).toEqual({ from: '2026-10-01', categoryId: null, type: null });
+    });
   });
 
   it('should_return_the_focus_to_the_filters_button_when_the_popover_is_closed_with_escape', async () => {

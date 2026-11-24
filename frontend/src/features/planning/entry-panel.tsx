@@ -3,9 +3,11 @@ import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FormPanel } from '@/components/form-panel';
+import { useHideValues } from '@/components/hide-values-provider';
 import { Button } from '@/components/ui/button';
 import type { Category } from '@/lib/api/categories';
 import type { PlannedEntry, PlannedEntryInput } from '@/lib/api/planned-entries';
+import { editAmountField, NEW_AMOUNT_FIELD } from '@/lib/hidden-amount';
 
 import { EntryForm } from './entry-form';
 import { type EntrySubmitOutcome, entryValuesFrom, newEntryValues } from './entry-form-values';
@@ -96,6 +98,10 @@ export function EntryPanel({
 }: EntryPanelProps) {
   const [isConfirmingDelete, setConfirmingDelete] = useState(false);
   const entry = target?.kind === 'edit' ? target.entry : null;
+  const { areValuesHidden } = useHideValues();
+  const amountField = entry
+    ? editAmountField({ cents: entry.amountCents, areValuesHidden })
+    : NEW_AMOUNT_FIELD;
   return (
     <>
       <FormPanel
@@ -112,7 +118,12 @@ export function EntryPanel({
             <EntryForm
               // Trocar de previsão (ou reabrir) recomeça o formulário do zero.
               key={entry?.id ?? 'create'}
-              initialValues={entry ? entryValuesFrom(entry) : newEntryValues(month)}
+              initialValues={
+                entry
+                  ? { ...entryValuesFrom(entry), amountDigits: amountField.initialDigits }
+                  : newEntryValues(month)
+              }
+              keptAmountDigits={amountField.keptDigits}
               categories={categories}
               showsEditWarning={entry !== null && entry.recurrence !== 'none'}
               isPending={isSaving}

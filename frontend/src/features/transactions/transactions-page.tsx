@@ -19,6 +19,7 @@ import { DuplicatesBanner } from './duplicates-banner';
 import { useNewTransaction } from './new-transaction/new-transaction-provider';
 import { TransactionDetail } from './transaction-detail';
 import {
+  describePeriod,
   hasFiltersBesidesPeriod,
   NO_FILTERS,
   parseFilters,
@@ -149,10 +150,15 @@ export function Component() {
         categories={categories}
         accounts={accountsQuery.data ?? []}
         isPhone={isPhone}
+        resultCount={summary.data?.count ?? null}
         onChange={updateFilters}
       />
       {list.isPending || transactions.length > 0 ? (
-        <TransactionSummaryLine summary={summary} isTransferFilter={filters.type === 'transfer'} />
+        <TransactionSummaryLine
+          summary={summary}
+          periodLabel={describePeriod(filters, today)}
+          isTransferFilter={filters.type === 'transfer'}
+        />
       ) : null}
       <TransactionsContent
         list={list}
@@ -235,6 +241,7 @@ function TransactionsContent({
       layout={layout}
       hasNextPage={list.hasNextPage}
       isLoadingMore={list.isFetchingNextPage}
+      isTransferFilter={filters.type === 'transfer'}
       onLoadMore={() => void list.fetchNextPage()}
       onOpen={onOpen}
     />

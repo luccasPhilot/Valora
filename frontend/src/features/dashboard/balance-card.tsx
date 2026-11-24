@@ -7,6 +7,7 @@ import { Metric } from '@/components/cards/metric';
 import { ValueChange } from '@/components/cards/value-change';
 import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import { ChartContainer } from '@/components/ui/chart';
 import type { BalancePoint, Dashboard } from '@/lib/api/dashboard';
 import { formatDate } from '@/lib/format';
@@ -77,11 +78,7 @@ export function BalanceCard({ dashboard }: { dashboard: Dashboard }) {
   const { totalBalanceCents, balanceChange, balanceEvolution, netWorth } = dashboard;
   return (
     <DataCard title="Saldo total" tier="hero" icon={Wallet} className="gap-3">
-      <Metric
-        size="display"
-        value={<Money cents={totalBalanceCents} />}
-        isNegative={totalBalanceCents < 0}
-      />
+      <Metric size="display" value={<TonedMoney cents={totalBalanceCents} kind="balance" />} />
       {balanceChange ? <ValueChange change={balanceChange} /> : null}
       {hasNetWorthToShow(netWorth) ? <NetWorthLine netWorth={netWorth} /> : null}
       <BalanceEvolutionChart points={balanceEvolution} />

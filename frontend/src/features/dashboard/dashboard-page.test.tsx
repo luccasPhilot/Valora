@@ -366,7 +366,7 @@ describe('Início — projeção do fim do mês', () => {
     // Act
     const card = await findProjectionCard();
     // Assert
-    expect(card.querySelector('p.text-destructive')).toHaveTextContent('−R$ 300,00');
+    expect(card.querySelector('.text-destructive')).toHaveTextContent('−R$ 300,00');
   });
 
   it('should_offer_to_plan_the_month_when_nothing_is_planned', async () => {
@@ -565,7 +565,7 @@ describe('Início — patrimônio no card de saldo', () => {
     // Act
     const card = await findBalanceCard();
     // Assert
-    expect(card.querySelector('p.text-destructive')).toHaveTextContent('−R$ 700,00');
+    expect(card.querySelector('.text-destructive')).toHaveTextContent('−R$ 700,00');
   });
 
   it('should_not_use_red_when_the_net_worth_is_positive', async () => {

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import { DataCard } from '@/components/cards/data-card';
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { IncomeExpenseReport } from '@/lib/api/reports';
 
 import { ReportHero } from './report-hero';
@@ -40,9 +41,7 @@ export function IncomeExpenseFigures({ totals, context }: IncomeExpenseFiguresPr
       />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Figure title="Receitas" icon={ArrowDownLeft}>
-          <span className="text-positive">
-            <Money cents={totals.incomeCents} isSigned />
-          </span>
+          <TonedMoney cents={totals.incomeCents} kind="flow" isSigned />
         </Figure>
         <Figure title="Despesas" icon={ArrowUpRight}>
           <Money cents={-totals.expenseCents} isSigned />

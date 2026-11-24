@@ -4,13 +4,15 @@ import type { Category } from '@/lib/api/categories';
 import { type AccountOption, UNCATEGORIZED_FILTER } from '@/lib/api/transactions';
 
 import {
-  countPanelFilters,
+  activeFilterCount,
   describeActiveFilters,
+  describePeriod,
   NO_FILTERS,
   parseFilters,
   resolvePeriod,
   serializeFilters,
   toTransactionQuery,
+  withoutPanelFilters,
 } from './transaction-filters';
 
 const TODAY = '2026-11-04';
@@ -160,12 +162,15 @@ describe('filtros de origem e de duplicatas', () => {
     // Act
     const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
     // Assert
-    expect(chips.map((chip) => chip.label)).toEqual(['Lançamento manual', 'Possíveis duplicatas']);
+    expect(chips.map((chip) => chip.label)).toEqual([
+      'Origem: Lançamento manual',
+      'Possíveis duplicatas',
+    ]);
   });
 });
 
-describe('countPanelFilters', () => {
-  it('should_count_only_category_type_source_and_account_when_filters_are_active', () => {
+describe('activeFilterCount', () => {
+  it('should_count_only_category_type_source_and_account_when_the_period_is_outside', () => {
     // Arrange
     const filters = {
       ...NO_FILTERS,
@@ -176,15 +181,33 @@ describe('countPanelFilters', () => {
       search: 'farmácia',
     };
     // Act
-    const count = countPanelFilters(filters);
+    const count = activeFilterCount(filters, { isPeriodInside: false });
     // Assert
     expect(count).toBe(2);
   });
 
-  it('should_return_zero_when_no_panel_filter_is_active', () => {
+  it('should_count_the_period_when_it_is_inside_the_panel_and_not_this_month', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, period: 'last-month' as const, categoryId: TRANSPORT.id };
+    // Act
+    const count = activeFilterCount(filters, { isPeriodInside: true });
+    // Assert
+    expect(count).toBe(2);
+  });
+
+  it('should_not_count_this_month_when_the_period_is_inside_the_panel', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, categoryId: TRANSPORT.id };
+    // Act
+    const count = activeFilterCount(filters, { isPeriodInside: true });
+    // Assert
+    expect(count).toBe(1);
+  });
+
+  it('should_return_zero_when_no_filter_is_active', () => {
     // Arrange
     // Act
-    const count = countPanelFilters(NO_FILTERS);
+    const count = activeFilterCount(NO_FILTERS, { isPeriodInside: true });
     // Assert
     expect(count).toBe(0);
   });
@@ -199,9 +222,28 @@ describe('countPanelFilters', () => {
       accountId: CHECKING.id,
     };
     // Act
-    const count = countPanelFilters(filters);
+    const count = activeFilterCount(filters, { isPeriodInside: false });
     // Assert
     expect(count).toBe(4);
+  });
+});
+
+describe('withoutPanelFilters', () => {
+  it('should_drop_category_type_source_and_account_and_keep_period_and_search', () => {
+    // Arrange
+    const filters = {
+      ...NO_FILTERS,
+      period: 'last-month' as const,
+      search: 'uber',
+      categoryId: TRANSPORT.id,
+      type: 'expense' as const,
+      source: 'manual' as const,
+      accountId: CHECKING.id,
+    };
+    // Act
+    const cleared = withoutPanelFilters(filters);
+    // Assert
+    expect(cleared).toEqual({ ...NO_FILTERS, period: 'last-month', search: 'uber' });
   });
 });
 
@@ -220,7 +262,28 @@ describe('describeActiveFilters', () => {
     // Act
     const chips = describeActiveFilters(filters, { categories: [TRANSPORT], accounts: [CHECKING] });
     // Assert
-    expect(chips.map((chip) => chip.label)).toEqual(['Transporte', 'Nubank · Conta corrente']);
+    expect(chips.map((chip) => chip.label)).toEqual([
+      'Categoria: Transporte',
+      'Conta: Nubank · Conta corrente',
+    ]);
+  });
+
+  it('should_never_turn_the_period_into_a_chip_when_it_is_not_this_month', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, period: 'custom' as const, from: '2026-10-01' };
+    // Act
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
+    // Assert
+    expect(chips).toEqual([]);
+  });
+
+  it('should_name_the_type_in_the_chip_when_it_is_active', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, type: 'expense' as const };
+    // Act
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
+    // Assert
+    expect(chips.map((chip) => chip.label)).toEqual(['Tipo: Despesas']);
   });
 
   it('should_label_the_chip_as_uncategorized_when_filtering_transactions_without_category', () => {
@@ -229,7 +292,7 @@ describe('describeActiveFilters', () => {
     // Act
     const chips = describeActiveFilters(filters, { categories: [TRANSPORT], accounts: [] });
     // Assert
-    expect(chips.map((chip) => chip.label)).toEqual(['Sem categoria']);
+    expect(chips.map((chip) => chip.label)).toEqual(['Categoria: Sem categoria']);
   });
 
   it('should_drop_only_that_filter_when_removing_a_chip', () => {
@@ -243,5 +306,53 @@ describe('describeActiveFilters', () => {
     const remaining = categoryChip?.filtersWithoutIt;
     // Assert
     expect(remaining).toEqual({ ...NO_FILTERS, type: 'expense' });
+  });
+});
+
+describe('describePeriod', () => {
+  it.each([
+    { period: 'this-month', text: 'novembro de 2026' },
+    { period: 'last-month', text: 'outubro de 2026' },
+    { period: 'last-3-months', text: 'setembro a novembro de 2026' },
+    { period: 'this-year', text: 'ano de 2026' },
+  ] as const)('should_describe_$period_when_today_is_in_november', ({ period, text }) => {
+    // Arrange
+    const filters = { ...NO_FILTERS, period };
+    // Act
+    const description = describePeriod(filters, TODAY);
+    // Assert
+    expect(description).toBe(text);
+  });
+
+  it('should_name_both_years_when_the_last_3_months_cross_the_year', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, period: 'last-3-months' as const };
+    // Act
+    const description = describePeriod(filters, '2027-01-10');
+    // Assert
+    expect(description).toBe('novembro de 2026 a janeiro de 2027');
+  });
+
+  it('should_show_the_dates_when_the_period_is_custom', () => {
+    // Arrange
+    const filters = {
+      ...NO_FILTERS,
+      period: 'custom' as const,
+      from: '2026-10-01',
+      to: '2026-10-15',
+    };
+    // Act
+    const description = describePeriod(filters, TODAY);
+    // Assert
+    expect(description).toBe('01/10/2026 a 15/10/2026');
+  });
+
+  it('should_describe_the_current_month_when_custom_has_no_dates', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, period: 'custom' as const };
+    // Act
+    const description = describePeriod(filters, TODAY);
+    // Assert
+    expect(description).toBe('novembro de 2026');
   });
 });

@@ -454,6 +454,42 @@ describe('GoalsPage edit and delete', () => {
     expect(bodyOf(fetchMock, 'PUT')).toMatchObject({ name: 'Europa', targetCents: 1000000 });
   });
 
+  it('should_open_the_target_empty_with_the_hidden_values_hint_when_values_are_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    stubRoutes(baseRoutes([goal()]));
+    renderPage();
+    await userEvent.click(await findCard('Viagem'));
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar meta' }));
+    // Assert
+    const target = await screen.findByLabelText('Valor desejado');
+    expect(target).toHaveValue('');
+    expect(target).toHaveAccessibleDescription(
+      'Valores ocultos. Deixe em branco para manter o valor atual.',
+    );
+  });
+
+  it('should_keep_the_target_when_saving_a_blank_field_with_values_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    const fetchMock = stubRoutes({
+      ...baseRoutes([goal()]),
+      [`PUT /api/v1/goals/${TRIP_ID}`]: () => Response.json(goal({ name: 'Europa' })),
+    });
+    renderPage();
+    await userEvent.click(await findCard('Viagem'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar meta' }));
+    const nameField = await screen.findByLabelText('Nome');
+    // Act
+    await userEvent.clear(nameField);
+    await userEvent.type(nameField, 'Europa');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar meta' }));
+    // Assert
+    await screen.findByText('Meta Europa salva');
+    expect(bodyOf(fetchMock, 'PUT')).toMatchObject({ name: 'Europa', targetCents: 1000000 });
+  });
+
   it('should_ask_for_confirmation_before_deleting_a_goal', async () => {
     // Arrange
     const fetchMock = stubRoutes({

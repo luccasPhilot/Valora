@@ -9,7 +9,6 @@ interface ReportHeroProps {
   icon: LucideIcon;
   /** O número que responde a pergunta do relatório. */
   value: ReactNode;
-  isNegative?: boolean;
   /** A frase que explica o número; sem ela o cartão mostra só o valor. */
   context?: ReactNode;
 }
@@ -18,10 +17,10 @@ interface ReportHeroProps {
  * O cartão-herói do relatório: o número que responde a pergunta, grande, e a frase que o explica.
  * Um por relatório; os demais números ficam em cartões de apoio abaixo.
  */
-export function ReportHero({ title, icon, value, isNegative = false, context }: ReportHeroProps) {
+export function ReportHero({ title, icon, value, context }: ReportHeroProps) {
   return (
     <DataCard title={title} tier="hero" icon={icon} className="gap-2">
-      <Metric size="lg" value={value} isNegative={isNegative} caption={context} />
+      <Metric size="lg" value={value} caption={context} />
     </DataCard>
   );
 }

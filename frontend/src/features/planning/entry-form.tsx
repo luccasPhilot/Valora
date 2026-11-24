@@ -1,6 +1,7 @@
 import { TriangleAlert } from 'lucide-react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
+import { HiddenAmountHint } from '@/components/hidden-amount-hint';
 import { MoneyInput } from '@/components/money-input';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import type { Category } from '@/lib/api/categories';
 import type { PlannedEntryInput } from '@/lib/api/planned-entries';
+import { describedBy as joinDescriptions } from '@/lib/described-by';
+import { resolveAmountDigits } from '@/lib/hidden-amount';
 import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { KIND_OPTION_LABELS } from '../categories/category-labels';
@@ -33,6 +36,8 @@ const TYPE_OPTIONS: readonly { value: EntryKind; label: string }[] = [
 
 interface EntryFormProps {
   initialValues: EntryFormValues;
+  /** Dígitos do valor salvo quando o campo abriu vazio por causa dos valores ocultos; senão nulo. */
+  keptAmountDigits: string | null;
   /** Todas as categorias; o formulário mostra só as ativas do tipo escolhido. */
   categories: readonly Category[];
   /** Edição de uma previsão que repete: avisa que a mudança vale para todos os meses. */
@@ -67,6 +72,7 @@ function EditWarning() {
 /** Cria ou edita uma previsão: tipo, valor, descrição, categoria, dia, repetição, início e fim. */
 export function EntryForm({
   initialValues,
+  keptAmountDigits,
   categories,
   showsEditWarning,
   isPending,
@@ -82,6 +88,7 @@ export function EntryForm({
   const idOf = (field: EntryFormField) => `${formId}-${field}`;
   const errorIdOf = (field: EntryFormField) => `${idOf(field)}-error`;
   const describedBy = (field: EntryFormField) => (errors[field] ? errorIdOf(field) : undefined);
+  const amountHintId = `${idOf('amount')}-hint`;
 
   // Leva o foco ao primeiro campo com erro, para quem usa teclado ou leitor de tela.
   useEffect(() => {
@@ -103,7 +110,8 @@ export function EntryForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitMessage(null);
-    const validation = validateEntryForm(values);
+    const amountDigits = resolveAmountDigits(values.amountDigits, keptAmountDigits);
+    const validation = validateEntryForm({ ...values, amountDigits });
     if (!validation.isValid) return setErrors(validation.errors);
     const outcome = await onSubmit(validation.input);
     if (outcome.isSaved) return undefined;
@@ -134,8 +142,12 @@ export function EntryForm({
             digits={values.amountDigits}
             onDigitsChange={(amountDigits) => change({ amountDigits }, 'amount')}
             aria-invalid={Boolean(errors.amount)}
-            aria-describedby={describedBy('amount')}
+            aria-describedby={joinDescriptions([
+              keptAmountDigits !== null && amountHintId,
+              Boolean(errors.amount) && errorIdOf('amount'),
+            ])}
           />
+          {keptAmountDigits !== null ? <HiddenAmountHint id={amountHintId} /> : null}
           <FieldError id={errorIdOf('amount')} message={errors.amount} />
         </div>
         <div className="space-y-2">

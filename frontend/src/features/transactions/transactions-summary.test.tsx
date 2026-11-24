@@ -14,9 +14,7 @@ import {
 const SUMMARY_ROUTE = 'GET /api/v1/transactions/summary';
 
 function summaryLine(): HTMLElement {
-  const line = screen.getByText(/transaç(ão|ões)$/).closest('p');
-  if (!line) throw new Error('Teste: a linha de resumo não está dentro de um parágrafo');
-  return line;
+  return screen.getByRole('region', { name: 'Resumo do filtro' });
 }
 
 function summaryQueries(fetchMock: ReturnType<typeof stubApi>): URLSearchParams[] {
@@ -56,6 +54,42 @@ describe('resumo do filtro', () => {
       income: expect.stringContaining('text-positive'),
       expense: expect.stringContaining('text-foreground'),
     });
+  });
+
+  it('should_show_the_period_the_count_and_the_labeled_totals_when_the_month_has_both', async () => {
+    // Arrange
+    stubApi({
+      [SUMMARY_ROUTE]: () =>
+        summaryResponse({ incomeCents: 850000, expenseCents: 421530, count: 38 }),
+    });
+    // Act
+    renderPage();
+    // Assert
+    await screen.findByText('38 transações');
+    expect(summaryLine()).toHaveTextContent(
+      'novembro de 2026 38 transações Receitas + R$ 8.500,00 Despesas − R$ 4.215,30',
+    );
+  });
+
+  it('should_announce_the_summary_politely_without_moving_the_focus', async () => {
+    // Arrange
+    stubApi();
+    // Act
+    renderPage();
+    // Assert
+    await screen.findByText('4 transações');
+    expect(summaryLine()).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('should_show_the_new_period_when_the_period_changes', async () => {
+    // Arrange
+    stubApi();
+    renderPage();
+    await screen.findByText('4 transações');
+    // Act
+    await userEvent.selectOptions(screen.getByLabelText('Período'), 'last-month');
+    // Assert
+    await waitFor(() => expect(summaryLine()).toHaveTextContent('outubro de 2026'));
   });
 
   it('should_ask_for_the_summary_with_the_same_filters_as_the_list', async () => {
@@ -106,7 +140,7 @@ describe('resumo do filtro', () => {
     // Assert
     await screen.findByText('2 transações');
     expect(summaryLine()).toHaveTextContent(
-      '2 transações. Transferências não entram nos totais de receita e despesa.',
+      '2 transações Transferências não entram nos totais de receita e despesa.',
     );
     expect(within(summaryLine()).queryByText(/R\$/)).not.toBeInTheDocument();
   });
@@ -124,6 +158,20 @@ describe('resumo do filtro', () => {
     await screen.findByText('38 transações');
     expect(within(summaryLine()).getAllByText('R$ ••••')).toHaveLength(2);
     expect(summaryLine()).not.toHaveTextContent(/\d,\d\d/);
+  });
+
+  it('should_show_the_hidden_income_in_the_normal_color_when_values_are_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    stubApi({
+      [SUMMARY_ROUTE]: () =>
+        summaryResponse({ incomeCents: 850000, expenseCents: 421530, count: 38 }),
+    });
+    // Act
+    renderPage();
+    // Assert
+    await screen.findByText('38 transações');
+    expect(summaryLine().querySelector('.text-positive')).toBeNull();
   });
 
   it('should_keep_the_list_and_offer_retry_when_the_summary_fails', async () => {

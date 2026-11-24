@@ -7,6 +7,7 @@ import { ValueChange } from '@/components/cards/value-change';
 import { ValueRow } from '@/components/cards/value-row';
 import { Money } from '@/components/money';
 import { SegmentedControl } from '@/components/segmented-control';
+import { TonedMoney } from '@/components/toned-money';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { NetWorth } from '@/lib/api/net-worth';
@@ -54,11 +55,7 @@ function NetWorthSummary({ netWorth }: { netWorth: NetWorth }) {
   const { current, monthChange } = netWorth;
   return (
     <div className="min-w-0 space-y-3">
-      <Metric
-        size="display"
-        value={<Money cents={current.netWorthCents} />}
-        isNegative={current.netWorthCents < 0}
-      />
+      <Metric size="display" value={<TonedMoney cents={current.netWorthCents} kind="balance" />} />
       {monthChange ? <ValueChange change={monthChange} /> : null}
       <ul>
         <ValueRow title="Contas" value={<Money cents={current.accountsCents} />} />
