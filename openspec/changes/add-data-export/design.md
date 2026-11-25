@@ -18,8 +18,8 @@
 ### 1. CSV do filtro no front
 
 - O front busca as páginas de `GET /transactions` com o filtro atual (`limit=100`) até o fim, mostrando o progresso ("Preparando 340 de 1.200…") e com "Cancelar". Limite de 10.000 linhas: acima disso, pede para estreitar o período.
-- Colunas: Data (`dd/mm/aaaa`), Descrição, Categoria ("Sem categoria" quando nula), Tipo (Receita, Despesa, Transferência, pela mesma regra da API), Conta, Valor (`-89,90`, com o hífen comum para o Excel reconhecer como número, sem "R$"), Situação (Pendente, Confirmada), Origem (Banco, Manual), Parcela ("3/10" ou vazio).
-- UTF-8 com BOM, separador `;`, fim de linha `\r\n`, aspas duplas em todo campo de texto (aspas internas dobradas). Uma função pura `transactionsToCsv(rows)` em `features/transactions/`, com teste.
+- Colunas: Data (`dd/mm/aaaa`), Descrição, Categoria ("Sem categoria" quando nula), Tipo (Receita, Despesa, Transferência, pela mesma regra da API), Conta, Valor (`-89,90`, com o hífen comum para o Excel reconhecer como número, sem "R$"), Situação (Pendente, Confirmada), Origem (Banco, Manual), Parcela ("3 de 10" ou vazio; "3/10" viraria a data 3 de outubro no Excel).
+- UTF-8 com BOM, separador `;`, fim de linha `\r\n`, aspas duplas em todo campo de texto (aspas internas dobradas). Texto que começa com `=`, `+`, `-` ou `@` ganha um apóstrofo na frente, para o Excel não executar como fórmula. Uma função pura `transactionsToCsv(rows)` em `features/transactions/`, com teste.
 - **"Ocultar valores" ligado:** a exportação continua com os valores (é uma ação explícita), mas o botão avisa "O arquivo terá os valores, mesmo com eles ocultos na tela".
 - Nome: `valora-transacoes-2026-11-01-a-2026-11-30.csv`.
 - **Por que no front:** a regra 1 deixa a formatação no front, e o front já tem o filtro. O backend não ganha um segundo formatador de dinheiro.

@@ -39,6 +39,15 @@ describe('shouldCacheApiRequest', () => {
     expect(isCached).toBe(false);
   });
 
+  it('should_not_cache_when_the_path_is_the_data_export', () => {
+    // Arrange
+    const request = { method: 'GET', pathname: '/api/v1/exports/all.zip' };
+    // Act
+    const isCached = shouldCacheApiRequest(request);
+    // Assert
+    expect(isCached).toBe(false);
+  });
+
   it('should_not_cache_when_the_path_is_health', () => {
     // Arrange
     const request = { method: 'GET', pathname: '/api/v1/health' };

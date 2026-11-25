@@ -18,6 +18,7 @@ import { RuleSuggestionPrompt } from '../categories/rule-suggestion-prompt';
 import { useRuleSuggestionOffer } from '../categories/use-rule-suggestion-offer';
 import { BulkSelectionControls, useBulkActions } from './bulk-selection';
 import { DuplicatesBanner } from './duplicates-banner';
+import { ExportCsvButton } from './export-csv-button';
 import { TransactionDetailHost } from './transaction-detail-host';
 import {
   describePeriod,
@@ -94,10 +95,13 @@ export function Component() {
       <TransactionsViewsNav
         actions={
           transactions.length > 0 && !selection.isSelecting ? (
-            <Button variant="outline" onClick={selection.start}>
-              <ListChecks aria-hidden="true" />
-              Selecionar
-            </Button>
+            <>
+              <ExportCsvButton query={transactionQuery} showNotice={showNotice} />
+              <Button variant="outline" onClick={selection.start}>
+                <ListChecks aria-hidden="true" />
+                Selecionar
+              </Button>
+            </>
           ) : null
         }
       />

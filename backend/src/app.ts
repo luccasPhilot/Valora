@@ -32,6 +32,9 @@ import { DashboardService } from './modules/dashboard/dashboard.service.js';
 import { DataHealthRepository } from './modules/data-health/data-health.repository.js';
 import { dataHealthRoutes } from './modules/data-health/data-health.routes.js';
 import { DataHealthService } from './modules/data-health/data-health.service.js';
+import { ExportsRepository } from './modules/exports/exports.repository.js';
+import { exportsRoutes } from './modules/exports/exports.routes.js';
+import { ExportsService } from './modules/exports/exports.service.js';
 import { GoalsRepository } from './modules/goals/goals.repository.js';
 import { goalsRoutes } from './modules/goals/goals.routes.js';
 import { GoalsService } from './modules/goals/goals.service.js';
@@ -137,6 +140,11 @@ function registerModules(
     now,
   });
   app.register(dataHealthRoutes(dataHealthService), { prefix: API_PREFIX });
+  const exportsService = new ExportsService({
+    repository: new ExportsRepository(database.db),
+    now,
+  });
+  app.register(exportsRoutes(exportsService), { prefix: API_PREFIX });
   const categories = createCategoriesModule(database);
   app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
   app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });

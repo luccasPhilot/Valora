@@ -11,8 +11,9 @@ export const API_NETWORK_TIMEOUT_SECONDS = 5;
 export const CACHED_AT_HEADER = 'X-Valora-Cached-At';
 
 // O Workbox compara a expressão com a URL inteira, então ela não pode começar com `^`.
-// Fora do cache: o acompanhamento da sincronização (precisa do status de agora) e o health.
-export const CACHEABLE_API_PATTERN = /\/api\/v1\/(?!(?:sync-runs|health)(?:[/?]|$))/;
+// Fora do cache: o acompanhamento da sincronização (precisa do status de agora), o health e a
+// exportação (o `.zip` com todos os dados não fica guardado no aparelho e nunca sai velho).
+export const CACHEABLE_API_PATTERN = /\/api\/v1\/(?!(?:sync-runs|health|exports)(?:[/?]|$))/;
 
 interface ApiRequestLike {
   readonly method: string;

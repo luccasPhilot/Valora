@@ -7,6 +7,7 @@ import { ruleSuggestionSchema } from './categories';
 // (docs/03-arquitetura.md, "Contrato da API").
 
 export const TRANSACTION_PAGE_SIZE = 50;
+export const MAX_TRANSACTION_PAGE_SIZE = 100;
 
 const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
 
@@ -124,11 +125,13 @@ function toQueryString(query: TransactionQuery, params = new URLSearchParams()):
   return params.toString();
 }
 
-export function listTransactions(query: TransactionQuery, page: number): Promise<TransactionPage> {
-  const pagination = new URLSearchParams({
-    page: String(page),
-    limit: String(TRANSACTION_PAGE_SIZE),
-  });
+/** `limit` vai até `MAX_TRANSACTION_PAGE_SIZE`, o máximo da API (a exportação pede páginas cheias). */
+export function listTransactions(
+  query: TransactionQuery,
+  page: number,
+  limit = TRANSACTION_PAGE_SIZE,
+): Promise<TransactionPage> {
+  const pagination = new URLSearchParams({ page: String(page), limit: String(limit) });
   return apiGet(`/transactions?${toQueryString(query, pagination)}`, transactionPageSchema);
 }
 

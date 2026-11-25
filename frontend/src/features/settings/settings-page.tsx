@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { type ThemePreference } from '@/lib/theme';
 
 import { DataHealthLink } from '../data-health/data-health-link';
+import { DataExportSection } from './data-export-section';
 
 interface ThemeOption {
   readonly value: ThemePreference;
@@ -52,6 +53,7 @@ export function Component() {
           })}
         </div>
       </section>
+      <DataExportSection />
       <DataHealthLink />
     </div>
   );

@@ -293,6 +293,13 @@ Em Ajustes (e por um link em Contas), a tela **Saúde dos dados** (`/ajustes/sau
 - **Contas paradas:** conta corrente ou cartão, visível, de banco ativo que sincroniza normalmente, sem transação do Open Finance há 10 dias ou mais ("Sem transações há 14 dias"). Poupança fica de fora: ficar parada é normal.
 - **Sincronizações:** as últimas 30 execuções, com quando, como começou (Agendada ou Botão), o resultado com ícone e texto e as contagens ("12 novas, 3 atualizadas"), sem valores.
 
+## Exportar
+
+Duas saídas legíveis, além do backup do servidor (que só serve para restaurar o próprio Valora). Nenhuma delas manda dado para fora: o arquivo só sai da casa quando você o baixa.
+
+- **"Exportar CSV", em Transações:** baixa todas as transações do filtro da tela (período, categoria, tipo, origem, conta e busca), não só as carregadas. Feito para o Excel em pt-BR: UTF-8 com BOM, separador `;`, colunas Data (`dd/mm/aaaa`), Descrição, Categoria ("Sem categoria" quando não tem), Tipo (Receita, Despesa ou Transferência, pela mesma regra da tela), Conta, Valor (`-89,90`, com vírgula e o hífen comum, sem "R$"), Situação (Pendente ou Confirmada), Origem (Banco ou Manual) e Parcela ("3 de 10", não "3/10", que o Excel transformaria em data). Texto que começa com `=`, `+`, `-` ou `@` ganha um apóstrofo para não virar fórmula. Enquanto busca as páginas, mostra "Preparando 340 de 1.200…" com "Cancelar"; acima de 10.000 transações, pede um período menor e não baixa nada. Com "Ocultar valores" ligado, avisa antes que o arquivo terá os valores. Nome: `valora-transacoes-2026-11-01-a-2026-11-30.csv`.
+- **"Baixar meus dados", em Ajustes:** um `.zip` com um CSV por tabela do Valora (`transactions.csv`, `accounts.csv`, `balance_snapshots.csv`...), as colunas com os nomes do banco, valores em centavos inteiros (`amount_cents`), datas `AAAA-MM-DD` e instantes ISO 8601 em UTC, e um `LEIA-ME.txt` que explica o formato. É uma cópia para guardar e reprocessar, não para ler no Excel. O JSON bruto do Pluggy fica de fora. Todas as tabelas saem de uma foto só do banco, mesmo com a sincronização rodando. Não restaura o Valora.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:
