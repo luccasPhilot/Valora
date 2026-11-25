@@ -186,7 +186,7 @@ As fases seguem a ordem de valor por esforço. Esforço: **P** (um dia ou dois),
 | **Notas e etiquetas** | Nota livre e etiquetas por transação, com filtro em Transações e nos relatórios. Cobre viagem, reforma, reembolso e despesas dedutíveis sem criar categorias falsas. | M | `transactions.note`, `tags`, `transaction_tags`. **Contraria a regra 9** (ver decisões). |
 | ~~**Saúde dos dados**~~ (feito em 24/11/2026, `add-data-health`) | Em Contas ou Ajustes: consentimento a vencer (aviso 30 e 7 dias antes); conciliação "saldo de hoje = foto anterior + transações", com "possível transação faltando entre dd/mm e dd/mm"; conta sem transações há 10 dias ou mais; histórico das sincronizações. | M | `connections.consent_expires_at`; `sync_runs.stats`. |
 | **Push no iPhone** | Web Push (VAPID) no PWA instalado, pelo HTTPS do `tailscale serve`. Dispara nos alertas existentes, no consentimento a vencer e na caixa de entrada cheia. **Sem valor nem descrição no conteúdo**, porque passa pelo servidor da Apple. | M | `push_subscriptions`. |
-| **Exportar** | CSV das transações do filtro atual e "Baixar meus dados" (zip com um CSV por tabela). Backup legível. | P | Existentes. |
+| ~~**Exportar**~~ (feito em 25/11/2026, `add-data-export`) | CSV das transações do filtro atual e "Baixar meus dados" (zip com um CSV por tabela). Backup legível. | P | Existentes. |
 | ~~**Acabamento de Transações**~~ (feito em 24/11/2026) | Pendências da crítica (F17) e F8, com F7 e F15 (`refine-transactions-ux`). | P | — |
 
 **Pronta quando:** a caixa de entrada chega a zero depois da sincronização; o consentimento avisa 30 dias antes; uma transação apagada à mão no banco de teste aparece como divergência; um alerta chega como push com o app fechado; o CSV abre no Excel com acentos e valores certos.
@@ -271,7 +271,7 @@ Cada linha é uma change do OpenSpec, nesta ordem. As três primeiras protegem d
 | 3 | `fix-balance-history-gaps` | ~~D1, D9 e D2 (decidida: o estorno reduz a despesa), mais a D6.~~ Arquivada em 24/11/2026; falta o deploy. | Feito |
 | 4 | `harden-frontend-data` | ~~F1, F2, F3, F4, F13 e `query-keys.ts`.~~ Arquivada em 24/11/2026; falta o deploy. | Feito |
 | 5 | `refine-transactions-ux` | ~~F7, F8, F17 e F15.~~ Arquivada em 24/11/2026; falta o deploy. | Feito |
-| 6 | Fase 4 em 5 changes | ~~`add-review-inbox` (caixa de entrada + categoria em massa + regra sugerida)~~ (arquivada em 24/11/2026; falta o deploy), ~~`add-data-health`~~ (arquivada em 24/11/2026; falta o deploy), `add-data-export`, `add-transaction-notes-and-tags` e `add-push-notifications`. Propostas em 24/11/2026. | Dezembro a fevereiro |
+| 6 | Fase 4 em 5 changes | ~~`add-review-inbox` (caixa de entrada + categoria em massa + regra sugerida)~~ (arquivada em 24/11/2026; falta o deploy), ~~`add-data-health`~~ (arquivada em 24/11/2026; falta o deploy), ~~`add-data-export`~~ (arquivada em 25/11/2026; falta o deploy e conferir o download na PWA do iPhone), `add-transaction-notes-and-tags` e `add-push-notifications`. Propostas em 24/11/2026. | Dezembro a fevereiro |
 | 7 | `add-tax-support` e `add-investment-allocation` | Folha do IR e alocação da Fase 6, antecipadas pelo calendário do IR. | Até março de 2027 |
 | 8 | `add-year-in-review` | Retrospectiva de 2026. | Janeiro |
 | 9 | `harden-infra` | I6, I7, I9, I10, I11, I12, I13, I14, I15. Proposta em 24/11/2026, em grupos independentes. | Em paralelo, aos poucos |

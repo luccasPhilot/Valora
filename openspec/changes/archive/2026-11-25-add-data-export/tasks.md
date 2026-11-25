@@ -18,10 +18,10 @@
 
 ## 4. Conferência
 
-- [ ] 4.1 Abrir um CSV exportado no Excel em pt-BR e conferir acentos, colunas e valores numéricos
+- [x] 4.1 Abrir um CSV exportado no Excel em pt-BR e conferir acentos, colunas e valores numéricos
 - [x] 4.2 Rodar `typecheck`, `lint`, `format:check` e `test` no `backend/` e no `frontend/`
 
 ## 5. Documentação
 
 - [x] 5.1 `docs/01-produto.md` (exportar), `docs/03-arquitetura.md` (rota e Decisões: CSV no front, `.zip` no backend, exceção à paginação)
-- [ ] 5.2 Ao arquivar: marcar "Exportar" como feito em `docs/08-revisao-e-proximas-fases.md`
+- [x] 5.2 Ao arquivar: marcar "Exportar" como feito em `docs/08-revisao-e-proximas-fases.md`
