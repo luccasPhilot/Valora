@@ -43,4 +43,4 @@
 ## 8. Documentação
 
 - [x] 8.1 `docs/01-produto.md` (caixa, categoria em massa, regra sugerida), `docs/03-arquitetura.md` (rotas novas e Decisões: revisão como coluna, sugestão calculada), `docs/04-modelo-de-dados.md` (`reviewed_at`, `dismissed_rule_suggestions`)
-- [ ] 8.2 Ao arquivar: marcar os três itens da Fase 4 como feitos em `docs/08-revisao-e-proximas-fases.md`
+- [x] 8.2 Ao arquivar: marcar os três itens da Fase 4 como feitos em `docs/08-revisao-e-proximas-fases.md`
