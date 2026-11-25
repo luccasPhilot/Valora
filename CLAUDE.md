@@ -95,6 +95,10 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
   - identificadores, tabelas, colunas e rotas em inglês;
   - textos da interface e documentação em português do Brasil;
   - commits em Conventional Commits, em inglês.
+- **Fim de linha LF, nunca CRLF**, em todo arquivo de texto, como pedem o `.editorconfig`, o Prettier e o `.gitattributes`. No Windows, script que grava arquivo cria CRLF por padrão:
+  - Python: `open(path, 'w', encoding='utf-8', newline='\n')`;
+  - PowerShell: evite `Set-Content` e `Out-File` para código; use as ferramentas de edição ou `[System.IO.File]::WriteAllText` com o texto em `\n`.
+  - Antes de dar por pronto, `git ls-files --eol | grep -E "w/(crlf|mixed)"` não pode listar nada.
 - **Camadas:** Controller → Service → Repository. O `PluggyClient` é o único que fala com o Pluggy.
 - **Validação:** Zod em toda entrada (requests, `.env`, respostas do Pluggy, e no front as respostas da API).
 - **Partes independentes:** o frontend nunca importa código do `backend/`, e vice-versa. O backend é o dono do contrato da API; o front tem os próprios schemas em `frontend/src/lib/api/`. **Mudou um endpoint, os dois lados mudam na mesma change**, com testes nos dois ([Contrato da API](docs/03-arquitetura.md#contrato-da-api)).
