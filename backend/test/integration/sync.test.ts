@@ -435,3 +435,39 @@ describe('foto diária do saldo', () => {
     });
   });
 });
+
+describe('vencimento do consentimento', () => {
+  it('should_save_consent_expiry_when_pluggy_returns_it', async () => {
+    // Arrange
+    fixtureOf(harness.fixtures, 'item-1').item.consentExpiresAt = '2026-12-28T15:00:00.000Z';
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect((await connectionOf(harness.database, 'item-1')).consentExpiresAt).toEqual(
+      new Date('2026-12-28T15:00:00.000Z'),
+    );
+  });
+
+  it('should_save_consent_expiry_when_fetching_the_bank_data_fails_afterwards', async () => {
+    // Arrange
+    fixtureOf(harness.fixtures, 'item-2').item.consentExpiresAt = '2026-12-28T15:00:00.000Z';
+    vi.spyOn(harness.sdk, 'fetchAccounts').mockRejectedValue(new TypeError('network down'));
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect((await connectionOf(harness.database, 'item-2')).consentExpiresAt).toEqual(
+      new Date('2026-12-28T15:00:00.000Z'),
+    );
+  });
+
+  it('should_save_null_when_pluggy_does_not_inform_the_consent_expiry', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    fixtureOf(harness.fixtures, 'item-3').item.consentExpiresAt = null;
+    harness.clock.now = new Date(harness.clock.now.getTime() + 3_600_000);
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect((await connectionOf(harness.database, 'item-3')).consentExpiresAt).toBeNull();
+  });
+});

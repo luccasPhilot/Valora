@@ -8,7 +8,7 @@ import {
   UNCATEGORIZED_FILTER,
 } from '@/lib/api/transactions';
 import { firstDayOfMonth, lastDayOfMonth } from '@/lib/dates';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatMonth, formatMonthLongName } from '@/lib/format';
 
 export type PeriodPreset = 'this-month' | 'last-month' | 'last-3-months' | 'this-year' | 'custom';
 
@@ -171,10 +171,29 @@ export function hasFiltersBesidesPeriod(filters: TransactionFilters): boolean {
   );
 }
 
-/** Quantos dos filtros do botão "Filtros" (categoria, tipo, origem e conta) estão ativos. */
-export function countPanelFilters(filters: TransactionFilters): number {
-  return [filters.categoryId, filters.type, filters.source, filters.accountId].filter(Boolean)
-    .length;
+interface FilterCountOptions {
+  /** Abaixo de 768 px o período fica dentro do painel "Filtros" e entra na contagem. */
+  readonly isPeriodInside: boolean;
+}
+
+/**
+ * Quantos filtros o botão "Filtros" guarda: categoria, tipo, origem e conta, e o período quando ele
+ * fica dentro do painel e não é "Este mês".
+ */
+export function activeFilterCount(
+  filters: TransactionFilters,
+  { isPeriodInside }: FilterCountOptions,
+): number {
+  const panelCount = [filters.categoryId, filters.type, filters.source, filters.accountId].filter(
+    Boolean,
+  ).length;
+  const isPeriodCounted = isPeriodInside && filters.period !== DEFAULT_PERIOD;
+  return panelCount + (isPeriodCounted ? 1 : 0);
+}
+
+/** "Limpar filtros" do popover: tira categoria, tipo, origem e conta; período e busca ficam. */
+export function withoutPanelFilters(filters: TransactionFilters): TransactionFilters {
+  return { ...filters, categoryId: null, type: null, source: null, accountId: null };
 }
 
 export interface FilterChip {
@@ -201,35 +220,56 @@ function customPeriodLabel(filters: TransactionFilters): string {
   return PERIOD_LABELS.custom;
 }
 
-/** Cada filtro ativo vira um chip; o período padrão (este mês) não precisa de chip. */
+function threeMonthsLabel(today: string): string {
+  const start = firstDayOfMonth(today, -2);
+  const end = firstDayOfMonth(today);
+  if (start.slice(0, 4) !== end.slice(0, 4)) return `${formatMonth(start)} a ${formatMonth(end)}`;
+  return `${formatMonthLongName(start.slice(0, 7))} a ${formatMonth(end)}`;
+}
+
+/**
+ * O período do filtro em texto, para o resumo: "novembro de 2026", "setembro a novembro de 2026",
+ * "ano de 2026" ou as datas do personalizado. Quem mostra põe a primeira letra em maiúscula.
+ */
+export function describePeriod(filters: TransactionFilters, today: string): string {
+  switch (filters.period) {
+    case 'this-month':
+      return formatMonth(firstDayOfMonth(today));
+    case 'last-month':
+      return formatMonth(firstDayOfMonth(today, -1));
+    case 'last-3-months':
+      return threeMonthsLabel(today);
+    case 'this-year':
+      return `ano de ${today.slice(0, 4)}`;
+    case 'custom':
+      if (!filters.from && !filters.to) return describePeriod(NO_FILTERS, today);
+      return customPeriodLabel(filters);
+  }
+}
+
+/**
+ * Cada filtro ativo vira um chip com o nome do filtro ("Categoria: Transporte"). O período nunca
+ * vira chip: ele já fica à vista (ou conta no botão "Filtros", no celular).
+ */
 export function describeActiveFilters(
   filters: TransactionFilters,
   lookups: ChipLookups,
 ): FilterChip[] {
   const chips: FilterChip[] = [];
-  if (filters.period !== DEFAULT_PERIOD) {
-    const label =
-      filters.period === 'custom' ? customPeriodLabel(filters) : PERIOD_LABELS[filters.period];
-    chips.push({
-      key: 'period',
-      label,
-      filtersWithoutIt: { ...filters, period: DEFAULT_PERIOD, from: null, to: null },
-    });
-  }
   if (filters.categoryId) {
     const category = lookups.categories.find((candidate) => candidate.id === filters.categoryId);
     const label =
       filters.categoryId === UNCATEGORIZED_FILTER ? UNCATEGORIZED_LABEL : category?.name;
     chips.push({
       key: 'category',
-      label: label ?? 'Categoria',
+      label: label ? `Categoria: ${label}` : 'Categoria',
       filtersWithoutIt: { ...filters, categoryId: null },
     });
   }
   if (filters.type) {
     chips.push({
       key: 'type',
-      label: TYPE_LABELS[filters.type],
+      label: `Tipo: ${TYPE_LABELS[filters.type]}`,
       filtersWithoutIt: { ...filters, type: null },
     });
   }
@@ -237,14 +277,14 @@ export function describeActiveFilters(
     const account = lookups.accounts.find((candidate) => candidate.id === filters.accountId);
     chips.push({
       key: 'account',
-      label: account ? accountOptionLabel(account) : 'Conta',
+      label: account ? `Conta: ${accountOptionLabel(account)}` : 'Conta',
       filtersWithoutIt: { ...filters, accountId: null },
     });
   }
   if (filters.source) {
     chips.push({
       key: 'source',
-      label: SOURCE_LABELS[filters.source],
+      label: `Origem: ${SOURCE_LABELS[filters.source]}`,
       filtersWithoutIt: { ...filters, source: null },
     });
   }

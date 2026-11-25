@@ -15,6 +15,7 @@ export default mergeConfig(
     },
     test: {
       environment: 'jsdom',
+      unstubGlobals: true,
       testTimeout: 15_000,
       setupFiles: ['./test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.{ts,tsx}'],

@@ -1,7 +1,9 @@
 import {
   Bell,
+  CalendarX,
   CircleAlert,
   CopyX,
+  KeyRound,
   type LucideIcon,
   Repeat,
   TriangleAlert,
@@ -29,8 +31,13 @@ const APPEARANCE_BY_TYPE: Readonly<Record<string, AlertAppearance>> = {
   budget_warning: { icon: TriangleAlert, label: 'Orçamento em 80%', tone: 'warning' },
   budget_exceeded: { icon: CircleAlert, label: 'Orçamento estourado', tone: 'critical' },
   connection_error: { icon: Unplug, label: 'Banco sem sincronizar', tone: 'critical' },
+  // Ainda dá tempo de renovar: aviso, não erro. Vencido, o `connection_error` assume.
+  consent_expiring: { icon: KeyRound, label: 'Consentimento a vencer', tone: 'warning' },
   duplicate_charge: { icon: CopyX, label: 'Cobrança duplicada', tone: 'warning' },
   subscription_detected: { icon: Repeat, label: 'Assinatura', tone: 'neutral' },
+  // No próprio dia ainda dá para sincronizar; depois da virada, só conferir nos informes.
+  year_end_snapshot_pending: { icon: CalendarX, label: 'Foto de 31/12', tone: 'critical' },
+  year_end_snapshot_missing: { icon: CalendarX, label: 'Foto de 31/12', tone: 'warning' },
 };
 
 // Tipo que a interface ainda não conhece (o backend pode ganhar tipos antes do front).

@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
@@ -20,6 +20,14 @@ export interface PageRequest {
   readonly page: number;
   readonly limit: number;
 }
+
+/** A lista mostra a mais recente primeiro; a caixa "Para revisar", a mais antiga. */
+export type TransactionOrder = 'newest_first' | 'oldest_first';
+
+const ORDER_COLUMNS = {
+  newest_first: [desc(transactions.date), desc(transactions.createdAt), desc(transactions.id)],
+  oldest_first: [asc(transactions.date), asc(transactions.createdAt), asc(transactions.id)],
+} as const;
 
 export interface TransactionRecord {
   readonly id: string;
@@ -111,11 +119,15 @@ function toRecord(row: TransactionRow): TransactionRecord {
 export class TransactionsQueryRepository {
   constructor(private readonly db: DbExecutor) {}
 
-  async findPage(filters: TransactionFilters, request: PageRequest): Promise<TransactionPage> {
+  async findPage(
+    filters: TransactionFilters,
+    request: PageRequest,
+    order: TransactionOrder = 'newest_first',
+  ): Promise<TransactionPage> {
     const where = and(...buildConditions(filters));
     const rows = await selectTransactions(this.db)
       .where(where)
-      .orderBy(desc(transactions.date), desc(transactions.createdAt), desc(transactions.id))
+      .orderBy(...ORDER_COLUMNS[order])
       .limit(request.limit)
       .offset((request.page - 1) * request.limit);
     const [counted] = await this.db
@@ -131,13 +143,38 @@ export class TransactionsQueryRepository {
     return row ? toRecord(row) : null;
   }
 
-  /** Grava a categoria como escolha sua. Devolve `false` se a transação não existe. */
+  /** Grava a categoria como escolha sua e marca como revisada. `false` se a transação não existe. */
   async setUserCategory(transactionId: string, categoryId: string): Promise<boolean> {
     const rows = await this.db
       .update(transactions)
-      .set({ categoryId, categorySource: 'user', updatedAt: new Date() })
+      .set({ categoryId, categorySource: 'user', reviewedAt: sql`now()`, updatedAt: new Date() })
       .where(eq(transactions.id, transactionId))
       .returning({ id: transactions.id });
     return rows.length > 0;
+  }
+
+  /**
+   * Troca em massa: grava a categoria como escolha sua e marca como revisadas, num comando só (ou
+   * todas mudam, ou nenhuma). Ids que não existem são ignorados; devolve quantas mudaram.
+   */
+  async setUserCategoryOfMany(
+    transactionIds: readonly string[],
+    categoryId: string,
+  ): Promise<number> {
+    const rows = await this.db
+      .update(transactions)
+      .set({ categoryId, categorySource: 'user', reviewedAt: sql`now()`, updatedAt: new Date() })
+      .where(inArray(transactions.id, [...transactionIds]))
+      .returning({ id: transactions.id });
+    return rows.length;
+  }
+
+  /** Valores (com sinal) das transações manuais entre os ids: a categoria precisa casar com o tipo. */
+  async findManualAmounts(transactionIds: readonly string[]): Promise<number[]> {
+    const rows = await this.db
+      .select({ amountCents: transactions.amountCents })
+      .from(transactions)
+      .where(and(inArray(transactions.id, [...transactionIds]), eq(transactions.source, 'manual')));
+    return rows.map((row) => row.amountCents);
   }
 }

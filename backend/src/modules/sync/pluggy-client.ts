@@ -50,6 +50,8 @@ export interface PluggyItemOverview {
   readonly investmentsCollection: InvestmentsCollection;
   readonly connectorName: string;
   readonly institutionLogoUrl: string | null;
+  /** Nulo quando o Pluggy não informa o vencimento do consentimento. */
+  readonly consentExpiresAt: Date | null;
 }
 
 export interface PluggyAccountList {
@@ -139,12 +141,9 @@ export class PluggyClient {
   async getItem(itemId: string): Promise<PluggyItemOverview> {
     const item = parseOrThrow(pluggyItemSchema, await this.sdk.fetchItem(itemId), 'item');
     const isMeuPluggy = item.connector.id === MEU_PLUGGY_CONNECTOR_ID;
+    const consentExpiresAt = item.consentExpiresAt ?? null;
     const connection = mapItemStatus(
-      {
-        status: item.status,
-        errorCode: item.error?.code ?? null,
-        consentExpiresAt: item.consentExpiresAt ?? null,
-      },
+      { status: item.status, errorCode: item.error?.code ?? null, consentExpiresAt },
       this.now(),
     );
     const investmentsCollection = investmentsCollectionOf({
@@ -157,6 +156,7 @@ export class PluggyClient {
       investmentsCollection,
       connectorName: item.connector.name,
       institutionLogoUrl: isMeuPluggy ? null : (item.connector.imageUrl ?? null),
+      consentExpiresAt,
     };
   }
 

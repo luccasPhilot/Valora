@@ -314,3 +314,99 @@ describe('pendente com decisão do usuário trocada por postada', () => {
     }).toEqual({ rules: rulesBefore, posted: { categoryId, categorySource: 'user' } });
   });
 });
+
+describe('revisão na sincronização', () => {
+  const REVIEWED_AT = new Date('2026-11-10T16:00:00.000Z');
+
+  async function markPendingReviewed(): Promise<void> {
+    await harness.database.db
+      .update(transactions)
+      .set({ reviewedAt: REVIEWED_AT })
+      .where(eq(transactions.pluggyTransactionId, PENDING_ID));
+  }
+
+  async function reviewedAtOf(pluggyTransactionId: string): Promise<Date | null | undefined> {
+    return (await findTransaction(harness.database, pluggyTransactionId))?.reviewedAt;
+  }
+
+  function replacePendingWithPosted(): void {
+    withoutTransaction(card, PENDING_ID);
+    addCardTransaction('tx-posted', { date: '2026-11-11', status: 'POSTED' });
+    syncOn('2026-11-11');
+  }
+
+  it('should_insert_new_transactions_without_review', async () => {
+    // Arrange
+    addCardTransaction(PENDING_ID, { date: PENDING_DATE, status: 'PENDING' });
+    syncOn(PENDING_DATE);
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await reviewedAtOf(PENDING_ID)).toBeNull();
+  });
+
+  it('should_keep_the_review_when_the_sync_updates_an_existing_transaction', async () => {
+    // Arrange
+    await syncPending({ withUserCategory: false });
+    await markPendingReviewed();
+    const pending = card.transactions.find((transaction) => transaction.id === PENDING_ID);
+    if (!pending) throw new Error('Teste: pendente não está nas fixtures');
+    pending.description = 'Descrição corrigida pelo banco';
+    syncOn('2026-11-11');
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await reviewedAtOf(PENDING_ID)).toEqual(REVIEWED_AT);
+  });
+
+  it('should_carry_the_review_when_a_reviewed_pending_with_user_category_is_replaced', async () => {
+    // Arrange
+    await syncPending({ withUserCategory: true });
+    await markPendingReviewed();
+    replacePendingWithPosted();
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await reviewedAtOf('tx-posted')).toEqual(REVIEWED_AT);
+  });
+
+  it('should_carry_the_review_when_the_pending_was_only_reviewed', async () => {
+    // Arrange: só "Ok", sem trocar a categoria.
+    await syncPending({ withUserCategory: false });
+    await markPendingReviewed();
+    replacePendingWithPosted();
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect({
+      posted: await reviewedAtOf('tx-posted'),
+      pending: await findTransaction(harness.database, PENDING_ID),
+    }).toEqual({ posted: REVIEWED_AT, pending: undefined });
+  });
+
+  it('should_leave_the_posted_to_review_when_the_pending_was_not_reviewed', async () => {
+    // Arrange
+    await syncPending({ withUserCategory: true });
+    await harness.database.db
+      .update(transactions)
+      .set({ reviewedAt: null })
+      .where(eq(transactions.pluggyTransactionId, PENDING_ID));
+    replacePendingWithPosted();
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await reviewedAtOf('tx-posted')).toBeNull();
+  });
+
+  it('should_keep_an_only_reviewed_pending_within_5_days_when_no_posted_arrives', async () => {
+    // Arrange
+    await syncPending({ withUserCategory: false });
+    await markPendingReviewed();
+    withoutTransaction(card, PENDING_ID);
+    syncOn('2026-11-12');
+    // Act
+    await runSync(harness.syncService);
+    // Assert
+    expect(await reviewedAtOf(PENDING_ID)).toEqual(REVIEWED_AT);
+  });
+});

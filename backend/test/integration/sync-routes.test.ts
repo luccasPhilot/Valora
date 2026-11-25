@@ -151,3 +151,59 @@ describe('logs da sincronização', () => {
     );
   });
 });
+
+describe('GET /api/v1/sync-runs', () => {
+  async function insertRuns(count: number): Promise<void> {
+    const startedAt = Date.parse('2026-10-01T10:00:00Z');
+    await harness.database.db.insert(syncRuns).values(
+      Array.from({ length: count }, (_, index) => ({
+        trigger: index % 2 === 0 ? 'schedule' : 'manual',
+        status: 'success',
+        startedAt: new Date(startedAt + index * 86_400_000),
+        finishedAt: new Date(startedAt + index * 86_400_000 + 60_000),
+      })),
+    );
+  }
+
+  it('should_return_30_runs_and_the_total_when_no_limit_is_given', async () => {
+    // Arrange
+    await insertRuns(45);
+    // Act
+    const response = await harness.app.inject({ method: 'GET', url: SYNC_RUNS_URL });
+    // Assert
+    const body = response.json();
+    expect({ items: body.items.length, pagination: body.pagination }).toEqual({
+      items: 30,
+      pagination: { page: 1, limit: 30, total: 45 },
+    });
+  });
+
+  it('should_list_the_most_recent_run_first', async () => {
+    // Arrange
+    await insertRuns(3);
+    // Act
+    const response = await harness.app.inject({ method: 'GET', url: `${SYNC_RUNS_URL}?limit=2` });
+    // Assert
+    expect(response.json().items.map((run: { startedAt: string }) => run.startedAt)).toEqual([
+      '2026-10-03T10:00:00.000Z',
+      '2026-10-02T10:00:00.000Z',
+    ]);
+  });
+
+  it('should_return_the_same_format_as_latest_when_listing', async () => {
+    // Arrange
+    await runSync(harness.syncService);
+    // Act
+    const list = await harness.app.inject({ method: 'GET', url: SYNC_RUNS_URL });
+    const latest = await harness.app.inject({ method: 'GET', url: LATEST_RUN_URL });
+    // Assert
+    expect(list.json().items[0]).toEqual(latest.json());
+  });
+
+  it('should_answer_400_when_the_limit_is_above_100', async () => {
+    // Arrange & Act
+    const response = await harness.app.inject({ method: 'GET', url: `${SYNC_RUNS_URL}?limit=101` });
+    // Assert
+    expect(response.statusCode).toBe(400);
+  });
+});

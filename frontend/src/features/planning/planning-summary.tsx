@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { DataCard } from '@/components/cards/data-card';
 import { Metric } from '@/components/cards/metric';
 import { Money } from '@/components/money';
+import { useAmountTone } from '@/components/use-amount-tone';
 import type { MonthTotals } from '@/lib/api/planned-entries';
 
 import { expectedTotals } from './planning-labels';
@@ -26,9 +27,10 @@ function SummaryCard({ title, icon, valueClassName, children }: SummaryCardProps
 /** Receitas e despesas previstas do mês (o que falta e o que já aconteceu; as puladas ficam de fora). */
 export function PlanningSummary({ totals }: { totals: MonthTotals }) {
   const expected = expectedTotals(totals);
+  const incomeTone = useAmountTone(expected.incomeCents, 'flow');
   return (
     <div className="grid gap-3 min-[400px]:grid-cols-2 sm:gap-4">
-      <SummaryCard title="Receitas previstas" icon={ArrowDownLeft} valueClassName="text-positive">
+      <SummaryCard title="Receitas previstas" icon={ArrowDownLeft} valueClassName={incomeTone}>
         <Money cents={expected.incomeCents} isSigned />
       </SummaryCard>
       <SummaryCard title="Despesas previstas" icon={ArrowUpRight}>

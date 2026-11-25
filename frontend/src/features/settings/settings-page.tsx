@@ -4,6 +4,9 @@ import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { type ThemePreference } from '@/lib/theme';
 
+import { DataHealthLink } from '../data-health/data-health-link';
+import { DataExportSection } from './data-export-section';
+
 interface ThemeOption {
   readonly value: ThemePreference;
   readonly label: string;
@@ -21,33 +24,37 @@ export function Component() {
   const { preference, setPreference } = useTheme();
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-5 shadow-card">
-      <h2 id="theme-heading" className="type-label flex items-center gap-2">
-        <SunMoon className="size-4 text-primary" aria-hidden="true" />
-        Tema
-      </h2>
-      <div
-        role="radiogroup"
-        aria-labelledby="theme-heading"
-        className="inline-flex flex-wrap gap-1 rounded-full border bg-card p-1"
-      >
-        {THEME_OPTIONS.map((option) => {
-          const isSelected = preference === option.value;
-          return (
-            <Button
-              key={option.value}
-              role="radio"
-              aria-checked={isSelected}
-              variant="ghost"
-              className={`rounded-full ${isSelected ? SELECTED_OPTION_CLASSES : ''}`}
-              onClick={() => setPreference(option.value)}
-            >
-              {isSelected ? <Check aria-hidden="true" /> : null}
-              {option.label}
-            </Button>
-          );
-        })}
-      </div>
-    </section>
+    <div className="space-y-4">
+      <section className="space-y-4 rounded-lg border bg-card p-5 shadow-card">
+        <h2 id="theme-heading" className="type-label flex items-center gap-2">
+          <SunMoon className="size-4 text-primary" aria-hidden="true" />
+          Tema
+        </h2>
+        <div
+          role="radiogroup"
+          aria-labelledby="theme-heading"
+          className="inline-flex flex-wrap gap-1 rounded-full border bg-card p-1"
+        >
+          {THEME_OPTIONS.map((option) => {
+            const isSelected = preference === option.value;
+            return (
+              <Button
+                key={option.value}
+                role="radio"
+                aria-checked={isSelected}
+                variant="ghost"
+                className={`rounded-full ${isSelected ? SELECTED_OPTION_CLASSES : ''}`}
+                onClick={() => setPreference(option.value)}
+              >
+                {isSelected ? <Check aria-hidden="true" /> : null}
+                {option.label}
+              </Button>
+            );
+          })}
+        </div>
+      </section>
+      <DataExportSection />
+      <DataHealthLink />
+    </div>
   );
 }

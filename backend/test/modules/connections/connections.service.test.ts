@@ -18,6 +18,7 @@ function connection(overrides: Partial<ConnectionWithAccounts> = {}): Connection
     statusDetail: null,
     lastSyncedAt: null,
     archivedAt: null,
+    consentExpiresAt: null,
     accounts: [],
     ...overrides,
   };

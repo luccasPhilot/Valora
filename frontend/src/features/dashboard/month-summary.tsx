@@ -3,6 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, type LucideIcon, Scale } from 'lucide-reac
 
 import { DataCard } from '@/components/cards/data-card';
 import { Money } from '@/components/money';
+import { useAmountTone } from '@/components/use-amount-tone';
 
 interface SummaryCardProps {
   title: string;
@@ -40,13 +41,14 @@ interface MonthSummaryProps {
 
 /** Receitas e despesas do mês lado a lado; transferências já ficam fora dos dois números. */
 export function MonthSummary({ incomeCents, expenseCents }: MonthSummaryProps) {
+  const incomeTone = useAmountTone(incomeCents, 'flow');
   return (
     <div className="grid h-full grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-1 lg:grid-rows-3">
       <SummaryCard
         title="Receitas do mês"
         icon={ArrowDownLeft}
         cents={incomeCents}
-        valueClassName="text-positive"
+        valueClassName={incomeTone}
       />
       <SummaryCard title="Despesas do mês" icon={ArrowUpRight} cents={-expenseCents} />
       <SummaryCard

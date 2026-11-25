@@ -1,6 +1,8 @@
+import { toSaoPauloDate } from '../../shared/dates.js';
 import { budgetStatus } from '../budgets/budget-status.js';
 import type { BudgetRecord } from '../budgets/budgets.repository.js';
 import type { ConnectionRecord } from '../connections/connections.repository.js';
+import { consentDaysLeft } from '../connections/consent-expiry.js';
 
 export const ALERT_TYPES = [
   'duplicate_charge',
@@ -8,6 +10,9 @@ export const ALERT_TYPES = [
   'budget_warning',
   'budget_exceeded',
   'connection_error',
+  'year_end_snapshot_pending',
+  'year_end_snapshot_missing',
+  'consent_expiring',
 ] as const;
 
 export type AlertType = (typeof ALERT_TYPES)[number];
@@ -17,7 +22,13 @@ type BudgetAlertType = 'budget_warning' | 'budget_exceeded';
 /** Tipos que o avaliador de orçamento gerencia: o que ele não recalcular como ativo é resolvido. */
 export const BUDGET_ALERT_TYPES: readonly BudgetAlertType[] = ['budget_warning', 'budget_exceeded'];
 
-export const CONNECTION_ALERT_TYPES: readonly AlertType[] = ['connection_error'];
+export const CONNECTION_ALERT_TYPES: readonly AlertType[] = [
+  'connection_error',
+  'consent_expiring',
+];
+
+/** Só o alerta do próprio dia 31/12 é reconciliado; o de depois da virada é de evento. */
+export const YEAR_END_PENDING_ALERT_TYPES: readonly AlertType[] = ['year_end_snapshot_pending'];
 
 /** Uma situação que merece alerta agora. A `dedupeKey` a identifica entre uma avaliação e outra. */
 export interface AlertSituation {
@@ -106,4 +117,101 @@ export function connectionSituations(connections: readonly ConnectionRecord[]): 
       connectionId: connection.id,
       transactionId: null,
     }));
+}
+
+const FIRST_CONSENT_NOTICE_DAYS = 30;
+const SECOND_CONSENT_NOTICE_DAYS = 7;
+
+/** "28/12" a partir do instante, no fuso de São Paulo. */
+function dayAndMonth(instant: Date): string {
+  const isoDate = toSaoPauloDate(instant);
+  return `${isoDate.slice(8, 10)}/${isoDate.slice(5, 7)}`;
+}
+
+function consentExpiringSituation(connection: ConnectionRecord, now: Date): AlertSituation | null {
+  const expiresAt = connection.consentExpiresAt;
+  // Vencido, quem avisa é o `connection_error`.
+  if (!expiresAt || expiresAt <= now || connection.status === 'consent_expired') return null;
+  const daysLeft = consentDaysLeft(expiresAt, now);
+  if (daysLeft > FIRST_CONSENT_NOTICE_DAYS) return null;
+  // Limiares diferentes têm chaves diferentes: o segundo aviso nasce mesmo com o primeiro dispensado.
+  const threshold =
+    daysLeft <= SECOND_CONSENT_NOTICE_DAYS ? SECOND_CONSENT_NOTICE_DAYS : FIRST_CONSENT_NOTICE_DAYS;
+  return {
+    type: 'consent_expiring',
+    dedupeKey: `consent_expiring:${connection.id}:${threshold}`,
+    message: `O consentimento do ${connection.institutionName} vence em ${dayAndMonth(expiresAt)}. Renove a conexão no Meu Pluggy.`,
+    categoryId: null,
+    connectionId: connection.id,
+    transactionId: null,
+  };
+}
+
+/** Um aviso por conexão cujo consentimento vence nos próximos 30 dias: de 30 a 8 dias e a partir de 7. */
+export function consentExpiringSituations(
+  connections: readonly ConnectionRecord[],
+  now: Date,
+): AlertSituation[] {
+  return connections.flatMap((connection) => consentExpiringSituation(connection, now) ?? []);
+}
+
+/**
+ * Qual foto de 31/12 conferir hoje: a do próprio dia em 31/12 (ainda dá para sincronizar) ou a do ano
+ * anterior em janeiro (não dá mais). No resto do ano, nenhuma.
+ */
+export type YearEndCheck =
+  | { readonly kind: 'pending'; readonly date: string }
+  | { readonly kind: 'missing'; readonly date: string };
+
+/** Quantas contas e posições deveriam ter foto no dia e não têm. */
+export interface MissingSnapshotCounts {
+  readonly accounts: number;
+  readonly investments: number;
+}
+
+const YEAR_END_MONTH_DAY = '12-31';
+const JANUARY = '01';
+
+/** `today` em AAAA-MM-DD, no fuso de São Paulo. */
+export function yearEndCheckFor(today: string): YearEndCheck | null {
+  if (today.slice(5) === YEAR_END_MONTH_DAY) return { kind: 'pending', date: today };
+  if (today.slice(5, 7) !== JANUARY) return null;
+  const previousYear = Number(today.slice(0, 4)) - 1;
+  return { kind: 'missing', date: `${previousYear}-${YEAR_END_MONTH_DAY}` };
+}
+
+function countLabel(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/** "2 contas e 1 investimento"; só os itens que faltam. */
+function missingItemsLabel(counts: MissingSnapshotCounts): string {
+  const labels = [
+    counts.accounts > 0 ? countLabel(counts.accounts, 'conta', 'contas') : null,
+    counts.investments > 0 ? countLabel(counts.investments, 'investimento', 'investimentos') : null,
+  ];
+  return labels.filter((label) => label !== null).join(' e ');
+}
+
+/** A situação de alerta da foto de 31/12, ou `null` quando nada falta. Só contagens, nunca valores. */
+export function yearEndSnapshotSituation(
+  check: YearEndCheck,
+  counts: MissingSnapshotCounts,
+): AlertSituation | null {
+  if (counts.accounts + counts.investments === 0) return null;
+  const year = check.date.slice(0, 4);
+  const items = missingItemsLabel(counts);
+  const isPending = check.kind === 'pending';
+  const type = isPending ? 'year_end_snapshot_pending' : 'year_end_snapshot_missing';
+  const message = isPending
+    ? `Ainda falta a foto de 31/12 de ${items}. Sincronize hoje: ela é a base dos bens e direitos no IR.`
+    : `31/12/${year} terminou sem a foto de ${items}. Confira esses saldos nos informes de rendimentos dos bancos.`;
+  return {
+    type,
+    dedupeKey: `${type}:${year}`,
+    message,
+    categoryId: null,
+    connectionId: null,
+    transactionId: null,
+  };
 }

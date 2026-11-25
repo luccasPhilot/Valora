@@ -1,12 +1,13 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+// Carrega a tela na importação do arquivo: o primeiro teste não paga a transformação dela.
+import '@/features/reports/reports-layout';
+import '@/features/reports/income-expense-report-page';
+
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
-
-import { errorResponse, stubRoutes } from '../../../test/helpers/stub-routes';
+import { renderApp } from '../../../test/helpers/render-app';
+import { errorResponse, requestedUrls, stubRoutes } from '../../../test/helpers/stub-routes';
 
 const REPORT_PATH = '/relatorios/receitas-e-despesas';
 const REPORT_ROUTE = 'GET /api/v1/reports/income-expense';
@@ -45,22 +46,6 @@ function stubReport(body: unknown = reportBody()) {
   return stubRoutes({ [REPORT_ROUTE]: () => Response.json(body) });
 }
 
-function renderApp(initialPath: string) {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
-  return router;
-}
-
-function requestedRanges(fetchMock: ReturnType<typeof stubRoutes>): string[] {
-  return fetchMock.mock.calls
-    .map(([input]) => String(input))
-    .filter((url) => url.includes('/reports/'));
-}
-
 async function findReport() {
   return screen.findByRole('region', { name: 'Receitas x despesas' });
 }
@@ -83,7 +68,7 @@ describe('Relatórios — período', () => {
     renderApp(REPORT_PATH);
     await findReport();
     // Assert
-    expect(requestedRanges(fetchMock)).toEqual([
+    expect(requestedUrls(fetchMock, '/api/v1/reports/')).toEqual([
       '/api/v1/reports/income-expense?from=2025-12&to=2026-11',
     ]);
   });
@@ -95,7 +80,7 @@ describe('Relatórios — período', () => {
     renderApp(`${REPORT_PATH}?periodo=6m`);
     await findReport();
     // Assert
-    expect(requestedRanges(fetchMock)).toEqual([
+    expect(requestedUrls(fetchMock, '/api/v1/reports/')).toEqual([
       '/api/v1/reports/income-expense?from=2026-06&to=2026-11',
     ]);
   });
@@ -113,7 +98,7 @@ describe('Relatórios — período', () => {
   it('should_write_the_period_in_the_url_when_the_user_picks_six_months', async () => {
     // Arrange
     stubReport();
-    const router = renderApp(REPORT_PATH);
+    const { router } = renderApp(REPORT_PATH);
     await findReport();
     // Act
     await userEvent.click(screen.getByRole('radio', { name: '6 meses' }));
@@ -128,7 +113,7 @@ describe('Relatórios — período', () => {
     // Act
     await findReport();
     // Assert
-    expect(requestedRanges(fetchMock)).toEqual([
+    expect(requestedUrls(fetchMock, '/api/v1/reports/')).toEqual([
       '/api/v1/reports/income-expense?from=2026-01&to=2026-11',
     ]);
   });
@@ -139,7 +124,7 @@ describe('Relatórios — estrutura', () => {
     // Arrange
     stubReport();
     // Act
-    const router = renderApp('/relatorios?periodo=24m');
+    const { router } = renderApp('/relatorios?periodo=24m');
     await findReport();
     // Assert
     expect(router.state.location.pathname + router.state.location.search).toBe(
@@ -350,7 +335,7 @@ describe('Relatório de receitas e despesas — resposta e contexto', () => {
   it('should_keep_the_table_view_when_the_user_opens_another_report', async () => {
     // Arrange
     stubReport();
-    const router = renderApp(`${REPORT_PATH}?visao=tabela`);
+    const { router } = renderApp(`${REPORT_PATH}?visao=tabela`);
     await findReport();
     // Act
     await userEvent.click(screen.getByRole('link', { name: 'Por categoria' }));

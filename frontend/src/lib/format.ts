@@ -20,6 +20,13 @@ const compactCurrencyFormat = new Intl.NumberFormat(LOCALE, {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
+// Para planilha: sem "R$", sem separador de milhar e com o hífen comum, que o Excel lê como número.
+const spreadsheetAmountFormat = new Intl.NumberFormat(LOCALE, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  useGrouping: false,
+});
+const countFormat = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 });
 const percentFormat = new Intl.NumberFormat(LOCALE, { style: 'percent', maximumFractionDigits: 1 });
 
 const fullDateFormat = new Intl.DateTimeFormat(LOCALE, {
@@ -115,6 +122,17 @@ export function formatCompactCurrency(cents: number): string {
 /** Rótulo de eixo: o espaço não quebra, ou o Recharts parte "R$ 3,4 mil" em duas linhas. */
 export function formatAxisCurrency(cents: number): string {
   return formatCompactCurrency(cents).replaceAll(' ', NON_BREAKING_SPACE);
+}
+
+/** "-89,90" e "5000,00": o valor que o Excel em pt-BR reconhece como número. */
+export function formatSpreadsheetAmount(cents: number): string {
+  assertCents(cents);
+  return spreadsheetAmountFormat.format(cents / CENTS_PER_REAL);
+}
+
+/** Quantidade com separador de milhar: "1.200". */
+export function formatCount(count: number): string {
+  return countFormat.format(count);
 }
 
 export function formatPercent(ratio: number): string {

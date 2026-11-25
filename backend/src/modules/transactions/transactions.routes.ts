@@ -2,6 +2,10 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
 import { centsSchema } from '../../shared/money.js';
+import {
+  ruleSuggestionResponseSchema,
+  toRuleSuggestionResponse,
+} from '../categories/rule-suggestions.routes.js';
 import { UNCATEGORIZED_FILTER } from './transaction-filter-conditions.js';
 import { TRANSACTION_TYPES } from './transaction-type-filter.js';
 import type { TransactionsModule } from './transactions.module.js';
@@ -11,6 +15,8 @@ const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_SEARCH_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 120;
+/** Revisar ou trocar a categoria de até 100 de uma vez (o tamanho de uma página). */
+const MAX_BULK_IDS = 100;
 
 // Os filtros da lista e do resumo são os mesmos: o resumo cobre o filtro inteiro, não uma página.
 const filterShape = {
@@ -22,6 +28,8 @@ const filterShape = {
   source: z.enum(['open_finance', 'manual']).optional(),
   possibleDuplicate: z.stringbool().optional(),
   search: z.string().trim().max(MAX_SEARCH_LENGTH).optional(),
+  // `false` é a caixa "Para revisar".
+  reviewed: z.stringbool().optional(),
 };
 
 function isPeriodInOrder({ from, to }: { from?: string; to?: string }): boolean {
@@ -81,6 +89,28 @@ const updateBodySchema = z
 
 const duplicateResolutionBodySchema = z.object({ action: z.enum(['merge', 'keep_both']) });
 
+const transactionIdsSchema = z
+  .array(z.uuid())
+  .min(1, { error: 'Escolha ao menos uma transação' })
+  .max(MAX_BULK_IDS, { error: 'Escolha até 100 transações de uma vez' })
+  .refine((ids) => new Set(ids).size === ids.length, { error: 'Há transações repetidas' });
+
+const reviewBodySchema = z.object({ transactionIds: transactionIdsSchema });
+
+const reviewAllBodySchema = z.object({ until: z.iso.datetime({ offset: true }) });
+
+const bulkCategoryBodySchema = z.object({
+  transactionIds: transactionIdsSchema,
+  categoryId: z.uuid({ error: 'Escolha uma categoria' }),
+});
+
+const reviewCountResponseSchema = z.object({ count: z.int() });
+const reviewedCountResponseSchema = z.object({ reviewedCount: z.int() });
+const bulkCategoryResponseSchema = z.object({
+  updatedCount: z.int(),
+  ruleSuggestion: ruleSuggestionResponseSchema.nullable(),
+});
+
 export const transactionResponseSchema = z.object({
   id: z.uuid(),
   date: z.iso.date(),
@@ -110,6 +140,11 @@ export const transactionResponseSchema = z.object({
 const transactionListResponseSchema = z.object({
   items: z.array(transactionResponseSchema),
   pagination: z.object({ page: z.int(), limit: z.int(), total: z.int() }),
+  loadedAt: z.iso.datetime(),
+});
+
+const transactionUpdateResponseSchema = transactionResponseSchema.extend({
+  ruleSuggestion: ruleSuggestionResponseSchema.nullable(),
 });
 
 // Lista os campos um a um: o JSON bruto do Pluggy nunca sai da API.
@@ -136,6 +171,7 @@ export function transactionsRoutes({
   transactionsService,
   writesService,
   duplicatesService,
+  reviewService,
 }: TransactionsModule): FastifyPluginAsyncZod {
   return async (app) => {
     app.get(
@@ -149,6 +185,41 @@ export function transactionsRoutes({
         return {
           items: result.items.map(toTransactionResponse),
           pagination: { page, limit, total: result.total },
+          loadedAt: result.loadedAt.toISOString(),
+        };
+      },
+    );
+
+    app.get(
+      '/transactions/review-count',
+      { schema: { response: { 200: reviewCountResponseSchema } } },
+      async () => ({ count: await reviewService.countUnreviewed() }),
+    );
+
+    app.post(
+      '/transactions/review',
+      { schema: { body: reviewBodySchema, response: { 200: reviewedCountResponseSchema } } },
+      async (request) => ({
+        reviewedCount: await reviewService.markReviewed(request.body.transactionIds),
+      }),
+    );
+
+    app.post(
+      '/transactions/review-all',
+      { schema: { body: reviewAllBodySchema, response: { 200: reviewedCountResponseSchema } } },
+      async (request) => ({
+        reviewedCount: await reviewService.markInboxReviewedUntil(new Date(request.body.until)),
+      }),
+    );
+
+    app.patch(
+      '/transactions/category',
+      { schema: { body: bulkCategoryBodySchema, response: { 200: bulkCategoryResponseSchema } } },
+      async (request) => {
+        const result = await transactionsService.changeCategoryOfMany(request.body);
+        return {
+          updatedCount: result.updatedCount,
+          ruleSuggestion: result.ruleSuggestion && toRuleSuggestionResponse(result.ruleSuggestion),
         };
       },
     );
@@ -187,11 +258,19 @@ export function transactionsRoutes({
         schema: {
           params: transactionParamsSchema,
           body: updateBodySchema,
-          response: { 200: transactionResponseSchema },
+          response: { 200: transactionUpdateResponseSchema },
         },
       },
-      async (request) =>
-        toTransactionResponse(await writesService.update(request.params.id, request.body)),
+      async (request) => {
+        const { transaction, ruleSuggestion } = await writesService.update(
+          request.params.id,
+          request.body,
+        );
+        return {
+          ...toTransactionResponse(transaction),
+          ruleSuggestion: ruleSuggestion && toRuleSuggestionResponse(ruleSuggestion),
+        };
+      },
     );
 
     app.delete(

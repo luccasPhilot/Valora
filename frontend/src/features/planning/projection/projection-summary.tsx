@@ -1,8 +1,8 @@
-import { cn } from 'cn';
 import { CircleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { Projection } from '@/lib/api/projection';
 import { formatIsoDayMonth } from '@/lib/format';
 
@@ -25,17 +25,11 @@ function CompositionRow({ label, children }: CompositionRowProps) {
 /** O saldo projetado em destaque, o aviso de saldo negativo e as parcelas da conta. */
 export function ProjectionSummary({ projection }: { projection: Projection }) {
   const negativeWarning = describeNegativeBalance(projection);
-  const isLowestNegative = projection.lowestBalanceCents < 0;
   return (
     <div className="min-w-0 space-y-4">
       <div className="space-y-1">
-        <p
-          className={cn(
-            'type-display break-words tabular-nums',
-            projection.projectedBalanceCents < 0 && 'text-destructive',
-          )}
-        >
-          <Money cents={projection.projectedBalanceCents} />
+        <p className="type-display break-words tabular-nums">
+          <TonedMoney cents={projection.projectedBalanceCents} kind="balance" />
         </p>
         <p className="text-sm text-muted-foreground">
           Saldo projetado em {formatIsoDayMonth(projectionEndDate(projection))}
@@ -52,9 +46,7 @@ export function ProjectionSummary({ projection }: { projection: Projection }) {
           <Money cents={projection.startBalanceCents} />
         </CompositionRow>
         <CompositionRow label="Receitas previstas">
-          <span className={cn(projection.plannedIncomeCents > 0 && 'text-positive')}>
-            <Money cents={projection.plannedIncomeCents} isSigned />
-          </span>
+          <TonedMoney cents={projection.plannedIncomeCents} kind="flow" isSigned />
         </CompositionRow>
         <CompositionRow label="Despesas previstas">
           <Money cents={-projection.plannedExpenseCents} isSigned />
@@ -65,9 +57,7 @@ export function ProjectionSummary({ projection }: { projection: Projection }) {
         <CompositionRow
           label={`Menor saldo, em ${formatIsoDayMonth(projection.lowestBalanceDate)}`}
         >
-          <span className={cn(isLowestNegative && 'text-destructive')}>
-            <Money cents={projection.lowestBalanceCents} />
-          </span>
+          <TonedMoney cents={projection.lowestBalanceCents} kind="balance" />
         </CompositionRow>
       </dl>
     </div>

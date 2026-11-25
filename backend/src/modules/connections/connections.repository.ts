@@ -29,6 +29,8 @@ export interface ConnectionRecord {
   readonly lastSyncedAt: Date | null;
   /** Nulo = banco ativo. */
   readonly archivedAt: Date | null;
+  /** Nulo quando o Pluggy não informou o vencimento na última leitura do item. */
+  readonly consentExpiresAt: Date | null;
 }
 
 export interface ConnectionAccountSummary {
@@ -63,6 +65,7 @@ function toRecord(row: typeof connections.$inferSelect): ConnectionRecord {
     statusDetail: row.statusDetail,
     lastSyncedAt: row.lastSyncedAt,
     archivedAt: row.archivedAt,
+    consentExpiresAt: row.consentExpiresAt,
   };
 }
 
@@ -87,6 +90,13 @@ export class ConnectionsRepository {
     await this.db
       .update(connections)
       .set({ status: update.status, statusDetail: update.statusDetail, updatedAt: new Date() })
+      .where(eq(connections.id, connectionId));
+  }
+
+  async updateConsentExpiry(connectionId: string, consentExpiresAt: Date | null): Promise<void> {
+    await this.db
+      .update(connections)
+      .set({ consentExpiresAt, updatedAt: new Date() })
       .where(eq(connections.id, connectionId));
   }
 

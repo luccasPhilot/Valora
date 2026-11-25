@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildAccountsMonthChange,
+  buildBalanceSeries,
   buildMonthChange,
   buildNetWorthSeries,
   groupSnapshotRows,
@@ -358,6 +360,125 @@ describe('buildMonthChange', () => {
     const change = buildMonthChange(items, 11000, TODAY);
     // Assert
     expect(change?.cents).toBe(1000);
+  });
+});
+
+describe('buildBalanceSeries', () => {
+  const MONTH = '2026-11-01';
+
+  it('should_use_the_previous_month_snapshot_when_an_account_has_none_on_day_1', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-10-31', 100000], ['2026-11-02', 100000]) }),
+      item({ snapshots: snapshots(['2026-10-31', 300000], ['2026-11-01', 300000]) }),
+    ];
+    // Act
+    const series = buildBalanceSeries(items, MONTH);
+    // Assert
+    expect(series).toEqual([
+      { date: '2026-11-01', balanceCents: 400000 },
+      { date: '2026-11-02', balanceCents: 400000 },
+    ]);
+  });
+
+  it('should_drop_the_account_when_its_latest_snapshot_is_eight_days_old', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-11-01', 100000]) }),
+      item({ snapshots: snapshots(['2026-11-01', 300000], ['2026-11-09', 300000]) }),
+    ];
+    // Act
+    const series = buildBalanceSeries(items, MONTH);
+    // Assert
+    expect(series.at(-1)).toEqual({ date: '2026-11-09', balanceCents: 300000 });
+  });
+
+  it('should_sum_an_archived_bank_only_before_the_archiving_day', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-11-09', 400000], ['2026-11-10', 400000]) }),
+      item({
+        archivedOn: '2026-11-10',
+        snapshots: snapshots(['2026-11-09', 100000], ['2026-11-10', 100000]),
+      }),
+    ];
+    // Act
+    const series = buildBalanceSeries(items, MONTH);
+    // Assert
+    expect(series).toEqual([
+      { date: '2026-11-09', balanceCents: 500000 },
+      { date: '2026-11-10', balanceCents: 400000 },
+    ]);
+  });
+
+  it('should_leave_out_hidden_accounts_and_credit_cards', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-11-01', 400000]) }),
+      item({ isHidden: true, snapshots: snapshots(['2026-11-01', 900000]) }),
+      item({ type: 'credit_card', snapshots: snapshots(['2026-11-02', 150000]) }),
+    ];
+    // Act
+    const series = buildBalanceSeries(items, MONTH);
+    // Assert
+    expect(series).toEqual([{ date: '2026-11-01', balanceCents: 400000 }]);
+  });
+
+  it('should_return_an_empty_series_when_the_month_has_no_snapshot', () => {
+    // Arrange
+    const items = [item({ snapshots: snapshots(['2026-10-31', 400000]) })];
+    // Act
+    const series = buildBalanceSeries(items, MONTH);
+    // Assert
+    expect(series).toEqual([]);
+  });
+});
+
+describe('buildAccountsMonthChange', () => {
+  it('should_not_count_a_missing_bank_as_gain_when_it_failed_on_day_1', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-10-31', 100000], ['2026-11-02', 100000]) }),
+      item({ snapshots: snapshots(['2026-11-01', 300000], [TODAY, 300000]) }),
+    ];
+    // Act
+    const change = buildAccountsMonthChange(items, 400000, TODAY);
+    // Assert
+    expect(change).toEqual({ cents: 0, percent: 0 });
+  });
+
+  it('should_not_show_a_drop_when_a_bank_was_archived_during_the_month', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-11-01', 400000]) }),
+      item({ archivedOn: '2026-11-10', snapshots: snapshots(['2026-11-01', 100000]) }),
+    ];
+    // Act
+    const change = buildAccountsMonthChange(items, 485032, TODAY);
+    // Assert
+    expect(change?.cents).toBe(85032);
+  });
+
+  it('should_leave_out_investments_and_credit_cards', () => {
+    // Arrange
+    const items = [
+      item({ snapshots: snapshots(['2026-11-02', 400000]) }),
+      item({ type: 'investment', snapshots: snapshots(['2026-11-01', 900000]) }),
+      item({ type: 'credit_card', snapshots: snapshots(['2026-11-01', 150000]) }),
+    ];
+    // Act
+    const change = buildAccountsMonthChange(items, 450000, TODAY);
+    // Assert
+    expect(change?.cents).toBe(50000);
+  });
+
+  it('should_return_null_when_the_only_snapshot_of_the_month_is_from_today', () => {
+    // Arrange
+    const items = [item({ snapshots: snapshots([TODAY, 400000]) })];
+    // Act
+    const change = buildAccountsMonthChange(items, 400000, TODAY);
+    // Assert
+    expect(change).toBeNull();
   });
 });
 

@@ -49,7 +49,6 @@ function CandidateList({ candidates, isSaving, onLink }: CandidatesProps) {
           <PlannedAmount cents={candidate.amountCents} className="shrink-0 text-sm font-medium" />
           <Button
             type="button"
-            size="sm"
             variant="outline"
             disabled={isSaving}
             aria-label={`Vincular ${candidate.description}`}

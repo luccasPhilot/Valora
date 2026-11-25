@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
 import { apiDelete, apiGet, apiPatch, apiPost } from '../api-client';
+import { ruleSuggestionSchema } from './categories';
 
 // Contrato de /transactions. O backend é o dono; estes schemas são a cópia do front
 // (docs/03-arquitetura.md, "Contrato da API").
 
 export const TRANSACTION_PAGE_SIZE = 50;
+export const MAX_TRANSACTION_PAGE_SIZE = 100;
 
 const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
 
@@ -43,7 +45,24 @@ export const transactionSchema = z.object({
 const transactionPageSchema = z.object({
   items: z.array(transactionSchema),
   pagination: z.object({ page: z.int(), limit: z.int(), total: z.int() }),
+  /** Instante do servidor em que a página foi lida: o limite de "Marcar tudo como revisado". */
+  loadedAt: z.iso.datetime(),
 });
+
+/** Depois de trocar a categoria: a transação e a regra sugerida para a descrição, se houver. */
+const transactionUpdateSchema = transactionSchema.extend({
+  ruleSuggestion: ruleSuggestionSchema.nullable(),
+});
+
+const reviewCountSchema = z.object({ count: z.int() });
+const reviewedCountSchema = z.object({ reviewedCount: z.int() });
+const bulkCategorySchema = z.object({
+  updatedCount: z.int(),
+  ruleSuggestion: ruleSuggestionSchema.nullable(),
+});
+
+/** Revisar ou trocar a categoria de até 100 transações por vez (o limite da API). */
+export const MAX_BULK_TRANSACTIONS = 100;
 
 const transactionSummarySchema = z.object({
   incomeCents: z.int(),
@@ -65,6 +84,8 @@ export interface AccountOption {
 export type Transaction = z.infer<typeof transactionSchema>;
 export type TransactionSource = Transaction['source'];
 export type TransactionPage = z.infer<typeof transactionPageSchema>;
+export type TransactionUpdate = z.infer<typeof transactionUpdateSchema>;
+export type BulkCategoryResult = z.infer<typeof bulkCategorySchema>;
 
 export const UNCATEGORIZED_FILTER = 'none';
 
@@ -104,11 +125,13 @@ function toQueryString(query: TransactionQuery, params = new URLSearchParams()):
   return params.toString();
 }
 
-export function listTransactions(query: TransactionQuery, page: number): Promise<TransactionPage> {
-  const pagination = new URLSearchParams({
-    page: String(page),
-    limit: String(TRANSACTION_PAGE_SIZE),
-  });
+/** `limit` vai até `MAX_TRANSACTION_PAGE_SIZE`, o máximo da API (a exportação pede páginas cheias). */
+export function listTransactions(
+  query: TransactionQuery,
+  page: number,
+  limit = TRANSACTION_PAGE_SIZE,
+): Promise<TransactionPage> {
+  const pagination = new URLSearchParams({ page: String(page), limit: String(limit) });
   return apiGet(`/transactions?${toQueryString(query, pagination)}`, transactionPageSchema);
 }
 
@@ -120,8 +143,41 @@ export function getTransactionSummary(query: TransactionQuery): Promise<Transact
 export function changeTransactionCategory(
   transactionId: string,
   change: CategoryChange,
-): Promise<Transaction> {
-  return apiPatch(`/transactions/${transactionId}`, change, transactionSchema);
+): Promise<TransactionUpdate> {
+  return apiPatch(`/transactions/${transactionId}`, change, transactionUpdateSchema);
+}
+
+/** Do Open Finance e manuais: todas ficam com a categoria escolhida por você e revisadas. */
+export function changeCategoryOfMany(
+  transactionIds: readonly string[],
+  categoryId: string,
+): Promise<BulkCategoryResult> {
+  return apiPatch('/transactions/category', { transactionIds, categoryId }, bulkCategorySchema);
+}
+
+/** A caixa "Para revisar": as não revisadas de qualquer período, da mais antiga para a mais nova. */
+export function listReviewInbox(page: number): Promise<TransactionPage> {
+  const params = new URLSearchParams({
+    reviewed: 'false',
+    page: String(page),
+    limit: String(TRANSACTION_PAGE_SIZE),
+  });
+  return apiGet(`/transactions?${params.toString()}`, transactionPageSchema);
+}
+
+export async function getReviewCount(): Promise<number> {
+  return (await apiGet('/transactions/review-count', reviewCountSchema)).count;
+}
+
+/** Devolve quantas foram marcadas agora (as já revisadas e os ids que não existem não contam). */
+export async function reviewTransactions(transactionIds: readonly string[]): Promise<number> {
+  const body = { transactionIds };
+  return (await apiPost('/transactions/review', body, reviewedCountSchema)).reviewedCount;
+}
+
+/** `until` é o `loadedAt` da caixa: o que chegou depois de ela carregar continua para revisar. */
+export async function reviewAllTransactions(until: string): Promise<number> {
+  return (await apiPost('/transactions/review-all', { until }, reviewedCountSchema)).reviewedCount;
 }
 
 export function getTransaction(transactionId: string): Promise<Transaction> {

@@ -1,5 +1,7 @@
 import { FormPanel } from '@/components/form-panel';
+import { useHideValues } from '@/components/hide-values-provider';
 import type { Goal } from '@/lib/api/goals';
+import { editAmountField } from '@/lib/hidden-amount';
 
 import { GoalDetail } from './goal-detail';
 import { GoalForm } from './goal-form';
@@ -45,6 +47,7 @@ function CreateView({ onSaved }: CreateViewProps) {
   return (
     <GoalForm
       initialValues={newGoalValues()}
+      keptTargetDigits={null}
       asksInitialValue
       goal={null}
       isPending={createGoal.isPending}
@@ -62,9 +65,12 @@ interface EditViewProps {
 
 function EditView({ goal, onSaved }: EditViewProps) {
   const updateGoal = useUpdateGoal();
+  const { areValuesHidden } = useHideValues();
+  const targetField = editAmountField({ cents: goal.targetCents, areValuesHidden });
   return (
     <GoalForm
-      initialValues={goalValuesFrom(goal)}
+      initialValues={{ ...goalValuesFrom(goal), targetDigits: targetField.initialDigits }}
+      keptTargetDigits={targetField.keptDigits}
       asksInitialValue={false}
       goal={goal}
       isPending={updateGoal.isPending}

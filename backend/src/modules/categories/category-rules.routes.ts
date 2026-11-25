@@ -3,15 +3,15 @@ import { z } from 'zod';
 
 import type { CategoryRuleRecord } from './category-rules.repository.js';
 import type { CategoryRulesService } from './category-rules.service.js';
+import { MAX_RULE_PATTERN_LENGTH } from './rule-suggestions.js';
 
-const MAX_PATTERN_LENGTH = 120;
 const MIN_PRIORITY = 0;
 const MAX_PRIORITY = 1000;
 
 const matchTypeSchema = z.enum(['contains', 'starts_with', 'equals']);
 
 const ruleBodySchema = z.object({
-  pattern: z.string().trim().min(1).max(MAX_PATTERN_LENGTH),
+  pattern: z.string().trim().min(1).max(MAX_RULE_PATTERN_LENGTH),
   matchType: matchTypeSchema,
   categoryId: z.uuid(),
   priority: z.int().min(MIN_PRIORITY).max(MAX_PRIORITY).default(0),

@@ -1,13 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
-import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router';
+import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router';
 import { vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
 import { HideValuesProvider } from '@/components/hide-values-provider';
 
+import { renderApp as renderAppAt } from '../../../test/helpers/render-app';
+import { SHELL_ROUTES } from '../../../test/helpers/stub-routes';
 import { NewTransactionProvider } from './new-transaction/new-transaction-provider';
+import { Component as ReviewPage } from './review-page';
 import { Component as TransactionsPage } from './transactions-page';
 
 // Dados e servidor de mentira compartilhados pelos testes da tela de Transações.
@@ -80,6 +82,8 @@ export function accountsResponse(items: unknown[], totalBalanceCents = 0): Respo
 }
 
 const PAGE_LIMIT = 50;
+/** O `loadedAt` das páginas de mentira: o instante em que o servidor leu a lista. */
+export const LOADED_AT = '2026-11-04T12:00:00.000Z';
 
 export function fixture(id: number, overrides: Record<string, unknown>) {
   return {
@@ -134,7 +138,11 @@ export const DEFAULT_PAGE = [PHARMACY, SALARY_ENTRY, CARD_BILL, YESTERDAY_PURCHA
 export type Handler = (url: URL, init: RequestInit) => Response | Promise<Response>;
 
 export function pageResponse(items: unknown[], page = 1, total = items.length): Response {
-  return Response.json({ items, pagination: { page, limit: PAGE_LIMIT, total } });
+  return Response.json({
+    items,
+    pagination: { page, limit: PAGE_LIMIT, total },
+    loadedAt: LOADED_AT,
+  });
 }
 
 /** A resposta de `GET /transactions/summary`; o padrão bate com `DEFAULT_PAGE` (salário e duas compras). */
@@ -162,11 +170,13 @@ function isDuplicateCount(url: URL): boolean {
 /** Responde pelo método e caminho (sem query); a query é lida pelo próprio handler. */
 export function stubApi(overrides: Record<string, Handler> = {}) {
   const routes: Record<string, Handler> = {
+    ...SHELL_ROUTES,
     'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
     'GET /api/v1/accounts': () => accountsResponse([CASH_ACCOUNT, ACCOUNT]),
     'GET /api/v1/transactions': () => pageResponse(DEFAULT_PAGE),
     'GET /api/v1/transactions/summary': () => summaryResponse(),
     [DUPLICATE_COUNT_ROUTE]: () => pageResponse([], 1, 0),
+    'GET /api/v1/transactions/review-count': () => Response.json({ count: 0 }),
     ...overrides,
   };
   const fetchMock = vi.fn((input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -190,27 +200,29 @@ export function listQueries(fetchMock: ReturnType<typeof stubApi>): URLSearchPar
     .map(({ url }) => url.searchParams);
 }
 
-export function renderPage(path = '/transacoes') {
+function renderScreen(path: string, page: ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <HideValuesProvider>
         <MemoryRouter initialEntries={[path]}>
-          <NewTransactionProvider>
-            <TransactionsPage />
-          </NewTransactionProvider>
+          <NewTransactionProvider>{page}</NewTransactionProvider>
         </MemoryRouter>
       </HideValuesProvider>
     </QueryClientProvider>,
   );
 }
 
+export function renderPage(path = '/transacoes') {
+  return renderScreen(path, <TransactionsPage />);
+}
+
+/** A caixa "Para revisar" sozinha, sem o shell. */
+export function renderReviewPage() {
+  return renderScreen('/transacoes/revisar', <ReviewPage />);
+}
+
 /** O app inteiro (menu, topo, painéis), para testar o que depende do botão "Nova transação" do topo. */
 export function renderApp(path = '/transacoes') {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
-  return render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
+  return renderAppAt(path);
 }

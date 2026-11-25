@@ -1,6 +1,7 @@
 import { TriangleAlert } from 'lucide-react';
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
 
+import { HiddenAmountHint } from '@/components/hidden-amount-hint';
 import { Money } from '@/components/money';
 import { MoneyInput } from '@/components/money-input';
 import { SegmentedControl, type SegmentedOption } from '@/components/segmented-control';
@@ -8,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Goal } from '@/lib/api/goals';
+import { describedBy } from '@/lib/described-by';
+import { resolveAmountDigits } from '@/lib/hidden-amount';
 import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { IconPicker } from '../categories/icon-picker';
@@ -28,6 +31,8 @@ const MODE_OPTIONS: readonly SegmentedOption<GoalMode>[] = [
 
 interface GoalFormProps {
   initialValues: GoalFormValues;
+  /** Dígitos do valor desejado salvo quando o campo abriu vazio por causa dos valores ocultos; senão nulo. */
+  keptTargetDigits: string | null;
   /** Só a meta nova pergunta quanto você já tinha guardado. */
   asksInitialValue: boolean;
   /** A meta que está sendo editada; nula na meta nova. */
@@ -82,6 +87,7 @@ function ModeChangeNotice({ goal, mode }: { goal: Goal | null; mode: GoalMode })
 /** Nome, ícone, valor desejado, prazo opcional, de onde vem o valor guardado e (na meta nova) o que você já tem. */
 export function GoalForm({
   initialValues,
+  keptTargetDigits,
   asksInitialValue,
   goal,
   isPending,
@@ -101,9 +107,11 @@ export function GoalForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextErrors = validateGoalValues(values);
+    const targetDigits = resolveAmountDigits(values.targetDigits, keptTargetDigits);
+    const submitted = { ...values, targetDigits };
+    const nextErrors = validateGoalValues(submitted);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) onSubmit(values);
+    if (Object.keys(nextErrors).length === 0) onSubmit(submitted);
   }
 
   return (
@@ -130,8 +138,12 @@ export function GoalForm({
           digits={values.targetDigits}
           onDigitsChange={(targetDigits) => change({ targetDigits }, 'target')}
           aria-invalid={Boolean(errors.target)}
-          aria-describedby={errors.target ? `${fieldId}-target-error` : undefined}
+          aria-describedby={describedBy([
+            keptTargetDigits !== null && `${fieldId}-target-hint`,
+            Boolean(errors.target) && `${fieldId}-target-error`,
+          ])}
         />
+        {keptTargetDigits !== null ? <HiddenAmountHint id={`${fieldId}-target-hint`} /> : null}
         <FieldError id={`${fieldId}-target-error`} message={errors.target} />
       </div>
       <div className="space-y-2">

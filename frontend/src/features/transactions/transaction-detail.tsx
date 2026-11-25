@@ -11,7 +11,7 @@ import { formatDate } from '@/lib/format';
 import { CategoryBadgeIcon } from '../categories/category-icons';
 import { CategoryPicker } from './category-picker';
 import { DuplicateComparison } from './duplicate-comparison';
-import { amountColorClass } from './transaction-item';
+import { useTransactionAmountClass } from './transaction-item';
 
 const STATUS_LABELS: Readonly<Record<Transaction['status'], string>> = {
   pending: 'Pendente',
@@ -94,11 +94,10 @@ function DetailBody({
   onResolveDuplicate,
 }: DetailBodyProps) {
   const installment = installmentText(transaction);
+  const amountClass = useTransactionAmountClass(transaction);
   return (
     <div className="space-y-5">
-      <p
-        className={`text-3xl font-bold tabular-nums font-display ${amountColorClass(transaction)}`}
-      >
+      <p className={`text-3xl font-bold tabular-nums font-display ${amountClass}`}>
         <Money cents={transaction.amountCents} isSigned />
       </p>
       {transaction.possibleDuplicateOfId ? (

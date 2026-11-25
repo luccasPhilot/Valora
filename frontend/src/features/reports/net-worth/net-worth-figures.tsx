@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { DataCard } from '@/components/cards/data-card';
 import { ValueChange } from '@/components/cards/value-change';
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { NetWorth, NetWorthPoint } from '@/lib/api/net-worth';
 import { formatIsoDayMonth, formatPercent } from '@/lib/format';
 
@@ -65,8 +66,7 @@ export function NetWorthFigures({ netWorth }: NetWorthFiguresProps) {
       <ReportHero
         title="Patrimônio hoje"
         icon={Landmark}
-        value={<Money cents={current.netWorthCents} />}
-        isNegative={current.netWorthCents < 0}
+        value={<TonedMoney cents={current.netWorthCents} kind="balance" />}
       />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Figure title="Variação no período" icon={TrendingUp}>

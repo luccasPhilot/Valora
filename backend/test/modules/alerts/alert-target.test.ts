@@ -47,6 +47,34 @@ describe('alertTarget', () => {
     expect(target).toEqual({ screen: 'accounts' });
   });
 
+  it('should_point_to_the_accounts_screen_when_the_year_end_snapshot_is_pending', () => {
+    // Arrange
+    const alert: AlertTargetSource = {
+      type: 'year_end_snapshot_pending',
+      dedupeKey: 'year_end_snapshot_pending:2026',
+      categoryId: null,
+      transaction: null,
+    };
+    // Act
+    const target = alertTarget(alert);
+    // Assert
+    expect(target).toEqual({ screen: 'accounts' });
+  });
+
+  it('should_point_to_the_accounts_screen_when_the_year_end_snapshot_is_missing', () => {
+    // Arrange
+    const alert: AlertTargetSource = {
+      type: 'year_end_snapshot_missing',
+      dedupeKey: 'year_end_snapshot_missing:2026',
+      categoryId: null,
+      transaction: null,
+    };
+    // Act
+    const target = alertTarget(alert);
+    // Assert
+    expect(target).toEqual({ screen: 'accounts' });
+  });
+
   it('should_return_null_when_a_transaction_alert_lost_its_transaction', () => {
     // Arrange
     const alert: AlertTargetSource = {

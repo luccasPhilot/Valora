@@ -28,6 +28,17 @@ O **saldo total** é a soma do saldo das contas **corrente e poupança** que voc
 
 Cheque especial entra como número negativo e reduz o total. O Início e a tela de Contas usam a mesma definição, calculada pela API.
 
+A **evolução do saldo** no Início soma, em cada dia com foto, as mesmas contas, cada uma pela sua foto mais recente até o dia (no máximo 7 dias), como o patrimônio. Um banco que não gravou a foto do dia 1 entra com a do dia 31 do mês anterior, e não vira "ganho" no resto do mês. A variação "no mês" só existe no mês atual.
+
+### Receita, despesa e estorno
+
+A mesma definição vale no Início, nos relatórios e no resumo e no filtro de tipo de Transações. As transferências internas (categorias do tipo transferência, como o pagamento da fatura) ficam fora das duas.
+
+- **Despesa:** toda transação numa **categoria de despesa**, qualquer que seja o sinal, e toda saída sem categoria. O **estorno** (uma entrada numa categoria de despesa) **reduz a despesa** e não conta como receita: uma compra de R$ 200 com estorno de R$ 50 dá R$ 150 de despesa, o mesmo número dos gastos por categoria. O resultado do mês (receitas − despesas) não muda com essa regra; só a divisão entre as duas.
+- **Receita:** toda entrada numa categoria de receita ou sem categoria.
+- **Saída numa categoria de receita** (por exemplo, a devolução de um salário pago a mais) continua despesa, pelo sinal.
+- O total de despesas do mês **não tem mínimo de zero**, para o resultado continuar sendo a soma de tudo que não é transferência. Por isso ele pode ficar abaixo da soma da lista de gastos por categoria num mês em que uma categoria só tem estornos (o estorno de uma compra do mês anterior): na lista, cada categoria tem mínimo de zero.
+
 ### Remover um banco do Valora
 
 Quando um banco sai do Meu Pluggy (ou o id dele sai do `PLUGGY_ITEM_IDS`), ele não some sozinho: fica parado com o aviso "não sincroniza desde…". O botão **"Remover do Valora"**, no aviso e em cada banco da tela Contas, **arquiva** o banco inteiro, com confirmação:
@@ -79,6 +90,40 @@ Regras:
   - **São diferentes:** as duas ficam, e o aviso não volta.
   - O app nunca junta sozinho.
 - **Saque:** um saque no banco chega pelo Open Finance como saída, com a categoria "Saque". Se você também lançar à mão o que gastou com aquele dinheiro, troque a categoria do saque para uma transferência, para não contar a despesa duas vezes.
+
+## Rotina de revisão
+
+Dois minutos por dia deixam tudo revisado: o que chegou do banco desde a última visita fica numa caixa, e as correções repetidas viram regra.
+
+### Caixa "Para revisar"
+
+Uma visão de Transações (`/transacoes/revisar`, aba "Para revisar" ao lado de "Todas").
+
+- **O que entra:** toda transação que a sincronização insere chega **para revisar**. Lançar à mão, trocar a categoria ou marcar como revisada tira a transação da caixa. A sincronização nunca devolve à caixa uma transação que já existe. Quando uma pendente revisada vira postada com outro id, a postada herda a revisão, como herda a categoria escolhida por você.
+- **O que aparece:** as não revisadas de bancos ativos (e as manuais, que nascem revisadas), de qualquer mês, **da mais antiga para a mais nova**. Um banco arquivado sai da caixa e do contador.
+- **Em cada linha:** "Ok" (marca como revisada) e "Trocar categoria". As etiquetas "Sem categoria" e "Possível duplicata" ficam à vista; a duplicata tem "Conferir", que abre a conferência de sempre. "Ok" numa duplicata só marca como revisada: a conferência continua no fluxo dela.
+- **"Marcar tudo como revisado"**, com confirmação, marca só o que estava na caixa quando a tela foi carregada. O que chegou depois fica. Não dá para desfazer.
+- **Vazia**, a caixa mostra "Tudo revisado".
+- **No Início**, o aviso "12 para revisar" fica acima dos cartões e leva à caixa; some quando ela zera.
+- Na criação da coluna, todas as transações que já existiam entraram revisadas: a caixa começou vazia.
+
+### Categoria em massa
+
+Na lista de Transações e na caixa, **"Selecionar"** liga o modo de seleção: cada linha ganha uma caixa de seleção e uma barra no pé da tela mostra quantas foram escolhidas, com "Trocar categoria", "Marcar como revisadas" e "Cancelar". No computador, Shift+clique marca o intervalo.
+
+- Até 100 de uma vez.
+- Vale para transações do Open Finance e manuais. Todas ficam com a categoria escolhida por você (`category_source = 'user'`) e revisadas.
+- Categoria arquivada é recusada. Numa transação manual, a categoria precisa ser do tipo do valor (despesa ou receita); se alguma não casar, nada muda.
+- Não existe "Aplicar sempre" na troca em massa: a regra sugerida cobre o caso.
+
+### Regra sugerida
+
+Quando há **2 ou mais** transações do Open Finance com a mesma descrição, todas com a mesma categoria escolhida por você, e nenhuma regra já decide essa descrição para essa categoria, o app oferece **"Criar regra para 'UBER *TRIP' → Transporte?"**.
+
+- Aparece logo depois de uma troca de categoria (no detalhe, na caixa e na troca em massa), com "Criar regra" e "Agora não", e numa lista "Sugestões" no topo da aba Regras, com "Criar regra" e "Dispensar".
+- Aceitar cria a regra "igual a" pelo caminho de sempre, que também recategoriza o histórico.
+- "Agora não" e "Dispensar" guardam o par descrição e categoria: ele não volta a ser sugerido, nem depois de uma terceira correção.
+- Lançamentos manuais não contam. Regra fixa, sem IA; só "igual a" (como "Aplicar sempre").
 
 ## Projeção do fim do mês
 
@@ -202,7 +247,7 @@ A área **Relatórios** (`/relatorios`) reúne as telas para olhar o passado com
 
 Receitas, despesas e resultado (receitas − despesas) mês a mês, e os três números do período.
 
-- **A mesma regra do Início:** sem transferências internas, com lançamentos manuais e transações pendentes, e uma despesa sem categoria conta como despesa. O mês do relatório mostra exatamente o número do Início.
+- **A mesma regra do Início** ([receita, despesa e estorno](#receita-despesa-e-estorno)): sem transferências internas, com lançamentos manuais e transações pendentes, uma despesa sem categoria conta como despesa e o estorno reduz a despesa. O mês do relatório mostra exatamente o número do Início.
 - **Começa na primeira transação:** meses anteriores à primeira transação guardada não aparecem (um período de 24 meses não vem com 12 meses vazios de antes de o app existir). Mês sem movimento no meio do período aparece com zero.
 - **Sem transações:** a tela diz "Ainda não há transações neste período" e leva ao filtro de período.
 
@@ -239,6 +284,22 @@ De que o patrimônio é feito e como ele andou (`/relatorios/patrimonio`), no pe
 - **O que não entra:** gastos no cartão ainda fora de fatura fechada; um banco removido do Valora sai do patrimônio a partir do dia do arquivamento (a curva do passado não muda); bens que não vêm do Open Finance; patrimônio por tipo de investimento ao longo do tempo; projeção, meta de patrimônio e comparação com inflação.
 - **Sem nenhuma foto:** a tela diz "O patrimônio aparece depois da primeira sincronização" e leva a "Ver contas".
 
+## Saúde dos dados
+
+Em Ajustes (e por um link em Contas), a tela **Saúde dos dados** (`/ajustes/saude-dos-dados`) diz se os números batem com o banco. Ela só lê: nada é corrigido sozinho. Um resumo no topo conta os pontos para conferir; cada seção diz "Tudo certo" quando não há nada.
+
+- **Consentimentos:** cada banco ativo com o vencimento do consentimento informado pelo Pluggy, marcando os que vencem em até 30 dias. Sem a data, "O banco não informou o vencimento".
+- **Conciliação:** em cada conta corrente e poupança de banco ativo, nos últimos 60 dias, a variação do saldo entre duas fotos diárias seguidas é comparada com a soma das transações postadas do Open Finance do período. Quando não fecha, aparece "Possível transação faltando entre 03/11 e 04/11" com a diferença, e tocar abre Transações filtrada pela conta e pelas datas. Os últimos 3 dias ficam de fora até tudo chegar, e períodos seguidos cujas diferenças se anulam (transação que chegou com outra data) não contam. Cartão não entra: o saldo dele é a fatura. Lançar a transação que falta é o [lançamento manual](#lançamento-manual) de sempre.
+- **Contas paradas:** conta corrente ou cartão, visível, de banco ativo que sincroniza normalmente, sem transação do Open Finance há 10 dias ou mais ("Sem transações há 14 dias"). Poupança fica de fora: ficar parada é normal.
+- **Sincronizações:** as últimas 30 execuções, com quando, como começou (Agendada ou Botão), o resultado com ícone e texto e as contagens ("12 novas, 3 atualizadas"), sem valores.
+
+## Exportar
+
+Duas saídas legíveis, além do backup do servidor (que só serve para restaurar o próprio Valora). Nenhuma delas manda dado para fora: o arquivo só sai da casa quando você o baixa.
+
+- **"Exportar CSV", em Transações:** baixa todas as transações do filtro da tela (período, categoria, tipo, origem, conta e busca), não só as carregadas. Feito para o Excel em pt-BR: UTF-8 com BOM, separador `;`, colunas Data (`dd/mm/aaaa`), Descrição, Categoria ("Sem categoria" quando não tem), Tipo (Receita, Despesa ou Transferência, pela mesma regra da tela), Conta, Valor (`-89,90`, com vírgula e o hífen comum, sem "R$"), Situação (Pendente ou Confirmada), Origem (Banco ou Manual) e Parcela ("3 de 10", não "3/10", que o Excel transformaria em data). Texto que começa com `=`, `+`, `-` ou `@` ganha um apóstrofo para não virar fórmula. Enquanto busca as páginas, mostra "Preparando 340 de 1.200…" com "Cancelar"; acima de 10.000 transações, pede um período menor e não baixa nada. Com "Ocultar valores" ligado, avisa antes que o arquivo terá os valores. Nome: `valora-transacoes-2026-11-01-a-2026-11-30.csv`.
+- **"Baixar meus dados", em Ajustes:** um `.zip` com um CSV por tabela do Valora (`transactions.csv`, `accounts.csv`, `balance_snapshots.csv`...), as colunas com os nomes do banco, valores em centavos inteiros (`amount_cents`), datas `AAAA-MM-DD` e instantes ISO 8601 em UTC, e um `LEIA-ME.txt` que explica o formato. É uma cópia para guardar e reprocessar, não para ler no Excel. O JSON bruto do Pluggy fica de fora. Todas as tabelas saem de uma foto só do banco, mesmo com a sincronização rodando. Não restaura o Valora.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:
@@ -252,15 +313,18 @@ Estes itens ficam de fora, inclusive no futuro:
 
 ## Alertas
 
-O sino no topo de cada tela lista os alertas ativos, com um contador de não lidos. Cada alerta nasce **uma vez** por situação e **não volta se você o dispensou**. Os de orçamento e conexão somem sozinhos quando a situação acaba; os de cobrança duplicada e assinatura são avisos de um fato e ficam até você dispensar.
+O sino no topo de cada tela lista os alertas ativos, com um contador de não lidos. Cada alerta nasce **uma vez** por situação e **não volta se você o dispensou**. Os de orçamento, conexão e foto de 31/12 do próprio dia somem sozinhos quando a situação acaba; os de cobrança duplicada, assinatura e 31/12 sem foto são avisos de um fato e ficam até você dispensar.
 
 | Alerta | Quando nasce | Quando some |
 |---|---|---|
 | Orçamento em 80% | o gasto da categoria no mês chega a 80% do limite | o gasto cai (estorno), o limite sobe ou é removido, ou o mês acaba |
 | Orçamento estourado | o gasto passa do limite; substitui o aviso de 80% da mesma categoria | igual ao anterior |
 | Conexão com banco caída | a conexão fica com erro ou com o consentimento expirado | a conexão volta ao normal |
+| Consentimento a vencer | faltam 30 dias ou menos para o consentimento do banco vencer ("O consentimento do Itaú vence em 28/12. Renove a conexão no Meu Pluggy."); um segundo aviso, separado, a partir de 7 dias antes, mesmo que o primeiro tenha sido dispensado | o consentimento é renovado, vence (o de conexão assume) ou o banco é arquivado |
 | Cobrança duplicada | uma saída postada de uma conta repete a descrição e o valor de outra da mesma conta, com até 3 dias de diferença (só cobranças dos últimos 7 dias); o alerta é da mais recente | só quando você dispensa |
 | Assinatura detectada | 3 ou mais cobranças de mesmo valor e descrição em sequência, com 25 a 35 dias entre elas, a última com até 45 dias | só quando você dispensa |
+| Foto de 31/12 pendente | em 31/12, ao fim de uma sincronização, alguma conta ou posição de investimento ainda está sem a foto do dia | uma sincronização completa as fotos, ou o dia acaba |
+| 31/12 sem foto | de 1º a 31 de janeiro, ao fim de uma sincronização, 31/12 do ano anterior terminou sem a foto de alguma conta ou posição | só quando você dispensa; não volta para o mesmo ano |
 
 - Os percentuais (80% e 100%) são fixos e as mensagens não mostram valores.
 - A faixa de aviso de banco fora do ar continua; o sino é um aviso a mais.
@@ -268,6 +332,7 @@ O sino no topo de cada tela lista os alertas ativos, com um contador de não lid
 - Descrição e valor precisam ser exatamente iguais; assinatura com valor que muda só é detectada depois de 3 cobranças no novo valor. Cobrança duplicada não compara contas diferentes.
 - Na primeira sincronização depois de ativar, cada assinatura em andamento gera um alerta de uma vez só ("Marcar todos como lidos" zera o contador).
 - "Ver transações" abre a lista do dia da cobrança, pesquisando pela descrição.
+- A foto de 31/12 é a base dos bens e direitos no IR e só pode ser gravada naquele dia. Contam as contas de banco ativo (inclusive as ocultas dos totais, menos a conta "Dinheiro", que não tem foto) e as posições de investimento de banco ativo ou manuais com saldo diferente de zero. Em janeiro, só conta o que já existia em 31/12. Os dois alertas dizem só quantas contas e posições faltam e levam para Contas.
 
 ## Referência: Pierre
 

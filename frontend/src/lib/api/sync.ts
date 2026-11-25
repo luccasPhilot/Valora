@@ -18,6 +18,21 @@ const syncRunSchema = z.object({
   stats: z.object({ transactionsInserted: z.int() }).nullable(),
 });
 
+// O histórico da tela Saúde dos dados lê mais campos do mesmo DTO de `/sync-runs/latest`.
+const syncRunHistoryItemSchema = syncRunSchema.extend({
+  stats: z.object({ transactionsInserted: z.int(), transactionsUpdated: z.int() }).nullable(),
+  /** Mensagem escrita pelo Valora (nunca o texto do Pluggy). */
+  errorMessage: z.string().nullable(),
+});
+
+/** As execuções mais recentes que o histórico mostra; o backend aceita até 100. */
+export const SYNC_HISTORY_SIZE = 30;
+
+const syncRunHistorySchema = z.object({
+  items: z.array(syncRunHistoryItemSchema),
+  pagination: z.object({ page: z.int(), limit: z.int(), total: z.int() }),
+});
+
 const connectionSchema = z.object({
   id: z.uuid(),
   institutionName: z.string(),
@@ -41,6 +56,7 @@ const connectionListSchema = z.object({ items: z.array(connectionSchema) });
 
 export type SyncRun = z.infer<typeof syncRunSchema>;
 export type SyncRunStatus = SyncRun['status'];
+export type SyncRunHistoryItem = z.infer<typeof syncRunHistoryItemSchema>;
 export type Connection = z.infer<typeof connectionSchema>;
 
 /** Nulo quando ainda não houve nenhuma sincronização (a API responde 404). */
@@ -51,6 +67,11 @@ export async function getLatestSyncRun(): Promise<SyncRun | null> {
     if (error instanceof ApiError && error.status === NOT_FOUND_STATUS) return null;
     throw error;
   }
+}
+
+/** As últimas execuções, da mais recente para a mais antiga. */
+export async function listRecentSyncRuns(): Promise<SyncRunHistoryItem[]> {
+  return (await apiGet(`/sync-runs?limit=${SYNC_HISTORY_SIZE}`, syncRunHistorySchema)).items;
 }
 
 export function startSyncRun(): Promise<SyncRun> {

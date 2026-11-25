@@ -1,5 +1,6 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 
+import { useInvalidateAfter } from '@/hooks/use-invalidate-after';
 import {
   addGoalContribution,
   type ContributionInput,
@@ -12,21 +13,19 @@ import {
   removeGoalContribution,
   updateGoal,
 } from '@/lib/api/goals';
-
-/** Prefixo de todas as consultas de metas (a lista e o histórico de cada uma). */
-export const GOALS_QUERY_KEY = ['goals'] as const;
+import { queryKeys } from '@/lib/query-keys';
 
 const CONTRIBUTIONS_PAGE_SIZE = 20;
 const FIRST_PAGE = 1;
 
 export function useGoals() {
-  return useQuery({ queryKey: GOALS_QUERY_KEY, queryFn: getGoals });
+  return useQuery({ queryKey: queryKeys.goals, queryFn: getGoals });
 }
 
 /** Histórico completo de uma meta, uma página por vez; `enabled` espera o painel abrir. */
 export function useGoalContributions(goalId: string, isEnabled: boolean) {
   return useInfiniteQuery({
-    queryKey: [...GOALS_QUERY_KEY, 'contributions', goalId],
+    queryKey: [...queryKeys.goals, 'contributions', goalId],
     queryFn: ({ pageParam }) => getGoalContributions(goalId, pageParam, CONTRIBUTIONS_PAGE_SIZE),
     initialPageParam: FIRST_PAGE,
     getNextPageParam: ({ pagination }) =>
@@ -35,17 +34,10 @@ export function useGoalContributions(goalId: string, isEnabled: boolean) {
   });
 }
 
-// Progresso, ritmo, prazo e situação são calculados no servidor: recarrega em vez de recalcular aqui.
-function useRefreshGoals() {
-  const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: GOALS_QUERY_KEY });
-}
-
 export function useCreateGoal() {
-  const refreshGoals = useRefreshGoals();
   return useMutation({
     mutationFn: (input: NewGoalInput) => createGoal(input),
-    onSuccess: refreshGoals,
+    onSuccess: useInvalidateAfter('goals'),
   });
 }
 
@@ -55,16 +47,14 @@ interface GoalUpdate {
 }
 
 export function useUpdateGoal() {
-  const refreshGoals = useRefreshGoals();
   return useMutation({
     mutationFn: ({ id, input }: GoalUpdate) => updateGoal(id, input),
-    onSuccess: refreshGoals,
+    onSuccess: useInvalidateAfter('goals'),
   });
 }
 
 export function useDeleteGoal() {
-  const refreshGoals = useRefreshGoals();
-  return useMutation({ mutationFn: deleteGoal, onSuccess: refreshGoals });
+  return useMutation({ mutationFn: deleteGoal, onSuccess: useInvalidateAfter('goals') });
 }
 
 interface ContributionAdd {
@@ -73,10 +63,9 @@ interface ContributionAdd {
 }
 
 export function useAddContribution() {
-  const refreshGoals = useRefreshGoals();
   return useMutation({
     mutationFn: ({ goalId, input }: ContributionAdd) => addGoalContribution(goalId, input),
-    onSuccess: refreshGoals,
+    onSuccess: useInvalidateAfter('goals'),
   });
 }
 
@@ -86,10 +75,9 @@ interface ContributionRemoval {
 }
 
 export function useRemoveContribution() {
-  const refreshGoals = useRefreshGoals();
   return useMutation({
     mutationFn: ({ goalId, contributionId }: ContributionRemoval) =>
       removeGoalContribution(goalId, contributionId),
-    onSuccess: refreshGoals,
+    onSuccess: useInvalidateAfter('goals'),
   });
 }

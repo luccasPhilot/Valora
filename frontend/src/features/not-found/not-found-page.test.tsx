@@ -1,12 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react';
+// Carrega a tela na importação do arquivo: o primeiro teste não paga a transformação dela.
+import '@/features/not-found/not-found-page';
+
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
-
 import { stubViewport } from '../../../test/helpers/match-media';
+import { renderApp as renderAppAt } from '../../../test/helpers/render-app';
 import { stubRoutes } from '../../../test/helpers/stub-routes';
 
 const DESKTOP_WIDTH = 1440;
@@ -15,13 +15,7 @@ const PAGE_TITLE = '404 Página não encontrada';
 function renderApp(initialPath: string) {
   stubViewport({ viewportWidth: DESKTOP_WIDTH });
   stubRoutes({});
-  const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
-  return router;
+  return renderAppAt(initialPath).router;
 }
 
 describe('Página não encontrada', () => {

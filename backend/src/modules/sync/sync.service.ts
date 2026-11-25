@@ -26,6 +26,8 @@ import { addStats, EMPTY_STATS, type ItemOutcome, summarizeRun } from './sync-ou
 import type {
   FinishedSyncRunStatus,
   SyncRunOutcome,
+  SyncRunPage,
+  SyncRunPageRequest,
   SyncRunRecord,
   SyncRunsRepository,
   SyncStats,
@@ -203,6 +205,10 @@ export class SyncService {
     return this.deps.syncRuns.findLatest();
   }
 
+  listRuns(request: SyncRunPageRequest): Promise<SyncRunPage> {
+    return this.deps.syncRuns.findPage(request);
+  }
+
   /** Ao iniciar a API: fecha as execuções que ficaram `running` porque o processo parou no meio. */
   failInterruptedRuns(): Promise<number> {
     return this.deps.syncRuns.failInterrupted(INTERRUPTED_RUN_MESSAGE);
@@ -321,6 +327,8 @@ export class SyncService {
       this.deps.pluggy.getItem(itemId),
     );
     if (!overview) return FAILED_ITEM;
+    // Antes de ler os dados: o vencimento fica gravado mesmo que a leitura falhe depois.
+    await this.deps.connections.updateConsentExpiry(connection.id, overview.consentExpiresAt);
     await this.updateConnectionStatus(connection, overview.connection);
     if (!overview.connection.canReadData) return FAILED_ITEM;
     const window = this.windowFor(connection);
@@ -588,17 +596,20 @@ interface DecisionsCarry {
   readonly plan: PendingReplacementPlan;
 }
 
-/** Antes de apagar a pendente: a categoria (se era sua) e o vínculo com a previsão vão para a postada. */
+/**
+ * Antes de apagar a pendente: a categoria (se era sua), a revisão e o vínculo com a previsão vão
+ * para a postada.
+ */
 async function carryDecisions(
   transactions: ItemRepositories['transactions'],
   { vanishedPendings, plan }: DecisionsCarry,
 ): Promise<void> {
-  const categoryByPendingId = new Map(
-    vanishedPendings.map((pending) => [pending.id, pending.userCategoryId]),
-  );
+  const pendingById = new Map(vanishedPendings.map((pending) => [pending.id, pending]));
   for (const { pendingId, postedId } of plan.replacements) {
-    const categoryId = categoryByPendingId.get(pendingId);
-    if (categoryId) await transactions.carryUserCategory(postedId, categoryId);
+    const pending = pendingById.get(pendingId);
+    if (pending?.userCategoryId)
+      await transactions.carryUserCategory(postedId, pending.userCategoryId);
+    if (pending?.reviewedAt) await transactions.carryReview(postedId, pending.reviewedAt);
     await transactions.moveOccurrenceLink(pendingId, postedId);
   }
 }

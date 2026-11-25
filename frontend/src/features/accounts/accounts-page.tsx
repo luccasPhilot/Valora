@@ -10,6 +10,7 @@ import { useNotice } from '@/hooks/use-notice';
 import { useConnections } from '@/hooks/use-sync';
 import type { Account } from '@/lib/api/accounts';
 
+import { DataHealthLink } from '../data-health/data-health-link';
 import { groupByInstitution } from './account-groups';
 import { AccountPanel } from './account-panel';
 import { useAccountsOverview, useSetAccountHidden } from './accounts-queries';
@@ -99,6 +100,7 @@ export function Component() {
           onSelectAccount={(account) => selectAccount(account.id)}
         />
       ))}
+      <DataHealthLink />
       <ArchivedBanks />
       <AccountPanel
         account={selectedAccount}

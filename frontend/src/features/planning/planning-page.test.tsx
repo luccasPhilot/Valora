@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -286,6 +286,22 @@ describe('PlanningPage occurrence actions', () => {
     );
   });
 
+  it('should_give_the_link_button_a_44px_touch_target_when_there_is_a_candidate', async () => {
+    // Arrange
+    const candidate = {
+      id: TRANSACTION_ID,
+      date: '2026-11-11',
+      description: 'Imobiliária',
+      amountCents: -180000,
+    };
+    stubRoutes(baseRoutes([occurrence({ candidates: [candidate] })]));
+    renderPage();
+    // Act
+    await userEvent.click(await findRow('Aluguel'));
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Vincular Imobiliária' })).toHaveClass('h-11');
+  });
+
   it('should_explain_there_is_no_similar_transaction_when_there_are_no_candidates', async () => {
     // Arrange
     stubRoutes(baseRoutes([occurrence()]));
@@ -421,6 +437,46 @@ describe('PlanningPage entry form', () => {
       startMonth: '2026-11',
       endMonth: null,
       isActive: true,
+    });
+  });
+
+  it('should_open_the_amount_empty_with_the_hidden_values_hint_when_values_are_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    stubRoutes(baseRoutes([occurrence()]));
+    renderPage();
+    await userEvent.click(await findRow('Aluguel'));
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar previsão' }));
+    // Assert
+    const amount = await screen.findByLabelText('Valor');
+    expect(amount).toHaveValue('');
+    expect(amount).toHaveAccessibleDescription(
+      'Valores ocultos. Deixe em branco para manter o valor atual.',
+    );
+  });
+
+  it('should_keep_the_amount_when_saving_a_blank_field_with_values_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    const fetchMock = stubRoutes({
+      ...baseRoutes([occurrence()]),
+      [`PUT /api/v1/planned-entries/${RENT_ID}`]: () =>
+        Response.json(entry({ description: 'Aluguel novo' })),
+    });
+    renderPage();
+    await userEvent.click(await findRow('Aluguel'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar previsão' }));
+    await userEvent.type(await screen.findByLabelText('Descrição'), ' novo');
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar previsão' }));
+    // Assert
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+      expect(JSON.parse(String(put?.[1]?.body))).toMatchObject({
+        amountCents: 180000,
+        description: 'Aluguel novo',
+      });
     });
   });
 

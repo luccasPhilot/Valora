@@ -43,6 +43,8 @@ export const connections = pgTable(
     lastSyncedAt: timestamptz('last_synced_at'),
     // Preenchido quando o usuário tira o banco do dia a dia (nada é apagado). Nulo = banco ativo.
     archivedAt: timestamptz('archived_at'),
+    // Vencimento do consentimento informado pelo Pluggy na última leitura do item; nulo se não veio.
+    consentExpiresAt: timestamptz('consent_expires_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
@@ -68,6 +70,8 @@ export const accounts = pgTable(
     availableLimitCents: cents('available_limit_cents'),
     isHidden: boolean('is_hidden').notNull().default(false),
     raw: jsonb('raw'),
+    // A checagem da foto de 31/12 em janeiro não conta o que foi criado depois da virada.
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
   (table) => [
@@ -138,6 +142,8 @@ export const transactions = pgTable(
       { onDelete: 'set null' },
     ),
     raw: jsonb('raw'),
+    // Nulo = para revisar. A sincronização insere nulo e nunca muda numa transação que já existe.
+    reviewedAt: timestamptz('reviewed_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
@@ -149,6 +155,9 @@ export const transactions = pgTable(
     index('transactions_category_id_date_idx').on(table.categoryId, table.date),
     index('transactions_date_idx').on(table.date),
     index('transactions_source_idx').on(table.source),
+    index('transactions_unreviewed_idx')
+      .on(table.date)
+      .where(sql`${table.reviewedAt} is null`),
     check('transactions_source_check', sql`${table.source} in ('open_finance', 'manual')`),
     check('transactions_status_check', sql`${table.status} in ('pending', 'posted')`),
     check(
@@ -180,6 +189,19 @@ export const categoryRules = pgTable(
       sql`${table.matchType} in ('contains', 'starts_with', 'equals')`,
     ),
   ],
+);
+
+// Par de descrição e categoria que o usuário não quer ver sugerido como regra de novo.
+export const dismissedRuleSuggestions = pgTable(
+  'dismissed_rule_suggestions',
+  {
+    pattern: text('pattern').notNull(),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    dismissedAt: timestamptz('dismissed_at').notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.pattern, table.categoryId] })],
 );
 
 export const pluggyCategoryMappings = pgTable('pluggy_category_mappings', {
@@ -294,6 +316,8 @@ export const investments = pgTable(
     // Só em posição manual: o dia do último valor informado.
     balanceUpdatedOn: day('balance_updated_on'),
     raw: jsonb('raw'),
+    // A checagem da foto de 31/12 em janeiro não conta o que foi criado depois da virada.
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
   (table) => [
@@ -459,7 +483,7 @@ export const alerts = pgTable(
     index('alerts_created_at_idx').on(table.createdAt),
     check(
       'alerts_type_check',
-      sql`${table.type} in ('duplicate_charge', 'subscription_detected', 'budget_warning', 'budget_exceeded', 'connection_error')`,
+      sql`${table.type} in ('duplicate_charge', 'subscription_detected', 'budget_warning', 'budget_exceeded', 'connection_error', 'year_end_snapshot_pending', 'year_end_snapshot_missing', 'consent_expiring')`,
     ),
   ],
 );

@@ -18,6 +18,7 @@ import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { categoryRulesRoutes } from './modules/categories/category-rules.routes.js';
 import type { CategorySeedService } from './modules/categories/category-seed.service.js';
 import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-category-mappings.routes.js';
+import { ruleSuggestionsRoutes } from './modules/categories/rule-suggestions.routes.js';
 import { categoryInsightsRoutes } from './modules/category-insights/category-insights.routes.js';
 import { CategoryInsightsService } from './modules/category-insights/category-insights.service.js';
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
@@ -26,9 +27,14 @@ import { ConnectionsService } from './modules/connections/connections.service.js
 import { CreditCardBillsRepository } from './modules/credit-card-bills/credit-card-bills.repository.js';
 import { creditCardBillsRoutes } from './modules/credit-card-bills/credit-card-bills.routes.js';
 import { CreditCardBillsService } from './modules/credit-card-bills/credit-card-bills.service.js';
-import { DashboardRepository } from './modules/dashboard/dashboard.repository.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
+import { DataHealthRepository } from './modules/data-health/data-health.repository.js';
+import { dataHealthRoutes } from './modules/data-health/data-health.routes.js';
+import { DataHealthService } from './modules/data-health/data-health.service.js';
+import { ExportsRepository } from './modules/exports/exports.repository.js';
+import { exportsRoutes } from './modules/exports/exports.routes.js';
+import { ExportsService } from './modules/exports/exports.service.js';
 import { GoalsRepository } from './modules/goals/goals.repository.js';
 import { goalsRoutes } from './modules/goals/goals.routes.js';
 import { GoalsService } from './modules/goals/goals.service.js';
@@ -128,9 +134,21 @@ function registerModules(
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
   app.register(alertsRoutes(alerts.alertsService), { prefix: API_PREFIX });
+  const dataHealthService = new DataHealthService({
+    repository: new DataHealthRepository(database.db),
+    connections: new ConnectionsRepository(database.db),
+    now,
+  });
+  app.register(dataHealthRoutes(dataHealthService), { prefix: API_PREFIX });
+  const exportsService = new ExportsService({
+    repository: new ExportsRepository(database.db),
+    now,
+  });
+  app.register(exportsRoutes(exportsService), { prefix: API_PREFIX });
   const categories = createCategoriesModule(database);
   app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
   app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });
+  app.register(ruleSuggestionsRoutes(categories.ruleSuggestionsService), { prefix: API_PREFIX });
   app.register(pluggyCategoryMappingsRoutes(categories.pluggyCategoryMappingsService), {
     prefix: API_PREFIX,
   });
@@ -142,8 +160,9 @@ function registerModules(
   });
   app.register(creditCardBillsRoutes(creditCardBillsService), { prefix: API_PREFIX });
   app.register(investmentsRoutes(investmentsService), { prefix: API_PREFIX });
+  const netWorthRepository = new NetWorthRepository(database.db);
   const netWorthService = new NetWorthService({
-    netWorth: new NetWorthRepository(database.db),
+    netWorth: netWorthRepository,
     accounts: accountsService,
     investments: investmentsService,
     now,
@@ -174,17 +193,19 @@ function registerModules(
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,
+    ruleSuggestionsService: categories.ruleSuggestionsService,
     budgetAlerts: alerts.budgetAlertRefresher,
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
   const transactionTotals = new TransactionTotalsRepository(database.db);
   const dashboardService = new DashboardService({
-    dashboard: new DashboardRepository(database.db),
+    snapshots: netWorthRepository,
     totals: transactionTotals,
     accounts: accountsService,
     budgets: budgetsService,
     transactions: transactions.transactionsService,
+    reviews: transactions.reviewService,
     projection: projectionService,
     goals: goalsService,
     netWorth: netWorthService,

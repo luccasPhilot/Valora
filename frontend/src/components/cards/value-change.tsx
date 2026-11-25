@@ -2,6 +2,7 @@ import { cn } from 'cn';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
 import { Money } from '@/components/money';
+import { useAmountTone } from '@/components/use-amount-tone';
 import { formatPercent } from '@/lib/format';
 
 const PERCENT_TO_RATIO = 100;
@@ -26,13 +27,11 @@ interface ValueChangeProps {
 /** Variação de um valor: ícone e texto (nunca só a cor), verde só quando subiu. */
 export function ValueChange({ change, label = 'no mês' }: ValueChangeProps) {
   const Icon = change.cents < 0 ? TrendingDown : TrendingUp;
+  const tone = useAmountTone(change.cents, 'flow');
   return (
     <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium">
-      <Icon
-        className={cn('size-4', change.cents > 0 ? 'text-positive' : 'text-muted-foreground')}
-        aria-hidden="true"
-      />
-      <span className={cn('tabular-nums', change.cents > 0 && 'text-positive')}>
+      <Icon className={cn('size-4', tone || 'text-muted-foreground')} aria-hidden="true" />
+      <span className={cn('tabular-nums', tone)}>
         <Money cents={change.cents} isSigned />
         {change.percent === null ? null : ` (${signedPercent(change.percent)})`}
       </span>

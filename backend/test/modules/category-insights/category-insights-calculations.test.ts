@@ -8,7 +8,6 @@ import {
   buildDifferences,
   buildItems,
   buildTotals,
-  percentOf,
   variationPercentOf,
 } from '../../../src/modules/category-insights/category-insights-calculations.js';
 import type {
@@ -43,24 +42,6 @@ function itemsFor(
     items: buildItems({ differences, rows, months: MONTHS, limitsByCategoryId: limits }),
   };
 }
-
-describe('percentOf', () => {
-  it('should_round_to_one_decimal_when_the_share_is_not_exact', () => {
-    // Arrange
-    // Act
-    const percent = percentOf(1, 3);
-    // Assert
-    expect(percent).toBe(33.3);
-  });
-
-  it('should_return_zero_when_the_total_is_zero', () => {
-    // Arrange
-    // Act
-    const percent = percentOf(0, 0);
-    // Assert
-    expect(percent).toBe(0);
-  });
-});
 
 describe('variationPercentOf', () => {
   it('should_return_null_when_the_previous_period_had_no_spending', () => {

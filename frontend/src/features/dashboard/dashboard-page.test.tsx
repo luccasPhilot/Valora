@@ -22,8 +22,8 @@ import {
   stubApi,
 } from '../transactions/test-support';
 import { Component as DashboardPage } from './dashboard-page';
+import { dashboard, TRIP_GOAL } from './test-support';
 
-const LEISURE_ID = '88888888-8888-4888-8888-888888888888';
 const SYNC_RUN = {
   id: '99999999-9999-4999-8999-999999999999',
   trigger: 'schedule',
@@ -32,77 +32,6 @@ const SYNC_RUN = {
   finishedAt: '2026-11-05T10:02:00.000Z',
   stats: { transactionsInserted: 3 },
 };
-
-const TRIP_GOAL = {
-  id: '77777777-7777-4777-8777-777777777777',
-  name: 'Viagem',
-  icon: 'plane',
-  targetCents: 1000000,
-  savedCents: 400000,
-  percent: 40,
-  status: 'behind',
-  estimatedDate: null,
-  requiredMonthlyCents: 50000,
-};
-
-function dashboard(overrides: Record<string, unknown> = {}) {
-  return {
-    month: '2026-11',
-    totalBalanceCents: 485032,
-    balanceEvolution: [
-      { date: '2026-11-01', balanceCents: 400000 },
-      { date: '2026-11-05', balanceCents: 485032 },
-    ],
-    balanceChange: { cents: 85032, percent: 21.26 },
-    netWorth: {
-      totalCents: 1550000,
-      investmentsCents: 1200000,
-      openBillsCents: 150000,
-      change: { cents: 50000, percent: 3.33 },
-    },
-    monthIncomeCents: 500000,
-    monthExpenseCents: 200000,
-    incomeVsExpense: [
-      { month: '2026-06', incomeCents: 0, expenseCents: 0 },
-      { month: '2026-07', incomeCents: 0, expenseCents: 0 },
-      { month: '2026-08', incomeCents: 0, expenseCents: 0 },
-      { month: '2026-09', incomeCents: 0, expenseCents: 0 },
-      { month: '2026-10', incomeCents: 350000, expenseCents: 280000 },
-      { month: '2026-11', incomeCents: 500000, expenseCents: 200000 },
-    ],
-    spendingByCategory: [
-      {
-        kind: 'category',
-        categoryId: GROCERIES.id,
-        name: 'Mercado',
-        icon: 'shopping-cart',
-        amountCents: 120000,
-        percent: 60,
-      },
-      { kind: 'other', name: 'Outros', amountCents: 80000, percent: 40 },
-    ],
-    budgetsNearLimit: [
-      {
-        categoryId: LEISURE_ID,
-        categoryName: 'Lazer',
-        categoryIcon: 'ticket',
-        limitCents: 30000,
-        spentCents: 42000,
-        percent: 140,
-        status: 'exceeded',
-      },
-    ],
-    latestTransactions: [PHARMACY, fixture(7, { description: 'Padaria', amountCents: -1500 })],
-    projection: {
-      projectedBalanceCents: 480000,
-      lowestBalanceCents: 120000,
-      lowestBalanceDate: '2026-11-20',
-      hasPlannedItems: true,
-    },
-    goals: { items: [TRIP_GOAL], activeCount: 1 },
-    ...overrides,
-  };
-}
 
 function stubDashboardApi(
   data: Record<string, unknown> = dashboard(),
@@ -437,7 +366,7 @@ describe('Início — projeção do fim do mês', () => {
     // Act
     const card = await findProjectionCard();
     // Assert
-    expect(card.querySelector('p.text-destructive')).toHaveTextContent('−R$ 300,00');
+    expect(card.querySelector('.text-destructive')).toHaveTextContent('−R$ 300,00');
   });
 
   it('should_offer_to_plan_the_month_when_nothing_is_planned', async () => {
@@ -636,7 +565,7 @@ describe('Início — patrimônio no card de saldo', () => {
     // Act
     const card = await findBalanceCard();
     // Assert
-    expect(card.querySelector('p.text-destructive')).toHaveTextContent('−R$ 700,00');
+    expect(card.querySelector('.text-destructive')).toHaveTextContent('−R$ 700,00');
   });
 
   it('should_not_use_red_when_the_net_worth_is_positive', async () => {
@@ -738,5 +667,29 @@ describe('Início — estados', () => {
     const alert = await screen.findByRole('alert');
     // Assert
     expect(within(alert).getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+  });
+});
+
+describe('Início — para revisar', () => {
+  it('should_link_to_the_review_inbox_when_there_are_transactions_to_review', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ reviewCount: 12 }));
+    // Act
+    renderDashboard();
+    // Assert
+    expect(await screen.findByRole('link', { name: '12 para revisar' })).toHaveAttribute(
+      'href',
+      '/transacoes/revisar',
+    );
+  });
+
+  it('should_not_show_the_notice_when_everything_was_reviewed', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ reviewCount: 0 }));
+    // Act
+    renderDashboard();
+    await screen.findByRole('heading', { name: /Saldo/ });
+    // Assert
+    expect(screen.queryByRole('link', { name: /para revisar/ })).toBeNull();
   });
 });

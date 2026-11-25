@@ -5,6 +5,10 @@ import {
   budgetSituations,
   connectionDedupeKey,
   connectionSituations,
+  consentExpiringSituations,
+  type MissingSnapshotCounts,
+  yearEndCheckFor,
+  yearEndSnapshotSituation,
 } from '../../../src/modules/alerts/alert-situations.js';
 import type { BudgetRecord } from '../../../src/modules/budgets/budgets.repository.js';
 import type {
@@ -39,6 +43,7 @@ function connection(
     statusDetail: null,
     lastSyncedAt: null,
     archivedAt: null,
+    consentExpiresAt: null,
     ...overrides,
   };
 }
@@ -205,5 +210,249 @@ describe('budgetDedupeKey', () => {
     const key = budgetDedupeKey('budget_warning', MARKET_ID, month);
     // Assert
     expect(key).toBe(`budget_warning:${MARKET_ID}:2026-11`);
+  });
+});
+
+describe('yearEndCheckFor', () => {
+  it('should_return_null_when_today_is_december_30', () => {
+    // Arrange
+    const today = '2026-12-30';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toBeNull();
+  });
+
+  it('should_return_pending_for_the_same_day_when_today_is_december_31', () => {
+    // Arrange
+    const today = '2026-12-31';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'pending', date: '2026-12-31' });
+  });
+
+  it('should_return_missing_for_the_previous_year_when_today_is_january_1', () => {
+    // Arrange
+    const today = '2027-01-01';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'missing', date: '2026-12-31' });
+  });
+
+  it('should_return_missing_for_the_previous_year_when_today_is_january_31', () => {
+    // Arrange
+    const today = '2027-01-31';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'missing', date: '2026-12-31' });
+  });
+
+  it('should_return_null_when_today_is_february_1', () => {
+    // Arrange
+    const today = '2027-02-01';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toBeNull();
+  });
+
+  it('should_return_the_leap_year_december_31_when_today_is_in_the_following_january', () => {
+    // Arrange
+    const today = '2029-01-15';
+    // Act
+    const check = yearEndCheckFor(today);
+    // Assert
+    expect(check).toEqual({ kind: 'missing', date: '2028-12-31' });
+  });
+});
+
+describe('yearEndSnapshotSituation', () => {
+  const PENDING = { kind: 'pending', date: '2026-12-31' } as const;
+  const MISSING = { kind: 'missing', date: '2026-12-31' } as const;
+
+  function counts(accounts: number, investments: number): MissingSnapshotCounts {
+    return { accounts, investments };
+  }
+
+  it('should_return_null_when_nothing_is_missing', () => {
+    // Arrange
+    const missing = counts(0, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation).toBeNull();
+  });
+
+  it('should_return_the_pending_situation_when_one_account_is_missing', () => {
+    // Arrange
+    const missing = counts(1, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation).toEqual({
+      type: 'year_end_snapshot_pending',
+      dedupeKey: 'year_end_snapshot_pending:2026',
+      message:
+        'Ainda falta a foto de 31/12 de 1 conta. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+      categoryId: null,
+      connectionId: null,
+      transactionId: null,
+    });
+  });
+
+  it('should_use_the_plural_when_two_accounts_are_missing', () => {
+    // Arrange
+    const missing = counts(2, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation?.message).toBe(
+      'Ainda falta a foto de 31/12 de 2 contas. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+    );
+  });
+
+  it('should_name_the_investment_when_only_one_investment_is_missing', () => {
+    // Arrange
+    const missing = counts(0, 1);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation?.message).toBe(
+      'Ainda falta a foto de 31/12 de 1 investimento. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+    );
+  });
+
+  it('should_join_accounts_and_investments_when_both_are_missing', () => {
+    // Arrange
+    const missing = counts(2, 1);
+    // Act
+    const situation = yearEndSnapshotSituation(PENDING, missing);
+    // Assert
+    expect(situation?.message).toBe(
+      'Ainda falta a foto de 31/12 de 2 contas e 1 investimento. Sincronize hoje: ela é a base dos bens e direitos no IR.',
+    );
+  });
+
+  it('should_return_the_missing_situation_with_the_year_when_checking_after_new_year', () => {
+    // Arrange
+    const missing = counts(2, 0);
+    // Act
+    const situation = yearEndSnapshotSituation(MISSING, missing);
+    // Assert
+    expect(situation).toEqual({
+      type: 'year_end_snapshot_missing',
+      dedupeKey: 'year_end_snapshot_missing:2026',
+      message:
+        '31/12/2026 terminou sem a foto de 2 contas. Confira esses saldos nos informes de rendimentos dos bancos.',
+      categoryId: null,
+      connectionId: null,
+      transactionId: null,
+    });
+  });
+
+  it('should_never_carry_money_values_in_the_message', () => {
+    // Arrange
+    const missing = counts(3, 4);
+    // Act
+    const messages = [
+      yearEndSnapshotSituation(PENDING, missing)?.message,
+      yearEndSnapshotSituation(MISSING, missing)?.message,
+    ].join(' ');
+    // Assert
+    expect(messages).not.toMatch(/R\$|\d+,\d{2}/);
+  });
+});
+
+describe('consentExpiringSituations', () => {
+  // 28/11/2026 às 07:00 em São Paulo.
+  const NOW = new Date('2026-11-28T10:00:00Z');
+
+  function expiringIn(days: number, status: ConnectionStatus = 'ok'): ConnectionRecord {
+    const expiresAt = new Date(NOW.getTime() + days * 86_400_000 + 3_600_000);
+    return connection(status, { institutionName: 'Itaú', consentExpiresAt: expiresAt });
+  }
+
+  it('should_return_nothing_when_the_consent_expires_in_31_days', () => {
+    // Arrange
+    const connections = [expiringIn(31)];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
+  });
+
+  it('should_return_the_30_day_alert_when_the_consent_expires_in_30_days', () => {
+    // Arrange
+    const connections = [expiringIn(30)];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([
+      {
+        type: 'consent_expiring',
+        dedupeKey: `consent_expiring:${connections[0]?.id ?? ''}:30`,
+        message: 'O consentimento do Itaú vence em 28/12. Renove a conexão no Meu Pluggy.',
+        categoryId: null,
+        connectionId: connections[0]?.id,
+        transactionId: null,
+      },
+    ]);
+  });
+
+  it('should_keep_the_30_day_alert_when_the_consent_expires_in_8_days', () => {
+    // Arrange
+    const connections = [expiringIn(8)];
+    // Act
+    const [situation] = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situation?.dedupeKey).toMatch(/:30$/);
+  });
+
+  it('should_return_the_7_day_alert_when_the_consent_expires_in_7_days', () => {
+    // Arrange
+    const connections = [expiringIn(7)];
+    // Act
+    const [situation] = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situation?.dedupeKey).toMatch(/:7$/);
+  });
+
+  it('should_return_the_7_day_alert_when_the_consent_expires_later_today', () => {
+    // Arrange
+    const connections = [expiringIn(0)];
+    // Act
+    const [situation] = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situation?.dedupeKey).toMatch(/:7$/);
+  });
+
+  it('should_return_nothing_when_the_consent_already_expired', () => {
+    // Arrange
+    const connections = [connection('ok', { consentExpiresAt: new Date('2026-11-27T10:00:00Z') })];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
+  });
+
+  it('should_return_nothing_when_the_connection_status_is_consent_expired', () => {
+    // Arrange
+    const connections = [expiringIn(5, 'consent_expired')];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
+  });
+
+  it('should_return_nothing_when_the_bank_did_not_inform_the_expiry', () => {
+    // Arrange
+    const connections = [connection('ok')];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
   });
 });

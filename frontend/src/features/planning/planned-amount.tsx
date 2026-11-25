@@ -1,6 +1,6 @@
 import { cn } from 'cn';
 
-import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 
 interface PlannedAmountProps {
   /** Com sinal: negativo = despesa. */
@@ -11,8 +11,6 @@ interface PlannedAmountProps {
 // Design System, "Valores financeiros": receita em `positive` com "+"; despesa na cor normal com "−".
 export function PlannedAmount({ cents, className }: PlannedAmountProps) {
   return (
-    <span className={cn('tabular-nums', cents > 0 && 'text-positive', className)}>
-      <Money cents={cents} isSigned />
-    </span>
+    <TonedMoney cents={cents} kind="flow" isSigned className={cn('tabular-nums', className)} />
   );
 }

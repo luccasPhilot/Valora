@@ -8,12 +8,15 @@ import { CategoryRulesService } from './category-rules.service.js';
 import { CategorySeedService } from './category-seed.service.js';
 import { PluggyCategoryMappingsRepository } from './pluggy-category-mappings.repository.js';
 import { PluggyCategoryMappingsService } from './pluggy-category-mappings.service.js';
+import { RuleSuggestionsRepository } from './rule-suggestions.repository.js';
+import { RuleSuggestionsService } from './rule-suggestions.service.js';
 
 export interface CategoriesModule {
   readonly categoriesService: CategoriesService;
   readonly categoryRulesService: CategoryRulesService;
   readonly pluggyCategoryMappingsService: PluggyCategoryMappingsService;
   readonly categorySeedService: CategorySeedService;
+  readonly ruleSuggestionsService: RuleSuggestionsService;
 }
 
 /** Repositórios de categorização ligados a um executor: o `db` ou o `tx` de uma transação. */
@@ -46,6 +49,11 @@ export function createCategoriesModule({ db }: Database): CategoriesModule {
       categories,
       mappings: repositories.mappings,
       categorizer,
+    }),
+    ruleSuggestionsService: new RuleSuggestionsService({
+      suggestions: new RuleSuggestionsRepository(db),
+      rules: repositories.rules,
+      categories,
     }),
   };
 }

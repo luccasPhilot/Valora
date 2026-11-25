@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { useInvalidateAfter } from '@/hooks/use-invalidate-after';
 import {
   createPlannedEntry,
   decideOccurrence,
@@ -10,27 +11,13 @@ import {
   undoOccurrence,
   updatePlannedEntry,
 } from '@/lib/api/planned-entries';
-
-import { PROJECTION_QUERY_KEY } from './projection/projection-queries';
-
-/** Prefixo de todas as consultas de previsões: qualquer mudança recarrega todos os meses. */
-export const PLANNED_ENTRIES_QUERY_KEY = ['planned-entries'] as const;
+import { queryKeys } from '@/lib/query-keys';
 
 export function usePlannedEntries(month: string) {
   return useQuery({
-    queryKey: [...PLANNED_ENTRIES_QUERY_KEY, month],
+    queryKey: [...queryKeys.plannedEntries, month],
     queryFn: () => getPlannedEntries(month),
   });
-}
-
-// As ocorrências, as sugestões, os totais e a projeção são calculados no servidor: recarrega em vez de recalcular aqui.
-function useRefreshPlanning() {
-  const queryClient = useQueryClient();
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: PLANNED_ENTRIES_QUERY_KEY }),
-      queryClient.invalidateQueries({ queryKey: PROJECTION_QUERY_KEY }),
-    ]);
 }
 
 interface EntrySave {
@@ -40,17 +27,18 @@ interface EntrySave {
 }
 
 export function useSavePlannedEntry() {
-  const refresh = useRefreshPlanning();
   return useMutation({
     mutationFn: ({ id, input }: EntrySave) =>
       id === undefined ? createPlannedEntry(input) : updatePlannedEntry(id, input),
-    onSuccess: refresh,
+    onSuccess: useInvalidateAfter('planned-entries'),
   });
 }
 
 export function useDeletePlannedEntry() {
-  const refresh = useRefreshPlanning();
-  return useMutation({ mutationFn: deletePlannedEntry, onSuccess: refresh });
+  return useMutation({
+    mutationFn: deletePlannedEntry,
+    onSuccess: useInvalidateAfter('planned-entries'),
+  });
 }
 
 interface OccurrenceChange {
@@ -59,18 +47,16 @@ interface OccurrenceChange {
 }
 
 export function useDecideOccurrence(month: string) {
-  const refresh = useRefreshPlanning();
   return useMutation({
     mutationFn: ({ plannedEntryId, decision }: OccurrenceChange) =>
       decideOccurrence(plannedEntryId, month, decision),
-    onSuccess: refresh,
+    onSuccess: useInvalidateAfter('planned-entries'),
   });
 }
 
 export function useUndoOccurrence(month: string) {
-  const refresh = useRefreshPlanning();
   return useMutation({
     mutationFn: (plannedEntryId: string) => undoOccurrence(plannedEntryId, month),
-    onSuccess: refresh,
+    onSuccess: useInvalidateAfter('planned-entries'),
   });
 }

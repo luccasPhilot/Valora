@@ -1,9 +1,9 @@
+import { UNCATEGORIZED_NAME } from '../../shared/categories.js';
 import type { CategorySpending } from '../transactions/transaction-totals.repository.js';
 
 export const INCOME_VS_EXPENSE_MONTHS = 6;
 export const MAX_LISTED_CATEGORIES = 5;
 const OTHER_CATEGORIES_NAME = 'Outros';
-const UNCATEGORIZED_NAME = 'Sem categoria';
 const PERCENT_SCALE = 100;
 
 export type SpendingItem =

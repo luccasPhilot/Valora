@@ -15,7 +15,7 @@ Consulta paginada e filtrada de transações, detalhe, troca de categoria com ap
 - **THEN** a resposta é 400 com `code: "VALIDATION_ERROR"`
 
 ### Requirement: Filtros e busca
-A lista MUST aceitar os filtros `from` e `to` (datas), `categoryId`, `type` (`income`, `expense`, `transfer`), `accountId` e `search`. A busca MUST comparar o termo normalizado com `description_normalized` e encontrar o termo em qualquer parte da descrição. O tipo MUST ser decidido pela categoria (`transfer`) e, fora dela, pelo sinal do valor.
+A lista MUST aceitar os filtros `from` e `to` (datas), `categoryId`, `type` (`income`, `expense`, `transfer`), `accountId` e `search`. A busca MUST comparar o termo normalizado com `description_normalized` e encontrar o termo em qualquer parte da descrição. O tipo MUST ser decidido pela categoria (`transfer` e `expense`) e, fora delas, pelo sinal do valor: uma entrada numa categoria de despesa (estorno) é `expense`.
 
 #### Scenario: Busca sem acento
 - **WHEN** a busca é `farmacia` e existe a transação `FARMÁCIA SÃO JOÃO`
@@ -23,7 +23,11 @@ A lista MUST aceitar os filtros `from` e `to` (datas), `categoryId`, `type` (`in
 
 #### Scenario: Filtro de despesas
 - **WHEN** `type=expense` é pedido
-- **THEN** só aparecem transações com valor negativo que não estão numa categoria `transfer`
+- **THEN** aparecem as transações com valor negativo que não estão numa categoria `transfer` e as transações de qualquer sinal numa categoria `expense`
+
+#### Scenario: Estorno no filtro de receitas
+- **WHEN** `type=income` é pedido e existe um estorno de R$ 50,00 em "Compras"
+- **THEN** o estorno não aparece
 
 #### Scenario: Filtro de transferências
 - **WHEN** `type=transfer` é pedido
@@ -52,11 +56,11 @@ O JSON bruto do Pluggy MUST NOT ser exposto.
 - **THEN** a resposta é 404 com `code: "NOT_FOUND"`
 
 ### Requirement: Trocar a categoria
-`PATCH /api/v1/transactions/:id` com `categoryId` MUST gravar a categoria com `category_source = 'user'`. Com `applyAlways: true`, MUST também chamar o aprendizado da categorização, que cria ou atualiza a regra para a descrição. Uma categoria arquivada MUST ser recusada.
+`PATCH /api/v1/transactions/:id` com `categoryId` MUST gravar a categoria com `category_source = 'user'` e marcar a transação como revisada. Com `applyAlways: true`, MUST também chamar o aprendizado da categorização, que cria ou atualiza a regra para a descrição. Uma categoria arquivada MUST ser recusada. A resposta MUST trazer `ruleSuggestion`: a regra sugerida para a descrição da transação, ou nulo.
 
 #### Scenario: Correção simples
 - **WHEN** você troca a categoria de uma transação para "Lazer" sem "Aplicar sempre"
-- **THEN** a transação fica em "Lazer" com `category_source = 'user'` e nenhuma regra é criada
+- **THEN** a transação fica em "Lazer" com `category_source = 'user'`, revisada, e nenhuma regra é criada
 
 #### Scenario: Aplicar sempre
 - **WHEN** você troca a categoria de `PAG*JOSEDASILVA` para "Mercado" com "Aplicar sempre"
@@ -70,15 +74,19 @@ O JSON bruto do Pluggy MUST NOT ser exposto.
 - **WHEN** a troca pede uma categoria arquivada
 - **THEN** a resposta é 400 com `code: "VALIDATION_ERROR"`
 
+#### Scenario: Segunda correção da mesma descrição
+- **WHEN** você troca para "Transporte" a segunda transação `UBER *TRIP` do Open Finance, depois de já ter trocado a primeira para "Transporte", sem "Aplicar sempre"
+- **THEN** a resposta traz `ruleSuggestion` com o padrão `UBER *TRIP`, a categoria "Transporte" e `correctionCount` 2
+
 ### Requirement: Lista agrupada por dia
-A tela MUST agrupar as transações por dia, com cabeçalho "Hoje", "Ontem" ou a data por extenso, e o total do dia à direita, sem as transferências. Cada item MUST mostrar:
+A tela MUST agrupar as transações por dia, com cabeçalho "Hoje", "Ontem" ou a data por extenso, e o total do dia à direita, sem as transferências. Com o filtro de tipo em transferências, o cabeçalho MUST mostrar a quantidade do dia ("1 transferência", "3 transferências") no lugar do total. Cada item MUST mostrar:
 - o ícone da categoria;
-- a descrição, cortada com reticências quando não couber;
-- "categoria · conta";
+- a descrição, em até duas linhas, cortada com reticências só depois da segunda;
+- "categoria · conta" (abaixo de 360 px, só a categoria);
 - o valor com sinal;
 - a parcela como badge, quando houver.
 
-Receitas MUST aparecer em `positive` com `+`. Despesas MUST aparecer na cor normal, com `−`. Transferências MUST aparecer em `muted-foreground` com ícone de setas. Transação sem categoria MUST mostrar "Sem categoria".
+Receitas MUST aparecer em `positive` com `+`. Despesas MUST aparecer na cor normal, com `−`. Transferências MUST aparecer em `muted-foreground` com ícone de setas. Transação sem categoria MUST mostrar "Sem categoria". Em 320 px, o título da tela e o status da sincronização MUST aparecer inteiros, com o status abaixo do título.
 
 #### Scenario: Despesa
 - **WHEN** a lista mostra uma compra de R$ 89,90
@@ -87,6 +95,14 @@ Receitas MUST aparecer em `positive` com `+`. Despesas MUST aparecer na cor norm
 #### Scenario: Valores ocultos
 - **WHEN** o ocultar valores está ligado
 - **THEN** todos os valores e totais do dia mostram `R$ ••••`
+
+#### Scenario: Dia só com transferências filtradas
+- **WHEN** o filtro de tipo é "Transferências" e o dia 05/11 tem 3 pagamentos de fatura
+- **THEN** o cabeçalho de 05/11 mostra "3 transferências", e não "R$ 0,00"
+
+#### Scenario: Celular de 320 px
+- **WHEN** a tela é aberta com 320 px de largura
+- **THEN** o título "Transações" aparece inteiro, o status da sincronização fica abaixo dele, e uma descrição longa ocupa até duas linhas
 
 ### Requirement: Carregar mais
 A tela MUST carregar a próxima página quando você chega perto do fim da lista, e MUST mostrar quando não há mais transações no período.
@@ -101,10 +117,10 @@ A tela MUST ter:
 - filtro de período, com os atalhos Este mês, Mês passado, Últimos 3 meses, Este ano e Personalizado;
 - um botão "Filtros" que dá acesso aos filtros de categoria, tipo, origem e conta.
 
-A busca, o período e o botão "Filtros" MUST ficar sempre à vista. O botão MUST mostrar quantos dos filtros de categoria, tipo, origem e conta estão ativos. Filtros ativos MUST virar chips removíveis. Abaixo de 768 px, o botão "Filtros" MUST abrir um painel vindo de baixo com o período e os quatro filtros. A partir de 768 px, MUST abrir um popover com categoria, tipo, origem e conta, e a busca e o período MUST ficar numa linha acima da lista. O texto de nenhum seletor MUST aparecer cortado.
+A busca, o período e o botão "Filtros" MUST ficar sempre à vista. Filtros ativos de categoria, tipo, origem e conta MUST virar chips removíveis com o nome do filtro ("Categoria: Transporte"); o período MUST NOT virar chip. Abaixo de 768 px, o botão "Filtros" MUST abrir um painel vindo de baixo com o período e os quatro filtros, MUST contar o período quando ele não for "Este mês", e o botão de confirmar do painel MUST dizer quantas transações o filtro traz ("Ver 38 transações"). A partir de 768 px, MUST abrir um popover com categoria, tipo, origem e conta e o botão "Limpar filtros", a busca e o período MUST ficar numa linha acima da lista, e a contagem do botão MUST NOT incluir o período. O texto de nenhum seletor MUST aparecer cortado.
 
 #### Scenario: Remover filtro
-- **WHEN** você toca no "x" do chip "Transporte"
+- **WHEN** você toca no "x" do chip "Categoria: Transporte"
 - **THEN** o filtro de categoria é removido e a lista recarrega
 
 #### Scenario: Busca vazia
@@ -115,24 +131,32 @@ A busca, o período e o botão "Filtros" MUST ficar sempre à vista. O botão MU
 - **WHEN** a tela é aberta com 1440 px de largura
 - **THEN** a linha acima da lista mostra só a busca, o período e o botão "Filtros", e categoria, tipo, origem e conta aparecem ao abrir o botão
 
-#### Scenario: Contagem de filtros ativos
-- **WHEN** os filtros de categoria "Transporte" e de tipo "Despesas" estão ativos
-- **THEN** o botão mostra "Filtros (2)" e os dois chips aparecem abaixo
+#### Scenario: Contagem de filtros ativos no computador
+- **WHEN** os filtros de categoria "Transporte" e de tipo "Despesas" estão ativos e o período é "Mês passado", com 1440 px
+- **THEN** o botão mostra "Filtros (2)" e os chips "Categoria: Transporte" e "Tipo: Despesas" aparecem abaixo
+
+#### Scenario: Contagem com o período no celular
+- **WHEN** o filtro de categoria "Transporte" está ativo e o período é "Mês passado", com 390 px
+- **THEN** o botão mostra "Filtros (2)"
+
+#### Scenario: Limpar no popover
+- **WHEN** você aciona "Limpar filtros" no popover
+- **THEN** categoria, tipo, origem e conta são removidos e o período continua o mesmo
 
 #### Scenario: Celular
 - **WHEN** a tela é aberta com 390 px de largura e você toca em "Filtros"
-- **THEN** um painel vindo de baixo mostra período, categoria, tipo, origem e conta
+- **THEN** um painel vindo de baixo mostra período, categoria, tipo, origem e conta, e o botão de confirmar diz quantas transações o filtro traz
 
 ### Requirement: Resumo do filtro
-`GET /api/v1/transactions/summary` MUST aceitar os mesmos filtros de `GET /api/v1/transactions` (`from`, `to`, `categoryId`, `type`, `accountId`, `source`, `possibleDuplicate`, `search`; sem `from` e `to`, o mês atual em São Paulo) e MUST devolver `incomeCents`, `expenseCents` e `count`. `incomeCents` e `expenseCents` MUST usar a mesma definição de receita e despesa do Início, sem transferências internas, com lançamentos manuais e transações pendentes, e `expenseCents` MUST vir positivo. `count` MUST ser o número de transações do filtro, igual a `pagination.total` da lista. A tela MUST mostrar logo acima da lista, abaixo dos filtros e chips, o número de transações, as receitas com `+` em `positive` e as despesas com `−` na cor normal. Com `type=transfer`, a tela MUST mostrar só o número de transações e dizer que transferências não entram nos totais de receita e despesa.
+`GET /api/v1/transactions/summary` MUST aceitar os mesmos filtros de `GET /api/v1/transactions` (`from`, `to`, `categoryId`, `type`, `accountId`, `source`, `possibleDuplicate`, `search`; sem `from` e `to`, o mês atual em São Paulo) e MUST devolver `incomeCents`, `expenseCents` e `count`. `incomeCents` e `expenseCents` MUST usar a mesma definição de receita e despesa do Início, sem transferências internas, com lançamentos manuais e transações pendentes, e `expenseCents` MUST vir positivo. `count` MUST ser o número de transações do filtro, igual a `pagination.total` da lista. A tela MUST mostrar logo acima da lista, abaixo dos filtros e chips, no tamanho do texto do corpo: o período do filtro, o número de transações, "Receitas" com o valor com `+` em `positive` e "Despesas" com o valor com `−` na cor normal, com os rótulos visíveis. Quando o filtro mudar, o resumo novo MUST ser anunciado aos leitores de tela sem tirar o foco. Com `type=transfer`, a tela MUST mostrar só o período e o número de transações e dizer que transferências não entram nos totais de receita e despesa.
 
 #### Scenario: Resumo do mês
-- **WHEN** o mês tem receitas de 850000 centavos, despesas de 421530 centavos e 38 transações
-- **THEN** a tela mostra "38 transações", `+ R$ 8.500,00` e `− R$ 4.215,30`
+- **WHEN** o mês de novembro de 2026 tem receitas de 850000 centavos, despesas de 421530 centavos e 38 transações
+- **THEN** a tela mostra "Novembro de 2026", "38 transações", "Receitas + R$ 8.500,00" e "Despesas − R$ 4.215,30"
 
 #### Scenario: Filtro de categoria
 - **WHEN** a categoria "Transporte" está filtrada e tem 6 despesas que somam 75000 centavos
-- **THEN** o resumo mostra "6 transações" e `− R$ 750,00`, e a receita não aparece
+- **THEN** o resumo mostra "6 transações" e "Despesas − R$ 750,00", e a receita não aparece
 
 #### Scenario: Mesma regra do Início
 - **WHEN** o período filtrado é o mês atual, sem outros filtros
@@ -144,11 +168,15 @@ A busca, o período e o botão "Filtros" MUST ficar sempre à vista. O botão MU
 
 #### Scenario: Filtro de transferências
 - **WHEN** `type=transfer` está ativo
-- **THEN** a tela mostra só o número de transações e a nota de que transferências não entram nos totais
+- **THEN** a tela mostra só o período, o número de transações e a nota de que transferências não entram nos totais
+
+#### Scenario: Anúncio da mudança
+- **WHEN** o usuário troca o período para "Mês passado"
+- **THEN** o leitor de tela anuncia o resumo novo uma vez, sem mover o foco
 
 #### Scenario: Valores ocultos
 - **WHEN** o ocultar valores está ligado
-- **THEN** receitas e despesas do resumo mostram `R$ ••••` e o número de transações continua visível
+- **THEN** receitas e despesas do resumo mostram `R$ ••••` na cor normal e o número de transações continua visível
 
 #### Scenario: Erro no resumo
 - **WHEN** a requisição do resumo falha e a da lista funciona
@@ -189,4 +217,23 @@ O painel de detalhes da transação MUST ser a única área com rolagem: a lista
 #### Scenario: Buscar categoria
 - **WHEN** o usuário digita "merc" em "Buscar categoria"
 - **THEN** a lista mostra só as categorias que contêm "merc", sem rolagem própria
+
+### Requirement: Categoria em massa
+`PATCH /api/v1/transactions/category` com `transactionIds` (1 a 100) e `categoryId` MUST gravar a categoria com `category_source = 'user'` e marcar como revisadas todas as transações que existem, do Open Finance e manuais, numa transação só do banco de dados, MUST reavaliar os alertas de orçamento e MUST devolver `updatedCount` e `ruleSuggestion`. Uma categoria arquivada MUST ser recusada com 400 `VALIDATION_ERROR` sem mudar nada. A lista de Transações e a caixa "Para revisar" MUST ter o modo "Selecionar", com caixa de seleção de 44 px em cada linha e uma barra com o número de selecionadas, "Trocar categoria", "Marcar como revisadas" e "Cancelar". No computador, Shift+clique MUST selecionar o intervalo.
+
+#### Scenario: Trocar várias
+- **WHEN** o usuário seleciona 5 transações e escolhe "Restaurantes"
+- **THEN** as 5 ficam em "Restaurantes" com `category_source = 'user'`, revisadas, e a lista sai do modo de seleção
+
+#### Scenario: Orçamento atualizado
+- **WHEN** a troca em massa leva "Restaurantes" a 85% do limite
+- **THEN** o alerta de orçamento já existe na próxima consulta
+
+#### Scenario: Categoria arquivada em massa
+- **WHEN** a troca em massa pede uma categoria arquivada
+- **THEN** a resposta é 400 e nenhuma das transações muda
+
+#### Scenario: Celular
+- **WHEN** o modo "Selecionar" está ativo com 390 px de largura
+- **THEN** a barra de ações fica fixa embaixo, acima da área segura, sem cobrir a última linha da lista
 

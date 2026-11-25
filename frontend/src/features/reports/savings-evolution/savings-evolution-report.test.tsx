@@ -1,12 +1,13 @@
-import { render, screen, within } from '@testing-library/react';
+// Carrega a tela na importação do arquivo: o primeiro teste não paga a transformação dela.
+import '@/features/reports/reports-layout';
+import '@/features/reports/savings-evolution/savings-evolution-page';
+
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/router';
-
-import { errorResponse, stubRoutes } from '../../../../test/helpers/stub-routes';
+import { renderApp } from '../../../../test/helpers/render-app';
+import { errorResponse, requestedUrls, stubRoutes } from '../../../../test/helpers/stub-routes';
 
 const REPORT_PATH = '/relatorios/evolucao-financeira';
 const REPORT_ROUTE = 'GET /api/v1/reports/savings-evolution';
@@ -96,16 +97,6 @@ function stubReport(body: unknown = reportBody()) {
   return stubRoutes({ [REPORT_ROUTE]: () => Response.json(body) });
 }
 
-function renderApp(initialPath: string) {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [initialPath] });
-  render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  );
-  return router;
-}
-
 async function findFigure(name: string) {
   return screen.findByRole('region', { name });
 }
@@ -132,9 +123,9 @@ describe('Relatório de evolução financeira — números do período', () => {
     renderApp(REPORT_PATH);
     await findFigure('Resultado do período');
     // Assert
-    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(
+    expect(requestedUrls(fetchMock, '/api/v1/reports/savings-evolution')).toEqual([
       '/api/v1/reports/savings-evolution?from=2025-12&to=2026-11',
-    );
+    ]);
   });
 
   it('should_show_result_rate_and_surplus_months_of_the_period', async () => {

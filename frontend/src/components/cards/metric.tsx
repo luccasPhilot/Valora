@@ -17,32 +17,15 @@ interface MetricProps {
   caption?: ReactNode;
   /** `display` só no cartão de nível 1; `lg` nos demais; `md` quando o valor precisa caber em meia coluna. */
   size?: MetricSize;
-  /** Vermelho só para saldo negativo, nunca para despesa. */
-  isNegative?: boolean;
-  /** Cor ou ajuste do valor (ex.: `text-positive` para receita). O padrão é a cor do texto. */
+  /** Ajuste do valor. A cor de receita ou de saldo negativo vem de `TonedMoney` ou `useAmountTone`. */
   valueClassName?: string;
 }
 
 /** O número que o cartão existe para mostrar: o maior texto do cartão, com uma linha de contexto. */
-export function Metric({
-  value,
-  caption,
-  size = 'lg',
-  isNegative = false,
-  valueClassName,
-}: MetricProps) {
+export function Metric({ value, caption, size = 'lg', valueClassName }: MetricProps) {
   return (
     <div className="min-w-0 space-y-1">
-      <p
-        className={cn(
-          SIZE_CLASSES[size],
-          'break-words tabular-nums',
-          isNegative && 'text-destructive',
-          valueClassName,
-        )}
-      >
-        {value}
-      </p>
+      <p className={cn(SIZE_CLASSES[size], 'break-words tabular-nums', valueClassName)}>{value}</p>
       {caption ? <p className="text-sm text-muted-foreground">{caption}</p> : null}
     </div>
   );

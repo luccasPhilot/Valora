@@ -3,16 +3,20 @@ import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FormPanel } from '@/components/form-panel';
+import { NoticeRegion } from '@/components/notice-region';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { RowsSkeleton } from '@/components/states/skeletons';
 import { Button } from '@/components/ui/button';
+import { useNotice } from '@/hooks/use-notice';
 import type { Category, CategoryRule } from '@/lib/api/categories';
 
 import { useCategories, useCategoryRules, useDeleteRule, useSaveRule } from './categories-queries';
 import { CategoryBadgeIcon } from './category-icons';
 import { describeError, MATCH_TYPE_LABELS } from './category-labels';
+import { EditableRow } from './editable-row';
 import { RuleForm } from './rule-form';
+import { RuleSuggestionsList } from './rule-suggestions-list';
 
 const UNKNOWN_CATEGORY_NAME = 'Categoria removida';
 
@@ -29,37 +33,36 @@ interface RuleRowProps {
 function RuleRow({ rule, category, onEdit, onDelete }: RuleRowProps) {
   const categoryName = category?.name ?? UNKNOWN_CATEGORY_NAME;
   return (
-    <li className="flex items-center gap-1 py-1">
-      <button
-        type="button"
-        aria-label={`Editar regra ${rule.pattern}`}
-        onClick={onEdit}
-        className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <CategoryBadgeIcon name={category?.icon ?? 'tag'} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">
-            <span className="text-muted-foreground">{MATCH_TYPE_LABELS[rule.matchType]} </span>
-            {rule.pattern}
-          </span>
-          <span className="block truncate text-sm text-muted-foreground">
-            {categoryName}
-            {category?.isArchived ? ' (arquivada)' : ''}
-            {rule.priority > 0 ? ` · prioridade ${rule.priority}` : ''}
-            {rule.learnedFromTransactionId ? ' · aprendida de uma correção' : ''}
-          </span>
+    <EditableRow
+      editLabel={`Editar regra ${rule.pattern}`}
+      onEdit={onEdit}
+      className="min-h-14"
+      action={
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          aria-label={`Excluir regra ${rule.pattern}`}
+          onClick={onDelete}
+        >
+          <Trash2 className="size-5" aria-hidden="true" />
+        </Button>
+      }
+    >
+      <CategoryBadgeIcon name={category?.icon ?? 'tag'} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">
+          <span className="text-muted-foreground">{MATCH_TYPE_LABELS[rule.matchType]} </span>
+          {rule.pattern}
         </span>
-      </button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="rounded-full"
-        aria-label={`Excluir regra ${rule.pattern}`}
-        onClick={onDelete}
-      >
-        <Trash2 className="size-5" aria-hidden="true" />
-      </Button>
-    </li>
+        <span className="block truncate text-sm text-muted-foreground">
+          {categoryName}
+          {category?.isArchived ? ' (arquivada)' : ''}
+          {rule.priority > 0 ? ` · prioridade ${rule.priority}` : ''}
+          {rule.learnedFromTransactionId ? ' · aprendida de uma correção' : ''}
+        </span>
+      </span>
+    </EditableRow>
   );
 }
 
@@ -70,6 +73,7 @@ export function RulesTab() {
   const deleteRule = useDeleteRule();
   const [editing, setEditing] = useState<EditorTarget>(undefined);
   const [deleting, setDeleting] = useState<CategoryRule | undefined>(undefined);
+  const { notice, showNotice } = useNotice();
 
   if (rulesQuery.isPending || categoriesQuery.isPending) return <RowsSkeleton rowCount={4} />;
   if (rulesQuery.isError || categoriesQuery.isError) {
@@ -107,6 +111,7 @@ export function RulesTab() {
           Nova regra
         </Button>
       </div>
+      <RuleSuggestionsList showNotice={showNotice} />
       {rules.length === 0 ? (
         <EmptyState
           icon={ListFilter}
@@ -158,6 +163,7 @@ export function RulesTab() {
           if (deleting) deleteRule.mutate(deleting.id, { onSuccess: closeDeleteDialog });
         }}
       />
+      <NoticeRegion notice={notice} />
     </>
   );
 }

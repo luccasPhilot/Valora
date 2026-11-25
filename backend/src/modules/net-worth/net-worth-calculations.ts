@@ -44,6 +44,13 @@ export interface NetWorthParts {
   readonly netWorthCents: number;
 }
 
+/** Um ponto da curva do saldo do Início. */
+export interface BalancePoint {
+  /** `AAAA-MM-DD`. */
+  readonly date: string;
+  readonly balanceCents: number;
+}
+
 export interface NetWorthPoint extends NetWorthParts {
   /** `AAAA-MM`. */
   readonly month: string;
@@ -170,21 +177,63 @@ export function buildNetWorthSeries(
   });
 }
 
+/** Contas que entram no saldo total: corrente e poupança (as ocultas ficam fora em `isCountedOn`). */
+function balanceAccounts(items: readonly NetWorthItem[]): NetWorthItem[] {
+  return items.filter((item) => PART_BY_TYPE[item.type] === 'accountsCents');
+}
+
 /**
- * Patrimônio de hoje menos o da primeira foto do mês, só com bancos ativos nas duas pontas: um banco
- * arquivado no meio do mês não pode parecer uma queda que não aconteceu.
+ * Valor de hoje menos o do primeiro dia do mês com foto, só com bancos ativos nas duas pontas: um
+ * banco arquivado no meio do mês não pode parecer uma queda que não aconteceu.
  */
+function changeSinceFirstSnapshot(
+  items: readonly NetWorthItem[],
+  current: { readonly cents: number; readonly part: keyof NetWorthParts },
+  today: string,
+): ValueChange | null {
+  const [firstDay] = snapshotDaysBetween(items, firstDayOfMonth(today), today, 'active_only');
+  if (firstDay === undefined) return null;
+  const firstCents = valueOnDay(items, firstDay, 'active_only')[current.part];
+  return buildValueChange(current.cents, { date: firstDay, cents: firstCents }, today);
+}
+
+/** Patrimônio de hoje menos o da primeira foto do mês. */
 export function buildMonthChange(
   items: readonly NetWorthItem[],
   currentNetWorthCents: number,
   today: string,
 ): ValueChange | null {
-  const [firstDay] = snapshotDaysBetween(items, firstDayOfMonth(today), today, 'active_only');
-  if (firstDay === undefined) return null;
-  const firstNetWorthCents = valueOnDay(items, firstDay, 'active_only').netWorthCents;
-  return buildValueChange(
-    currentNetWorthCents,
-    { date: firstDay, cents: firstNetWorthCents },
+  return changeSinceFirstSnapshot(
+    items,
+    { cents: currentNetWorthCents, part: 'netWorthCents' },
     today,
+  );
+}
+
+/**
+ * Saldo das contas de hoje menos o do primeiro dia do mês com foto de alguma conta. Um banco que
+ * falhou nesse dia entra com a foto mais recente (até 7 dias), e não vira ganho no resto do mês.
+ */
+export function buildAccountsMonthChange(
+  items: readonly NetWorthItem[],
+  currentBalanceCents: number,
+  today: string,
+): ValueChange | null {
+  return changeSinceFirstSnapshot(
+    balanceAccounts(items),
+    { cents: currentBalanceCents, part: 'accountsCents' },
+    today,
+  );
+}
+
+/**
+ * A curva do saldo do mês (`month` é o dia 1): um ponto por dia com foto de alguma conta contada,
+ * somando cada conta pela foto mais recente até o dia (no máximo 7 dias). Os bancos arquivados entram
+ * só nos dias anteriores ao arquivamento.
+ */
+export function buildBalanceSeries(items: readonly NetWorthItem[], month: string): BalancePoint[] {
+  const accounts = balanceAccounts(items);
+  return snapshotDaysBetween(accounts, month, lastDayOfMonth(month), 'with_archived').map(
+    (date) => ({ date, balanceCents: valueOnDay(accounts, date).accountsCents }),
   );
 }

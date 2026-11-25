@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, isNotNull, lte, ne, type SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, isNotNull, isNull, lte, ne, type SQL, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/database.js';
 import { plannedEntryOccurrences, transactions } from '../../db/schema.js';
@@ -28,8 +28,10 @@ const HAS_CHANGED = sql`(
 
 /** Pendente que sumiu com decisão do usuário: o que a troca compara e o que ela leva. */
 export interface VanishedPending extends ReplacementTransaction {
-  /** Nula quando a decisão é só o vínculo com a previsão. */
+  /** Nula quando a decisão não inclui a categoria (só a previsão ou a revisão). */
   readonly userCategoryId: string | null;
+  /** Nula quando a pendente ainda estava para revisar. */
+  readonly reviewedAt: Date | null;
 }
 
 /** Pendentes que sumiram: pendentes do Open Finance da conta, na janela, com id que não voltou. */
@@ -88,9 +90,10 @@ export class TransactionsRepository {
     return { inserted: insertedIds.length, updated, insertedIds };
   }
 
-  /** Pendentes que sumiram com categoria escolhida pelo usuário ou com previsão vinculada. */
+  /** Pendentes que sumiram com categoria escolhida pelo usuário, previsão vinculada ou revisão. */
   async findVanishedPendingWithDecision(scope: VanishedPendingScope): Promise<VanishedPending[]> {
     const isUserCategory = eq(transactions.categorySource, 'user');
+    const isReviewed = isNotNull(transactions.reviewedAt);
     const hasOccurrence = sql`exists (
       select 1 from ${plannedEntryOccurrences}
       where ${plannedEntryOccurrences.transactionId} = ${transactions.id}
@@ -100,9 +103,15 @@ export class TransactionsRepository {
         ...REPLACEMENT_COLUMNS,
         categoryId: transactions.categoryId,
         categorySource: transactions.categorySource,
+        reviewedAt: transactions.reviewedAt,
       })
       .from(transactions)
-      .where(and(vanishedPendingFilter(scope), sql`(${isUserCategory} or ${hasOccurrence})`));
+      .where(
+        and(
+          vanishedPendingFilter(scope),
+          sql`(${isUserCategory} or ${hasOccurrence} or ${isReviewed})`,
+        ),
+      );
     return rows.map(({ categoryId, categorySource, ...row }) => ({
       ...row,
       userCategoryId: categorySource === 'user' ? categoryId : null,
@@ -135,6 +144,14 @@ export class TransactionsRepository {
       .update(transactions)
       .set({ categoryId, categorySource: 'user', updatedAt: sql`now()` })
       .where(and(eq(transactions.id, postedId), ne(transactions.categorySource, 'user')));
+  }
+
+  /** Leva a revisão da pendente para a postada, a menos que ela já tenha sido revisada. */
+  async carryReview(postedId: string, reviewedAt: Date): Promise<void> {
+    await this.db
+      .update(transactions)
+      .set({ reviewedAt, updatedAt: sql`now()` })
+      .where(and(eq(transactions.id, postedId), isNull(transactions.reviewedAt)));
   }
 
   /**

@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react';
 
 import { Metric } from '@/components/cards/metric';
 import { ValueChange } from '@/components/cards/value-change';
-import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { DashboardNetWorth } from '@/lib/api/dashboard';
 
 import { SectionLink } from './dashboard-section';
@@ -27,11 +27,7 @@ export function NetWorthLine({ netWorth }: { netWorth: DashboardNetWorth }) {
           <ChevronRight className="size-4" aria-hidden="true" />
         </SectionLink>
       </div>
-      <Metric
-        size="md"
-        value={<Money cents={netWorth.totalCents} />}
-        isNegative={netWorth.totalCents < 0}
-      />
+      <Metric size="md" value={<TonedMoney cents={netWorth.totalCents} kind="balance" />} />
       {netWorth.change ? <ValueChange change={netWorth.change} /> : null}
     </div>
   );

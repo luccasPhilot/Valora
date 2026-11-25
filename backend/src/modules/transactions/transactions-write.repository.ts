@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/database.js';
 import { transactions } from '../../db/schema.js';
@@ -28,6 +28,8 @@ export class TransactionsWriteRepository {
         categorySource: 'user',
         pluggyTransactionId: null,
         raw: null,
+        // Quem lança à mão já viu a transação: ela nunca entra na caixa "Para revisar".
+        reviewedAt: sql`now()`,
       })
       .returning({ id: transactions.id });
     if (!row) throw new Error('A transação manual não foi gravada');

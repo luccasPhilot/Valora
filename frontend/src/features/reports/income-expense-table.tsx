@@ -1,4 +1,5 @@
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { IncomeExpenseReport } from '@/lib/api/reports';
 import { formatMonthYear } from '@/lib/format';
 
@@ -21,9 +22,7 @@ function toCells(totals: {
   resultCents: number;
 }): ReportTableRow['cells'] {
   return [
-    <span key="income" className="text-positive">
-      <Money cents={totals.incomeCents} isSigned />
-    </span>,
+    <TonedMoney key="income" cents={totals.incomeCents} kind="flow" isSigned />,
     <Money key="expense" cents={-totals.expenseCents} isSigned />,
     <ResultMoney key="result" cents={totals.resultCents} />,
   ];

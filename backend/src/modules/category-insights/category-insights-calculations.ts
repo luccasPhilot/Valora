@@ -1,12 +1,11 @@
+import { UNCATEGORIZED_NAME } from '../../shared/categories.js';
+import { percentWithOneDecimal } from '../../shared/percent.js';
 import { budgetPercent, type BudgetStatus, budgetStatus } from '../budgets/budget-status.js';
 import type {
   CategorySpending,
   MonthCategorySpending,
 } from '../transactions/transaction-totals.repository.js';
 
-const PERCENT_SCALE = 1000;
-const PERCENT_DECIMALS_DIVISOR = 10;
-export const UNCATEGORIZED_NAME = 'Sem categoria';
 export const UNCATEGORIZED_KEY = 'uncategorized';
 
 export interface CategoryBudget {
@@ -60,22 +59,10 @@ export function keyOf(categoryId: string | null): string {
   return categoryId ?? UNCATEGORIZED_KEY;
 }
 
-/** `-0` vira `0`: a tela nunca mostra "−0%". */
-function withoutNegativeZero(value: number): number {
-  return value === 0 ? 0 : value;
-}
-
-/** Fatia com uma casa decimal; zero quando o total é zero. */
-export function percentOf(amountCents: number, totalCents: number): number {
-  if (totalCents <= 0) return 0;
-  return Math.round((amountCents * PERCENT_SCALE) / totalCents) / PERCENT_DECIMALS_DIVISOR;
-}
-
 /** `(atual − anterior) ÷ anterior × 100` com uma casa decimal; nulo sem base de comparação. */
 export function variationPercentOf(currentCents: number, previousCents: number): number | null {
   if (previousCents <= 0) return null;
-  const rounded = Math.round(((currentCents - previousCents) * PERCENT_SCALE) / previousCents);
-  return withoutNegativeZero(rounded / PERCENT_DECIMALS_DIVISOR);
+  return percentWithOneDecimal(currentCents - previousCents, previousCents);
 }
 
 function describeCategory(spending: CategorySpending): CategoryKey {
@@ -208,7 +195,7 @@ export function buildItems(input: BuildItemsInput): CategoryInsightItem[] {
       name: difference.name,
       icon: difference.icon,
       spentCents: difference.spentCents,
-      percent: percentOf(difference.spentCents, totalCents),
+      percent: percentWithOneDecimal(difference.spentCents, totalCents),
       previousSpentCents: difference.previousSpentCents,
       variationPercent: variationPercentOf(difference.spentCents, difference.previousSpentCents),
       budget: budgetOf(limitCents, difference.spentCents),

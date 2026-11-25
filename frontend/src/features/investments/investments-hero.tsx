@@ -3,6 +3,7 @@ import { TrendingUp } from 'lucide-react';
 import { DataCard } from '@/components/cards/data-card';
 import { Metric } from '@/components/cards/metric';
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { Investments } from '@/lib/api/investments';
 import { formatPercent } from '@/lib/format';
 
@@ -28,9 +29,8 @@ export function InvestmentsHero({ investments }: InvestmentsHeroProps) {
     <DataCard title="Investimentos" tier="hero" icon={TrendingUp} className="gap-5">
       <Metric
         size="display"
-        value={<Money cents={totals.totalCents} />}
+        value={<TonedMoney cents={totals.totalCents} kind="balance" />}
         caption={describePositions(totals.positionsCount, countInstitutions(groups))}
-        isNegative={totals.totalCents < 0}
       />
       <CompositionBar groups={groups} />
       <ul className="space-y-2">

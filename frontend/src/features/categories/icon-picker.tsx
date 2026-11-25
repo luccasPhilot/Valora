@@ -1,8 +1,15 @@
 import { useId, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { normalizeSearchText } from '@/lib/text';
 
+import { iconLabel } from './category-icon-labels';
 import { CategoryGlyph, SUGGESTED_ICON_NAMES } from './category-icons';
+
+/** Acha o ícone pelo nome em pt-BR ("carro") ou pelo nome do Lucide em inglês ("car"). */
+function matchesIcon(iconName: string, term: string): boolean {
+  return iconName.includes(term) || normalizeSearchText(iconLabel(iconName)).includes(term);
+}
 
 interface IconPickerProps {
   value: string;
@@ -13,8 +20,8 @@ interface IconPickerProps {
 export function IconPicker({ value, onChange }: IconPickerProps) {
   const labelId = useId();
   const [search, setSearch] = useState('');
-  const term = search.trim().toLowerCase();
-  const visibleIcons = SUGGESTED_ICON_NAMES.filter((iconName) => iconName.includes(term));
+  const term = normalizeSearchText(search);
+  const visibleIcons = SUGGESTED_ICON_NAMES.filter((iconName) => matchesIcon(iconName, term));
 
   return (
     <div className="space-y-2">
@@ -25,7 +32,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         type="search"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        placeholder="Buscar ícone (em inglês, ex.: car)"
+        placeholder="Buscar ícone (ex.: carro)"
         aria-label="Buscar ícone"
       />
       <div
@@ -41,8 +48,8 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
               type="button"
               role="radio"
               aria-checked={isSelected}
-              aria-label={iconName}
-              title={iconName}
+              aria-label={iconLabel(iconName)}
+              title={iconLabel(iconName)}
               onClick={() => onChange(iconName)}
               className={`flex h-11 items-center justify-center rounded-md outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${
                 isSelected ? 'bg-secondary text-primary ring-2 ring-primary' : 'text-foreground'

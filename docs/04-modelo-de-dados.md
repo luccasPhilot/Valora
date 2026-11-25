@@ -48,6 +48,7 @@ Se um banco novo mandar algo diferente, rode `npm run fixtures:record` em `backe
 | `status_detail` | text | mensagem para mostrar na tela |
 | `last_synced_at` | timestamptz | |
 | `archived_at` | timestamptz | pode ser nulo. Preenchido quando o usuário remove o banco do Valora: nada é apagado, o banco sai das telas e a sincronização o pula. Nulo = banco ativo |
+| `consent_expires_at` | timestamptz | pode ser nulo. Vencimento do consentimento (`consentExpiresAt` do Pluggy), regravado a cada leitura do item, mesmo que a leitura dos dados falhe depois. Nulo quando o Pluggy não manda. Alimenta o alerta `consent_expiring` e a tela Saúde dos dados |
 | `created_at`, `updated_at` | timestamptz | |
 
 O que sai quando `archived_at` está preenchido: as contas (e o saldo, as faturas e a projeção), a faixa de aviso e os alertas de conexão. O que fica: todas as transações, faturas, investimentos e fotos de saldo, que continuam contando em receitas, despesas e orçamentos. A curva de saldo do Início soma o banco só nos dias anteriores ao dia do arquivamento. Se o `PLUGGY_ITEM_IDS` não tem mais o id do banco, isso não é gravado: a API calcula `isConfigured` na leitura.
@@ -67,6 +68,7 @@ O que sai quando `archived_at` está preenchido: as contas (e o saldo, as fatura
 | `available_limit_cents` | bigint | só cartão |
 | `is_hidden` | boolean | conta que você não quer ver nos totais |
 | `raw` | jsonb | |
+| `created_at` | timestamptz | quando a conta entrou no Valora; as contas anteriores à migration ficaram com a data dela. Usado no alerta de 31/12 sem foto |
 | `updated_at` | timestamptz | |
 
 **`balance_snapshots`**: foto diária do saldo de cada conta. Base da evolução do patrimônio.
@@ -98,9 +100,10 @@ O que sai quando `archived_at` está preenchido: as contas (e o saldo, as fatura
 | `installment_total` | integer | total de parcelas; pode ser nulo |
 | `possible_duplicate_of_id` | uuid | → `transactions` (a manual parecida); preenchido só em transação do Open Finance; nulo depois que você resolve |
 | `raw` | jsonb | nulo em transação manual |
+| `reviewed_at` | timestamptz | quando foi revisada; nulo = na caixa "Para revisar". A sincronização insere nulo e nunca muda numa transação existente; lançar à mão, trocar a categoria e marcar como revisada gravam. A postada que substitui uma pendente herda o valor da pendente |
 | `created_at`, `updated_at` | timestamptz | |
 
-Índices: (`account_id`, `date`), (`category_id`, `date`), (`date`), (`source`).
+Índices: (`account_id`, `date`), (`category_id`, `date`), (`date`), (`source`) e o parcial (`date`) onde `reviewed_at` é nulo (`transactions_unreviewed_idx`). Na migration que criou `reviewed_at`, todas as transações que já existiam ficaram revisadas.
 
 `possible_duplicate_of_id` usa `ON DELETE SET NULL`: se a transação manual apontada for excluída, a marcação some sozinha. A detecção marca só transações do Open Finance **recém-inseridas** e cada manual só pode ser apontada por uma transação.
 
@@ -141,6 +144,16 @@ O mapeamento inicial de `pluggy_category_mappings` fica em `backend/src/modules/
 | `learned_from_transaction_id` | uuid | preenchido quando a regra nasceu de uma correção sua |
 | `created_at` | timestamptz | |
 
+**`dismissed_rule_suggestions`**: regras sugeridas que você dispensou ("Agora não" ou "Dispensar").
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `pattern` | text | descrição normalizada, como `description_normalized` |
+| `category_id` | uuid | → `categories`; `ON DELETE CASCADE` |
+| `dismissed_at` | timestamptz | |
+
+Chave primária (`pattern`, `category_id`): dispensar de novo não muda nada. A sugestão em si não é guardada: é calculada a cada consulta.
+
 **`pluggy_category_mappings`**: traduz as categorias do Pluggy para as suas.
 
 | Coluna | Tipo | Observação |
@@ -175,6 +188,7 @@ Um mês sem orçamento pode copiar o do mês anterior com uma ação na tela.
 | `balance_cents` | bigint | posição atual |
 | `balance_updated_on` | date | só na posição manual: o dia do último valor informado |
 | `raw` | jsonb | nulo na posição manual |
+| `created_at` | timestamptz | quando a posição entrou no Valora; as anteriores à migration ficaram com a data dela. Usado no alerta de 31/12 sem foto |
 | `updated_at` | timestamptz | |
 
 **Posição que sumiu = posição zerada, só com coleta completa.** Quando o Pluggy diz que a coleta de investimentos do item terminou (`UPDATED` com `executionStatus = SUCCESS`, ou `PARTIAL_SUCCESS` com `statusDetail.investments.isUpdated = true`) e um investimento deixou de vir (resgatado e removido), a sincronização grava `balance_cents = 0` nele e a foto do dia `0`, inclusive se a lista vier vazia. Numa coleta parcial ou em andamento, a posição ausente fica como estava, sem foto do dia. Sem isso o último saldo ficaria somando para sempre. Se o investimento voltar, o upsert restaura a posição. Banco com erro não tem investimentos alterados.
@@ -295,13 +309,13 @@ Exatamente uma entre `account_id` e `investment_id` é preenchida (`CHECK`). Ín
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
-| `type` | text | `duplicate_charge`, `subscription_detected`, `budget_warning`, `budget_exceeded`, `connection_error` |
+| `type` | text | `duplicate_charge`, `subscription_detected`, `budget_warning`, `budget_exceeded`, `connection_error`, `year_end_snapshot_pending`, `year_end_snapshot_missing`, `consent_expiring` |
 | `transaction_id` | uuid | pode ser nulo |
 | `category_id` | uuid | pode ser nulo |
 | `connection_id` | uuid | pode ser nulo |
 | `message` | text | |
 | `created_at` | timestamptz | |
-| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>` |
-| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento e conexão; `duplicate_charge` e `subscription_detected` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
+| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>`, `consent_expiring:<connectionId>:30` (de 30 a 8 dias antes) e `consent_expiring:<connectionId>:7` (a partir de 7 dias antes; chave nova, então nasce mesmo com o de 30 dispensado), `year_end_snapshot_pending:AAAA`, `year_end_snapshot_missing:AAAA` (o ano de 31/12) |
+| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento, conexão, `consent_expiring` e `year_end_snapshot_pending`; `duplicate_charge`, `subscription_detected` e `year_end_snapshot_missing` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
 
-`type` tem `CHECK` com os cinco tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.
+`type` tem `CHECK` com os sete tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.

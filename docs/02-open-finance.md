@@ -114,6 +114,8 @@ Não confirmei a data em que a regra passa a valer; confira no [site do Banco Ce
 
 De qualquer forma, conexões podem expirar ou ser revogadas. **O Valora precisa mostrar quando uma conexão parar de sincronizar.**
 
+**Vencimento no Valora:** a cada leitura do item, a sincronização grava o `consentExpiresAt` do Pluggy em `connections.consent_expires_at` (nulo quando ele não manda), mesmo que a leitura dos dados do banco falhe depois. Com a data, o sino avisa 30 dias antes e de novo 7 dias antes (alerta `consent_expiring`), e a tela [Saúde dos dados](01-produto.md#saúde-dos-dados) mostra o vencimento de cada banco. Vencido, o status vira `consent_expired` e quem avisa é o alerta de conexão.
+
 ## Fontes
 
 - [Meu Pluggy: página oficial](https://www.pluggy.ai/meu-pluggy)

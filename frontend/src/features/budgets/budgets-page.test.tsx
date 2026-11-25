@@ -270,6 +270,40 @@ describe('BudgetsPage panel', () => {
     });
   });
 
+  it('should_open_the_limit_empty_with_the_hidden_values_hint_when_values_are_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    stubRoutes(baseRoutes([GROCERIES_OK]));
+    renderPage();
+    // Act
+    await userEvent.click(await findRow('Mercado'));
+    // Assert
+    const field = await screen.findByLabelText('Limite do mês');
+    expect(field).toHaveValue('');
+    expect(field).toHaveAccessibleDescription(
+      'Valores ocultos. Deixe em branco para manter o valor atual.',
+    );
+  });
+
+  it('should_keep_the_limit_when_saving_a_blank_field_with_values_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    const fetchMock = stubRoutes({
+      ...baseRoutes([GROCERIES_OK]),
+      'PUT /api/v1/budgets/11111111-1111-4111-8111-111111111111': () => Response.json(GROCERIES_OK),
+    });
+    renderPage();
+    await userEvent.click(await findRow('Mercado'));
+    await screen.findByLabelText('Limite do mês');
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar limite' }));
+    // Assert
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+      expect(putCall?.[1]?.body).toBe(JSON.stringify({ limitCents: 100000 }));
+    });
+  });
+
   it('should_remove_the_limit_when_pressing_remove', async () => {
     // Arrange
     const fetchMock = stubRoutes({

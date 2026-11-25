@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatAxisCurrency,
   formatCompactCurrency,
+  formatCount,
   formatCurrency,
   formatCurrencyTrimmed,
   formatDate,
@@ -18,6 +19,7 @@ import {
   formatPercent,
   formatSignedCurrency,
   formatSignedPercent,
+  formatSpreadsheetAmount,
 } from './format';
 
 describe('formatCurrency', () => {
@@ -391,5 +393,54 @@ describe('formatAxisCurrency', () => {
     const text = formatAxisCurrency(cents);
     // Assert
     expect(text.replaceAll(String.fromCharCode(0xa0), ' ')).toBe(formatCompactCurrency(cents));
+  });
+});
+
+describe('formatSpreadsheetAmount', () => {
+  it('should_use_comma_and_plain_hyphen_when_the_amount_is_negative', () => {
+    // Arrange
+    const cents = -8990;
+    // Act
+    const text = formatSpreadsheetAmount(cents);
+    // Assert
+    expect(text).toBe('-89,90');
+  });
+
+  it('should_skip_the_thousands_separator_when_the_amount_is_large', () => {
+    // Arrange
+    const cents = 123456789;
+    // Act
+    const text = formatSpreadsheetAmount(cents);
+    // Assert
+    expect(text).toBe('1234567,89');
+  });
+
+  it('should_keep_two_decimals_when_the_amount_is_zero', () => {
+    // Arrange
+    const cents = 0;
+    // Act
+    const text = formatSpreadsheetAmount(cents);
+    // Assert
+    expect(text).toBe('0,00');
+  });
+
+  it('should_reject_the_amount_when_cents_are_not_an_integer', () => {
+    // Arrange
+    const cents = 10.5;
+    // Act
+    const format = () => formatSpreadsheetAmount(cents);
+    // Assert
+    expect(format).toThrow(RangeError);
+  });
+});
+
+describe('formatCount', () => {
+  it('should_use_the_thousands_separator_when_the_count_is_large', () => {
+    // Arrange
+    const count = 12000;
+    // Act
+    const text = formatCount(count);
+    // Assert
+    expect(text).toBe('12.000');
   });
 });

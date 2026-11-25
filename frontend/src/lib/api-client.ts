@@ -105,8 +105,8 @@ export function apiDeleteReturning<T>(path: string, responseSchema: z.ZodType<T>
 }
 
 /** Para os POST que respondem 204, sem corpo (ações como "marcar como lido"). */
-export async function apiPostNoContent(path: string): Promise<void> {
-  const response = await fetchOrThrow(path, 'POST');
+export async function apiPostNoContent(path: string, body?: unknown): Promise<void> {
+  const response = await fetchOrThrow(path, 'POST', body);
   if (!response.ok) throw await toApiError(response);
 }
 
@@ -114,4 +114,21 @@ export async function apiPostNoContent(path: string): Promise<void> {
 export async function apiDelete(path: string): Promise<void> {
   const response = await fetchOrThrow(path, 'DELETE');
   if (!response.ok) throw await toApiError(response);
+}
+
+export interface DownloadedFile {
+  readonly file: Blob;
+  /** O nome que a API manda no `Content-Disposition`, ou nulo se não veio. */
+  readonly fileName: string | null;
+}
+
+const CONTENT_DISPOSITION_FILE_NAME = /filename="([^"]+)"/;
+
+/** Para as rotas que respondem um arquivo (o `.zip` de "Baixar meus dados"), não JSON. */
+export async function apiGetFile(path: string): Promise<DownloadedFile> {
+  const response = await fetchOrThrow(path, 'GET');
+  if (!response.ok) throw await toApiError(response);
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const fileName = CONTENT_DISPOSITION_FILE_NAME.exec(disposition)?.[1] ?? null;
+  return { file: await response.blob(), fileName };
 }

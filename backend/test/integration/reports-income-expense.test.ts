@@ -60,6 +60,20 @@ describe('GET /api/v1/reports/income-expense', () => {
     ]);
   });
 
+  it('should_reduce_the_expense_and_keep_the_result_when_a_refund_is_in_an_expense_category', async () => {
+    // Arrange
+    const shoppingId = await insertCategoryOfKind(database.db, 'expense', 'Compras');
+    await insertTransaction('2026-10-05', 500000);
+    await insertTransaction('2026-10-06', -320000, { categoryId: shoppingId });
+    await insertTransaction('2026-10-07', 20000, { categoryId: shoppingId });
+    // Act
+    const { body } = await getJson('/api/v1/reports/income-expense?from=2026-10&to=2026-10');
+    // Assert
+    expect(body.months).toEqual([
+      { month: '2026-10', incomeCents: 500000, expenseCents: 300000, resultCents: 200000 },
+    ]);
+  });
+
   it('should_count_manual_and_pending_transactions_and_expenses_without_category', async () => {
     // Arrange
     await insertTransaction('2026-11-02', -1250, { source: 'manual' });

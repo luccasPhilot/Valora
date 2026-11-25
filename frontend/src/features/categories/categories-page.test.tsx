@@ -66,6 +66,7 @@ function sentBodies(fetchMock: ReturnType<typeof stubApi>, key: string): unknown
 const DEFAULT_ROUTES: Record<string, Handler> = {
   'GET /api/v1/categories?includeArchived=true': () => jsonResponse({ items: CATEGORIES }),
   'GET /api/v1/category-rules': () => jsonResponse({ items: [RULE] }),
+  'GET /api/v1/category-rules/suggestions': () => jsonResponse({ items: [] }),
   'GET /api/v1/pluggy-category-mappings': () =>
     jsonResponse({
       items: [
@@ -103,6 +104,16 @@ describe('aba Categorias', () => {
     // Assert
     const heading = await screen.findByRole('heading', { name: 'Despesas' });
     expect(within(sectionOf(heading)).getByText('Mercado')).toBeVisible();
+  });
+
+  it('should_name_the_edit_button_with_the_category_and_keep_the_row_unlabeled', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    // Act
+    renderPage();
+    // Assert
+    const editButton = await screen.findByRole('button', { name: 'Editar categoria Mercado' });
+    expect(editButton.closest('li')).not.toHaveAttribute('aria-label');
   });
 
   it('should_show_the_note_about_withdrawals_and_transfers', async () => {
@@ -209,6 +220,71 @@ describe('aba Regras', () => {
     await userEvent.click(await screen.findByRole('tab', { name: 'Regras' }));
   }
 
+  const UBER_SUGGESTION = {
+    pattern: 'UBER *TRIP',
+    categoryId: FOOD_ID,
+    categoryName: 'Alimentação',
+    categoryIcon: 'utensils',
+    correctionCount: 3,
+  };
+
+  const WITH_SUGGESTION: Record<string, Handler> = {
+    ...DEFAULT_ROUTES,
+    'GET /api/v1/category-rules/suggestions': () => jsonResponse({ items: [UBER_SUGGESTION] }),
+  };
+
+  it('should_show_the_suggestions_above_the_rules_when_there_are_some', async () => {
+    // Arrange
+    stubApi(WITH_SUGGESTION);
+    // Act
+    await openRulesTab();
+    // Assert
+    const heading = await screen.findByRole('heading', { name: 'Sugestões' });
+    expect(within(sectionOf(heading)).getByText('3 correções suas')).toBeVisible();
+  });
+
+  it('should_not_show_the_suggestions_section_when_there_are_none', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    // Act
+    await openRulesTab();
+    await screen.findByText(/Alimentação · prioridade 2/);
+    // Assert
+    expect(screen.queryByRole('heading', { name: 'Sugestões' })).toBeNull();
+  });
+
+  it('should_create_the_equals_rule_when_a_suggestion_is_accepted', async () => {
+    // Arrange
+    const fetchMock = stubApi({
+      ...WITH_SUGGESTION,
+      'POST /api/v1/category-rules': () => jsonResponse(RULE, 201),
+    });
+    await openRulesTab();
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Criar regra UBER *TRIP' }));
+    // Assert
+    expect(sentBodies(fetchMock, 'POST /api/v1/category-rules')).toEqual([
+      { pattern: 'UBER *TRIP', matchType: 'equals', categoryId: FOOD_ID, priority: 0 },
+    ]);
+  });
+
+  it('should_send_the_pair_when_a_suggestion_is_dismissed', async () => {
+    // Arrange
+    const fetchMock = stubApi({
+      ...WITH_SUGGESTION,
+      'POST /api/v1/category-rules/suggestions/dismiss': () => new Response(null, { status: 204 }),
+    });
+    await openRulesTab();
+    // Act
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Dispensar sugestão UBER *TRIP' }),
+    );
+    // Assert
+    expect(sentBodies(fetchMock, 'POST /api/v1/category-rules/suggestions/dismiss')).toEqual([
+      { pattern: 'UBER *TRIP', categoryId: FOOD_ID },
+    ]);
+  });
+
   it('should_list_the_rule_with_comparison_pattern_category_and_priority', async () => {
     // Arrange
     stubApi(DEFAULT_ROUTES);
@@ -216,6 +292,35 @@ describe('aba Regras', () => {
     await openRulesTab();
     // Assert
     expect(await screen.findByText(/Alimentação · prioridade 2/)).toBeVisible();
+  });
+
+  it('should_keep_the_visible_rule_text_readable_and_name_only_the_action_button', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    // Act
+    await openRulesTab();
+    // Assert
+    const editButton = await screen.findByRole('button', { name: 'Editar regra IFOOD' });
+    const row = editButton.closest('li');
+    expect({
+      rowLabel: row?.getAttribute('aria-label') ?? null,
+      buttonHasRowText: editButton.textContent?.includes('IFOOD') ?? false,
+      rowText: row?.textContent,
+    }).toEqual({
+      rowLabel: null,
+      buttonHasRowText: false,
+      rowText: expect.stringContaining('Alimentação · prioridade 2'),
+    });
+  });
+
+  it('should_open_the_rule_form_when_the_edit_button_is_pressed', async () => {
+    // Arrange
+    stubApi(DEFAULT_ROUTES);
+    await openRulesTab();
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar regra IFOOD' }));
+    // Assert
+    expect(await screen.findByRole('dialog', { name: /regra/i })).toBeVisible();
   });
 
   it('should_show_the_empty_state_when_there_are_no_rules', async () => {

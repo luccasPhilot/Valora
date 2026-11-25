@@ -77,7 +77,7 @@ export function FormPanel({
             : 'w-full overflow-y-auto sm:max-w-md'
         }
       >
-        <SheetHeader className="pr-12">
+        <SheetHeader className="pr-14">
           <SheetTitle className="font-display text-xl">{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>

@@ -3,13 +3,17 @@ import { type FormEvent, useId, useState } from 'react';
 import { Link } from 'react-router';
 
 import { FormPanel } from '@/components/form-panel';
+import { HiddenAmountHint } from '@/components/hidden-amount-hint';
+import { useHideValues } from '@/components/hide-values-provider';
 import { MoneyInput } from '@/components/money-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { Budget } from '@/lib/api/budgets';
 import type { Category } from '@/lib/api/categories';
+import { describedBy } from '@/lib/described-by';
 import { formatMonth } from '@/lib/format';
-import { centsToDigits, digitsToCents } from '@/lib/money-digits';
+import { editAmountField, NEW_AMOUNT_FIELD, resolveAmountDigits } from '@/lib/hidden-amount';
+import { digitsToCents } from '@/lib/money-digits';
 import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { CategorySelect } from '../categories/category-select';
@@ -64,18 +68,25 @@ function LimitForm({ target, availableCategories, isSaving, onSave }: LimitFormP
   const fieldId = useId();
   const isCreating = target.kind === 'create';
   const isOffline = useIsOffline();
+  const { areValuesHidden } = useHideValues();
+  const [amountField] = useState(() =>
+    isCreating
+      ? NEW_AMOUNT_FIELD
+      : editAmountField({ cents: target.budget.limitCents, areValuesHidden }),
+  );
   const [categoryId, setCategoryId] = useState(isCreating ? '' : target.budget.categoryId);
-  const [digits, setDigits] = useState(isCreating ? '' : centsToDigits(target.budget.limitCents));
+  const [digits, setDigits] = useState(amountField.initialDigits);
   const [errors, setErrors] = useState<FieldErrors>({});
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const limitCents = digitsToCents(resolveAmountDigits(digits, amountField.keptDigits));
     const nextErrors: FieldErrors = {};
     if (categoryId === '') nextErrors.category = CATEGORY_REQUIRED_MESSAGE;
-    if (digitsToCents(digits) <= 0) nextErrors.limit = LIMIT_REQUIRED_MESSAGE;
+    if (limitCents <= 0) nextErrors.limit = LIMIT_REQUIRED_MESSAGE;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    onSave({ categoryId, limitCents: digitsToCents(digits) });
+    onSave({ categoryId, limitCents });
   }
 
   return (
@@ -110,8 +121,12 @@ function LimitForm({ target, availableCategories, isSaving, onSave }: LimitFormP
             setErrors((current) => ({ ...current, limit: undefined }));
           }}
           aria-invalid={Boolean(errors.limit)}
-          aria-describedby={errors.limit ? `${fieldId}-limit-error` : undefined}
+          aria-describedby={describedBy([
+            amountField.keptDigits !== null && `${fieldId}-limit-hint`,
+            Boolean(errors.limit) && `${fieldId}-limit-error`,
+          ])}
         />
+        {amountField.keptDigits !== null ? <HiddenAmountHint id={`${fieldId}-limit-hint`} /> : null}
         <FieldError id={`${fieldId}-limit-error`} message={errors.limit} />
       </div>
       <Button

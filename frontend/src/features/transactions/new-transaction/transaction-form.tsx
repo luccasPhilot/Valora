@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
+import { HiddenAmountHint } from '@/components/hidden-amount-hint';
 import { MoneyInput } from '@/components/money-input';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import type { Category } from '@/lib/api/categories';
 import type { AccountOption, TransactionInput } from '@/lib/api/transactions';
+import { describedBy } from '@/lib/described-by';
+import { resolveAmountDigits } from '@/lib/hidden-amount';
 import { OFFLINE_ACTION_HINT, useIsOffline } from '@/lib/pwa/connectivity';
 
 import { KIND_OPTION_LABELS } from '../../categories/category-labels';
@@ -40,6 +43,8 @@ const GENERIC_SUBMIT_ERROR = 'Não foi possível salvar. Tente de novo.';
 
 interface TransactionFormProps {
   initialValues: TransactionFormValues;
+  /** Dígitos do valor salvo quando o campo abriu vazio por causa dos valores ocultos; senão nulo. */
+  keptAmountDigits: string | null;
   /** Todas as categorias; o formulário mostra só as ativas do tipo escolhido. */
   categories: readonly Category[];
   accounts: readonly AccountOption[];
@@ -70,6 +75,7 @@ function sortAccounts(accounts: readonly AccountOption[]): AccountOption[] {
 
 export function TransactionForm({
   initialValues,
+  keptAmountDigits,
   categories,
   accounts,
   today,
@@ -84,6 +90,7 @@ export function TransactionForm({
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const idOf = (field: FormField) => `${formId}-${field}`;
   const errorIdOf = (field: FormField) => `${idOf(field)}-error`;
+  const hintId = `${idOf('amount')}-hint`;
 
   // Leva o foco ao primeiro campo com erro, para quem usa teclado ou leitor de tela.
   useEffect(() => {
@@ -105,7 +112,8 @@ export function TransactionForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitMessage(null);
-    const validation = validateTransactionForm(values, today);
+    const amountDigits = resolveAmountDigits(values.amountDigits, keptAmountDigits);
+    const validation = validateTransactionForm({ ...values, amountDigits }, today);
     if (!validation.isValid) return setErrors(validation.errors);
     const outcome = await onSubmit(validation.input);
     if (outcome.isSaved) return undefined;
@@ -134,8 +142,12 @@ export function TransactionForm({
             digits={values.amountDigits}
             onDigitsChange={(amountDigits) => change({ amountDigits }, 'amount')}
             aria-invalid={Boolean(errors.amount)}
-            aria-describedby={errors.amount ? errorIdOf('amount') : undefined}
+            aria-describedby={describedBy([
+              keptAmountDigits !== null && hintId,
+              Boolean(errors.amount) && errorIdOf('amount'),
+            ])}
           />
+          {keptAmountDigits !== null ? <HiddenAmountHint id={hintId} /> : null}
           <FieldError id={errorIdOf('amount')} message={errors.amount} />
         </div>
         <div className="space-y-2">

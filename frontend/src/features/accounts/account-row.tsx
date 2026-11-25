@@ -1,6 +1,7 @@
 import { EyeOff } from 'lucide-react';
 
 import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { Account } from '@/lib/api/accounts';
 
 import { ACCOUNT_TYPE_LABELS } from './account-groups';
@@ -13,11 +14,6 @@ interface AccountRowProps {
 function describeAccount(account: Account): string {
   const typeLabel = ACCOUNT_TYPE_LABELS[account.type];
   return account.lastDigits ? `${typeLabel} · final ${account.lastDigits}` : typeLabel;
-}
-
-// Saldo negativo (cheque especial) em `destructive`; despesa e saldo positivo na cor normal.
-function balanceColorClass(balanceCents: number): string {
-  return balanceCents < 0 ? 'text-destructive' : '';
 }
 
 function CreditCardAmounts({ account }: { account: Account }) {
@@ -36,14 +32,15 @@ function CreditCardAmounts({ account }: { account: Account }) {
   );
 }
 
+// Saldo negativo (cheque especial) em `destructive`; saldo positivo na cor normal.
 function BalanceAmount({ account }: { account: Account }) {
   const balanceCents = account.balanceCents ?? 0;
   return (
-    <span
-      className={`font-display text-base font-semibold tabular-nums ${balanceColorClass(balanceCents)}`}
-    >
-      <Money cents={balanceCents} />
-    </span>
+    <TonedMoney
+      cents={balanceCents}
+      kind="balance"
+      className="font-display text-base font-semibold tabular-nums"
+    />
   );
 }
 

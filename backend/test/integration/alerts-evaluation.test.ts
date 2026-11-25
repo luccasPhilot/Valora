@@ -254,3 +254,84 @@ describe('alertas de conexão', () => {
     ]);
   });
 });
+
+describe('alertas de consentimento a vencer', () => {
+  // 21/12/2026 às 07:00 em São Paulo; o consentimento vence em 28/12.
+  const EXPIRES_AT = new Date('2026-12-28T15:00:00Z');
+
+  async function activeConsentKeys(): Promise<string[]> {
+    const rows = await database.db.select().from(alerts);
+    return rows
+      .filter((row) => row.type === 'consent_expiring' && row.resolvedAt === null)
+      .map((row) => row.dedupeKey.split(':').at(-1) ?? '');
+  }
+
+  it('should_create_the_7_day_alert_when_the_30_day_alert_was_dismissed', async () => {
+    // Arrange
+    await insertConnection(database.db, { consentExpiresAt: EXPIRES_AT });
+    clock.now = new Date('2026-11-28T10:00:00Z');
+    await alertsModule.evaluator.evaluateConnections();
+    await database.db.update(alerts).set({ dismissedAt: new Date() });
+    clock.now = new Date('2026-12-21T10:00:00Z');
+    // Act
+    await alertsModule.evaluator.evaluateConnections();
+    // Assert
+    expect(await allAlerts()).toEqual(
+      expect.arrayContaining([
+        { type: 'consent_expiring', isResolved: true, isDismissed: true },
+        { type: 'consent_expiring', isResolved: false, isDismissed: false },
+      ]),
+    );
+  });
+
+  it('should_resolve_the_alert_when_the_consent_is_renewed', async () => {
+    // Arrange
+    const connectionId = await insertConnection(database.db, { consentExpiresAt: EXPIRES_AT });
+    clock.now = new Date('2026-11-28T10:00:00Z');
+    await alertsModule.evaluator.evaluateConnections();
+    await database.db
+      .update(connections)
+      .set({ consentExpiresAt: new Date('2027-12-28T15:00:00Z') })
+      .where(eq(connections.id, connectionId));
+    // Act
+    await alertsModule.evaluator.evaluateConnections();
+    // Assert
+    expect(await activeConsentKeys()).toEqual([]);
+  });
+
+  it('should_resolve_the_alert_and_keep_the_connection_error_when_the_consent_expires', async () => {
+    // Arrange
+    const connectionId = await insertConnection(database.db, { consentExpiresAt: EXPIRES_AT });
+    clock.now = new Date('2026-12-21T10:00:00Z');
+    await alertsModule.evaluator.evaluateConnections();
+    await database.db
+      .update(connections)
+      .set({ status: 'consent_expired', statusDetail: 'Consentimento venceu.' })
+      .where(eq(connections.id, connectionId));
+    clock.now = new Date('2026-12-29T10:00:00Z');
+    // Act
+    await alertsModule.evaluator.evaluateConnections();
+    // Assert
+    expect(await allAlerts()).toEqual(
+      expect.arrayContaining([
+        { type: 'consent_expiring', isResolved: true, isDismissed: false },
+        { type: 'connection_error', isResolved: false, isDismissed: false },
+      ]),
+    );
+  });
+
+  it('should_resolve_the_alert_when_the_bank_is_archived', async () => {
+    // Arrange
+    const connectionId = await insertConnection(database.db, { consentExpiresAt: EXPIRES_AT });
+    clock.now = new Date('2026-11-28T10:00:00Z');
+    await alertsModule.evaluator.evaluateConnections();
+    await database.db
+      .update(connections)
+      .set({ archivedAt: new Date() })
+      .where(eq(connections.id, connectionId));
+    // Act
+    await alertsModule.evaluator.evaluateConnections();
+    // Assert
+    expect(await activeConsentKeys()).toEqual([]);
+  });
+});

@@ -25,6 +25,19 @@ const syncRunResponseSchema = z.object({
 
 type SyncRunResponse = z.infer<typeof syncRunResponseSchema>;
 
+const DEFAULT_PAGE_SIZE = 30;
+const MAX_PAGE_SIZE = 100;
+
+const syncRunsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
+});
+
+const syncRunListResponseSchema = z.object({
+  items: z.array(syncRunResponseSchema),
+  pagination: z.object({ page: z.int(), limit: z.int(), total: z.int() }),
+});
+
 function toSyncRunResponse(run: SyncRunRecord): SyncRunResponse {
   return {
     id: run.id,
@@ -48,6 +61,21 @@ export function syncRoutes(service: SyncService): FastifyPluginAsyncZod {
           throw new SyncInProgressError('Já existe uma sincronização em andamento');
         }
         return reply.status(202).send(toSyncRunResponse(started.run));
+      },
+    );
+
+    app.get(
+      '/sync-runs',
+      {
+        schema: { querystring: syncRunsQuerySchema, response: { 200: syncRunListResponseSchema } },
+      },
+      async (request) => {
+        const { page, limit } = request.query;
+        const result = await service.listRuns({ page, limit });
+        return {
+          items: result.items.map(toSyncRunResponse),
+          pagination: { page, limit, total: result.total },
+        };
       },
     );
 

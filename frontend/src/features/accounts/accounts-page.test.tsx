@@ -117,7 +117,21 @@ describe('AccountsPage summary', () => {
     renderPage();
     // Assert
     const balance = await screen.findByText('−R$ 200,00');
-    expect(balance.closest('p')).toHaveClass('text-destructive');
+    expect(balance.parentElement).toHaveClass('text-destructive');
+  });
+});
+
+describe('AccountsPage data health link', () => {
+  it('should_link_to_the_data_health_screen_when_there_are_accounts', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/accounts': overview([CHECKING]) });
+    // Act
+    renderPage();
+    // Assert
+    expect(await screen.findByRole('link', { name: /Saúde dos dados/ })).toHaveAttribute(
+      'href',
+      '/ajustes/saude-dos-dados',
+    );
   });
 });
 

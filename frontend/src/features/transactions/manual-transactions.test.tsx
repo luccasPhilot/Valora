@@ -515,6 +515,46 @@ describe('editar e excluir', () => {
     });
   });
 
+  it('should_open_the_amount_empty_with_the_hidden_values_hint_when_values_are_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    stubListWithManual();
+    renderApp();
+    await userEvent.click(await screen.findByText('Feira'));
+    const detail = await screen.findByRole('dialog', { name: 'Detalhes da transação' });
+    // Act
+    await userEvent.click(within(detail).getByRole('button', { name: 'Editar' }));
+    // Assert
+    const form = await screen.findByRole('dialog', { name: 'Editar transação' });
+    const amount = within(form).getByLabelText('Valor');
+    expect(amount).toHaveValue('');
+    expect(amount).toHaveAccessibleDescription(
+      'Valores ocultos. Deixe em branco para manter o valor atual.',
+    );
+  });
+
+  it('should_keep_the_amount_when_saving_a_blank_field_with_values_hidden', async () => {
+    // Arrange
+    window.localStorage.setItem('valora.hide-values', 'true');
+    const fetchMock = stubListWithManual({
+      [`PATCH /api/v1/transactions/${FEIRA_ID}`]: () =>
+        Response.json({ ...FEIRA, description: 'Feira livre' }),
+    });
+    renderApp();
+    await userEvent.click(await screen.findByText('Feira'));
+    const detail = await screen.findByRole('dialog', { name: 'Detalhes da transação' });
+    await userEvent.click(within(detail).getByRole('button', { name: 'Editar' }));
+    const form = await screen.findByRole('dialog', { name: 'Editar transação' });
+    // Act
+    await userEvent.type(within(form).getByLabelText('Descrição'), ' livre');
+    await userEvent.click(within(form).getByRole('button', { name: 'Salvar' }));
+    // Assert
+    await screen.findByText('Transação atualizada');
+    expect(jsonBodies(fetchMock, 'PATCH')).toMatchObject([
+      { amountCents: 4500, description: 'Feira livre' },
+    ]);
+  });
+
   it('should_send_the_corrected_value_and_confirm_when_the_edit_is_saved', async () => {
     // Arrange
     const fetchMock = stubListWithManual({
@@ -760,7 +800,7 @@ describe('filtro de origem', () => {
     renderApp('/transacoes?source=manual');
     // Assert
     expect(
-      await screen.findByRole('button', { name: 'Remover filtro Lançamento manual' }),
+      await screen.findByRole('button', { name: 'Remover filtro Origem: Lançamento manual' }),
     ).toBeInTheDocument();
   });
 

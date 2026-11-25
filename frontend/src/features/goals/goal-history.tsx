@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react';
 
-import { Money } from '@/components/money';
 import { RowsSkeleton } from '@/components/states/skeletons';
+import { TonedMoney } from '@/components/toned-money';
 import { Button } from '@/components/ui/button';
 import type { GoalContribution } from '@/lib/api/goals';
 import { formatDate } from '@/lib/format';
@@ -31,11 +31,12 @@ function HistoryRow({ contribution, onRemove }: HistoryRowProps) {
         <span className="block text-sm text-muted-foreground">{date}</span>
       </span>
       <span className="flex shrink-0 items-center gap-1">
-        <span
-          className={`font-medium tabular-nums ${contribution.amountCents > 0 ? 'text-positive' : ''}`}
-        >
-          <Money cents={contribution.amountCents} isSigned />
-        </span>
+        <TonedMoney
+          cents={contribution.amountCents}
+          kind="flow"
+          isSigned
+          className="font-medium tabular-nums"
+        />
         <Button
           type="button"
           variant="ghost"

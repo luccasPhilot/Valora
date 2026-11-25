@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { DuplicateResolution, Transaction } from '@/lib/api/transactions';
 import { formatDate } from '@/lib/format';
 
-import { amountColorClass } from './transaction-item';
+import { useTransactionAmountClass } from './transaction-item';
 import { useTransaction } from './transactions-queries';
 
 interface DuplicateComparisonProps {
@@ -15,6 +15,7 @@ interface DuplicateComparisonProps {
 }
 
 function ComparisonCard({ label, transaction }: { label: string; transaction: Transaction }) {
+  const amountClass = useTransactionAmountClass(transaction);
   return (
     <div className="min-w-0 space-y-1 rounded-md border bg-card p-3">
       <p className="type-label">{label}</p>
@@ -25,9 +26,7 @@ function ComparisonCard({ label, transaction }: { label: string; transaction: Tr
       <p className="text-sm text-muted-foreground">
         {transaction.category?.name ?? 'Sem categoria'}
       </p>
-      <p
-        className={`font-display text-lg font-bold tabular-nums whitespace-nowrap ${amountColorClass(transaction)}`}
-      >
+      <p className={`font-display text-lg font-bold tabular-nums whitespace-nowrap ${amountClass}`}>
         <Money cents={transaction.amountCents} isSigned />
       </p>
     </div>

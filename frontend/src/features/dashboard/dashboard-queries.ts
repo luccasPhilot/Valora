@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getDashboard } from '@/lib/api/dashboard';
-
-import { DASHBOARD_QUERY_KEY } from './dashboard-query-key';
+import { queryKeys } from '@/lib/query-keys';
 
 export function useDashboard() {
-  return useQuery({ queryKey: DASHBOARD_QUERY_KEY, queryFn: getDashboard });
+  return useQuery({ queryKey: queryKeys.dashboard, queryFn: getDashboard });
 }

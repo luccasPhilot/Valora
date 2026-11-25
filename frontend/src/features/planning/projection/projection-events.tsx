@@ -1,7 +1,6 @@
-import { cn } from 'cn';
 import { Clock } from 'lucide-react';
 
-import { Money } from '@/components/money';
+import { TonedMoney } from '@/components/toned-money';
 import type { ProjectionEvent } from '@/lib/api/projection';
 import { formatIsoDayMonth } from '@/lib/format';
 
@@ -34,13 +33,8 @@ function EventRow({ event }: { event: ProjectionEvent }) {
           {event.isOverdue ? <OverdueBadge /> : null}
         </span>
       </td>
-      <td
-        className={cn(
-          'py-3 text-right font-display text-sm font-semibold whitespace-nowrap tabular-nums',
-          event.amountCents > 0 && 'text-positive',
-        )}
-      >
-        <Money cents={event.amountCents} isSigned />
+      <td className="py-3 text-right font-display text-sm font-semibold whitespace-nowrap tabular-nums">
+        <TonedMoney cents={event.amountCents} kind="flow" isSigned />
       </td>
     </tr>
   );

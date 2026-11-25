@@ -1,8 +1,7 @@
-import { ArrowLeftRight, SearchX } from 'lucide-react';
+import { ArrowLeftRight, ListChecks, SearchX } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { ConfirmDialog } from '@/components/confirm-dialog';
 import { NoticeRegion } from '@/components/notice-region';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
@@ -11,14 +10,18 @@ import { Button } from '@/components/ui/button';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useNotice } from '@/hooks/use-notice';
 import type { Category } from '@/lib/api/categories';
-import type { DuplicateResolution, Transaction } from '@/lib/api/transactions';
+import type { Transaction } from '@/lib/api/transactions';
 import { todayInSaoPaulo } from '@/lib/dates';
 
 import { useCategories } from '../categories/categories-queries';
+import { RuleSuggestionPrompt } from '../categories/rule-suggestion-prompt';
+import { useRuleSuggestionOffer } from '../categories/use-rule-suggestion-offer';
+import { BulkSelectionControls, useBulkActions } from './bulk-selection';
 import { DuplicatesBanner } from './duplicates-banner';
-import { useNewTransaction } from './new-transaction/new-transaction-provider';
-import { TransactionDetail } from './transaction-detail';
+import { ExportCsvButton } from './export-csv-button';
+import { TransactionDetailHost } from './transaction-detail-host';
 import {
+  describePeriod,
   hasFiltersBesidesPeriod,
   NO_FILTERS,
   parseFilters,
@@ -27,27 +30,22 @@ import {
   type TransactionFilters,
 } from './transaction-filters';
 import { type FiltersBarHandle, TransactionFiltersBar } from './transaction-filters-bar';
-import { TransactionList } from './transaction-list';
+import { type ListSelection, TransactionList } from './transaction-list';
 import { TransactionSummaryLine } from './transaction-summary';
 import {
   useAccountOptions,
-  useChangeCategory,
-  useDeleteTransaction,
   useDuplicateCount,
-  useResolveDuplicate,
   useTransactionList,
   useTransactionSummary,
 } from './transactions-queries';
+import { TransactionsViewsNav } from './transactions-views-nav';
+import { usePickCategory } from './use-pick-category';
+import { useTransactionSelection } from './use-transaction-selection';
 
 // Faixas do Design System: celular < 768, tablet < 1024, computador a partir de 1024.
 const PHONE_QUERY = '(max-width: 767px)';
 const TABLET_QUERY = '(max-width: 1023px)';
 const EMPTY_CATEGORIES: readonly Category[] = [];
-
-const DUPLICATE_RESOLUTION_MESSAGES: Readonly<Record<DuplicateResolution, string>> = {
-  merge: 'Transações juntadas. Ficou a do banco, com a sua categoria.',
-  keep_both: 'Mantivemos as duas transações.',
-};
 
 export function Component() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,14 +56,11 @@ export function Component() {
   const summary = useTransactionSummary(transactionQuery);
   const categoriesQuery = useCategories();
   const accountsQuery = useAccountOptions();
-  const changeCategory = useChangeCategory();
-  const deleteTransaction = useDeleteTransaction();
-  const resolveDuplicate = useResolveDuplicate();
   const duplicateCount = useDuplicateCount(today);
-  const { openNewTransaction } = useNewTransaction();
   const { notice, showNotice } = useNotice();
+  const suggestionOffer = useRuleSuggestionOffer(showNotice);
+  const pickCategory = usePickCategory({ showNotice, suggestionOffer });
   const [openTransactionId, setOpenTransactionId] = useState<string | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const filtersBarRef = useRef<FiltersBarHandle>(null);
   const isPhone = useMediaQuery(PHONE_QUERY);
   const isTablet = useMediaQuery(TABLET_QUERY);
@@ -76,59 +71,16 @@ export function Component() {
   );
   const openTransaction = transactions.find((transaction) => transaction.id === openTransactionId);
   const categories = categoriesQuery.data ?? EMPTY_CATEGORIES;
+  const orderedIds = useMemo(
+    () => transactions.map((transaction) => transaction.id),
+    [transactions],
+  );
+  const selection = useTransactionSelection(orderedIds);
+  const bulk = useBulkActions({ selection, showNotice, suggestionOffer });
 
   function updateFilters(next: TransactionFilters) {
+    selection.cancel();
     setSearchParams(serializeFilters(next), { replace: true });
-  }
-
-  function pickCategory(transaction: Transaction, category: Category, applyAlways: boolean) {
-    setOpenTransactionId(null);
-    changeCategory.mutate(
-      { transaction, category, applyAlways },
-      {
-        onSuccess: () =>
-          showNotice({
-            tone: 'success',
-            message: applyAlways
-              ? `Categoria trocada para ${category.name}. Regra criada para esta descrição.`
-              : `Categoria trocada para ${category.name}.`,
-          }),
-        onError: () =>
-          showNotice({
-            tone: 'error',
-            message: 'Não foi possível trocar a categoria. A anterior foi mantida.',
-          }),
-      },
-    );
-  }
-
-  function editTransaction(transaction: Transaction) {
-    setOpenTransactionId(null);
-    openNewTransaction({ transaction });
-  }
-
-  function confirmDelete(transaction: Transaction) {
-    deleteTransaction.mutate(transaction, {
-      onSuccess: () => {
-        setTransactionToDelete(null);
-        setOpenTransactionId(null);
-        showNotice({ tone: 'success', message: 'Transação excluída.' });
-      },
-    });
-  }
-
-  function resolve(transaction: Transaction, action: DuplicateResolution) {
-    resolveDuplicate.mutate(
-      { transaction, action },
-      {
-        onSuccess: () => {
-          setOpenTransactionId(null);
-          showNotice({ tone: 'success', message: DUPLICATE_RESOLUTION_MESSAGES[action] });
-        },
-        onError: () =>
-          showNotice({ tone: 'error', message: 'Não foi possível resolver. Tente de novo.' }),
-      },
-    );
   }
 
   function reviewDuplicates() {
@@ -140,6 +92,19 @@ export function Component() {
 
   return (
     <div className="space-y-4">
+      <TransactionsViewsNav
+        actions={
+          transactions.length > 0 && !selection.isSelecting ? (
+            <>
+              <ExportCsvButton query={transactionQuery} showNotice={showNotice} />
+              <Button variant="outline" onClick={selection.start}>
+                <ListChecks aria-hidden="true" />
+                Selecionar
+              </Button>
+            </>
+          ) : null
+        }
+      />
       {pendingDuplicates > 0 && !filters.possibleDuplicate ? (
         <DuplicatesBanner count={pendingDuplicates} onReview={reviewDuplicates} />
       ) : null}
@@ -149,44 +114,40 @@ export function Component() {
         categories={categories}
         accounts={accountsQuery.data ?? []}
         isPhone={isPhone}
+        resultCount={summary.data?.count ?? null}
         onChange={updateFilters}
       />
       {list.isPending || transactions.length > 0 ? (
-        <TransactionSummaryLine summary={summary} isTransferFilter={filters.type === 'transfer'} />
+        <TransactionSummaryLine
+          summary={summary}
+          periodLabel={describePeriod(filters, today)}
+          isTransferFilter={filters.type === 'transfer'}
+        />
       ) : null}
       <TransactionsContent
         list={list}
         transactions={transactions}
         filters={filters}
         layout={isTablet ? 'stacked' : 'columns'}
+        selection={
+          selection.isSelecting
+            ? { isSelected: selection.isSelected, onToggle: selection.toggle }
+            : undefined
+        }
         onOpen={(transaction) => setOpenTransactionId(transaction.id)}
         onClearFilters={() => updateFilters(NO_FILTERS)}
         onChangePeriod={() => filtersBarRef.current?.focusPeriod()}
       />
-      <TransactionDetail
+      <BulkSelectionControls selection={selection} bulk={bulk} categories={categories} />
+      <TransactionDetailHost
         transaction={openTransaction}
         categories={categories}
-        isResolvingDuplicate={resolveDuplicate.isPending}
+        showNotice={showNotice}
         onClose={() => setOpenTransactionId(null)}
         onPickCategory={pickCategory}
-        onEdit={editTransaction}
-        onDelete={(transaction) => {
-          deleteTransaction.reset();
-          setTransactionToDelete(transaction);
-        }}
-        onResolveDuplicate={resolve}
-      />
-      <ConfirmDialog
-        open={transactionToDelete !== null}
-        onOpenChange={(isOpen) => (isOpen ? undefined : setTransactionToDelete(null))}
-        title="Excluir esta transação?"
-        description="Ela some da lista e dos totais. Não dá para desfazer."
-        confirmLabel="Excluir"
-        isPending={deleteTransaction.isPending}
-        errorMessage={deleteTransaction.isError ? 'Não foi possível excluir. Tente de novo.' : null}
-        onConfirm={() => transactionToDelete && confirmDelete(transactionToDelete)}
       />
       <NoticeRegion notice={notice} />
+      <RuleSuggestionPrompt offer={suggestionOffer} />
     </div>
   );
 }
@@ -196,6 +157,7 @@ interface TransactionsContentProps {
   transactions: readonly Transaction[];
   filters: TransactionFilters;
   layout: 'stacked' | 'columns';
+  selection: ListSelection | undefined;
   onOpen: (transaction: Transaction) => void;
   onClearFilters: () => void;
   onChangePeriod: () => void;
@@ -206,6 +168,7 @@ function TransactionsContent({
   transactions,
   filters,
   layout,
+  selection,
   onOpen,
   onClearFilters,
   onChangePeriod,
@@ -235,6 +198,8 @@ function TransactionsContent({
       layout={layout}
       hasNextPage={list.hasNextPage}
       isLoadingMore={list.isFetchingNextPage}
+      isTransferFilter={filters.type === 'transfer'}
+      selection={selection}
       onLoadMore={() => void list.fetchNextPage()}
       onOpen={onOpen}
     />

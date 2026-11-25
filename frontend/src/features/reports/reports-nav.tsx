@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router';
 
+import { PAGE_TAB_CLASSES } from '@/components/page-tab-classes';
+
 import { type ReportDefinition, REPORTS_BASE_PATH } from './report-definitions';
 
 const MIN_REPORTS_FOR_NAV = 2;
@@ -17,12 +19,6 @@ const SCROLL_CLASSES = [
   '-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
   'max-sm:pr-12 max-sm:[mask-image:linear-gradient(to_right,transparent,black_1rem,black_calc(100%-2rem),transparent)]',
   'sm:mx-0 sm:px-0',
-].join(' ');
-
-const TAB_CLASSES = [
-  'inline-flex h-11 items-center border-b-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap text-muted-foreground outline-none',
-  'hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-  'aria-[current=page]:border-primary aria-[current=page]:text-foreground',
 ].join(' ');
 
 /**
@@ -46,7 +42,7 @@ export function ReportsNav({ reports, filtersSearch }: ReportsNavProps) {
           <li key={report.key} className="-mb-px">
             <NavLink
               to={{ pathname: `${REPORTS_BASE_PATH}/${report.path}`, search: filtersSearch }}
-              className={TAB_CLASSES}
+              className={PAGE_TAB_CLASSES}
             >
               {report.label}
             </NavLink>

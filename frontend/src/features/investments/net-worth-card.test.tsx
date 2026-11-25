@@ -124,7 +124,7 @@ describe('NetWorthCard — valores', () => {
     // Act
     renderCard();
     // Assert
-    const total = (await findCard()).querySelector('p.type-display');
+    const total = (await findCard()).querySelector('p.type-display > span');
     expect(total).toHaveClass('text-destructive');
   });
 
@@ -134,7 +134,7 @@ describe('NetWorthCard — valores', () => {
     // Act
     renderCard();
     // Assert
-    const total = (await findCard()).querySelector('p.type-display');
+    const total = (await findCard()).querySelector('p.type-display > span');
     expect(total).not.toHaveClass('text-destructive');
   });
 
