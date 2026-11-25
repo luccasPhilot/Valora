@@ -33,4 +33,4 @@
 ## 7. Documentação
 
 - [x] 7.1 `docs/01-produto.md` (saúde dos dados), `docs/02-open-finance.md` (vencimento do consentimento), `docs/03-arquitetura.md` (rotas e Decisões: janela da conciliação), `docs/04-modelo-de-dados.md` (`consent_expires_at`, tipo de alerta)
-- [ ] 7.2 Ao arquivar: marcar "Saúde dos dados" como feita em `docs/08-revisao-e-proximas-fases.md`
+- [x] 7.2 Ao arquivar: marcar "Saúde dos dados" como feita em `docs/08-revisao-e-proximas-fases.md`
