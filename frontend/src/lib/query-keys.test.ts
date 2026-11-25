@@ -45,7 +45,62 @@ describe('invalidationsAfter', () => {
     // Act
     const names = invalidatedNames(change);
     // Assert
-    expect(names).toEqual(['alerts', 'budgets', 'dashboard', 'reports', 'transaction-summary']);
+    expect(names).toEqual([
+      'alerts',
+      'budgets',
+      'category-rules',
+      'dashboard',
+      'reports',
+      'review-count',
+      'transaction-summary',
+      'transactions',
+    ]);
+  });
+
+  it('should_refresh_the_inbox_the_counter_and_suggestions_but_not_the_list_when_one_category_changes', () => {
+    // Arrange
+    const queries = [
+      queryKeys.reviewInbox,
+      queryKeys.reviewCount,
+      queryKeys.ruleSuggestions,
+      [...queryKeys.transactions, { from: '2026-11-01', to: '2026-11-30' }],
+    ];
+    // Act
+    const stale = queries.map((queryKey) => isInvalidated('transaction-category', queryKey));
+    // Assert
+    expect(stale).toEqual([true, true, true, false]);
+  });
+
+  it('should_refresh_every_list_when_categories_change_in_bulk', () => {
+    // Arrange
+    const list = [...queryKeys.transactions, { from: '2026-11-01', to: '2026-11-30' }];
+    // Act
+    const isStale = isInvalidated('transaction-categories', list);
+    // Assert
+    expect(isStale).toBe(true);
+  });
+
+  it('should_refresh_only_the_inbox_the_counter_and_home_when_transactions_are_reviewed', () => {
+    // Arrange
+    const queries = [
+      queryKeys.reviewInbox,
+      queryKeys.reviewCount,
+      queryKeys.dashboard,
+      [...queryKeys.transactions, { from: '2026-11-01', to: '2026-11-30' }],
+      queryKeys.budgets,
+    ];
+    // Act
+    const stale = queries.map((queryKey) => isInvalidated('transaction-review', queryKey));
+    // Assert
+    expect(stale).toEqual([true, true, true, false, false]);
+  });
+
+  it('should_refresh_suggestions_when_a_rule_is_saved', () => {
+    // Arrange
+    // Act
+    const isStale = isInvalidated('categorization', queryKeys.ruleSuggestions);
+    // Assert
+    expect(isStale).toBe(true);
   });
 
   it('should_refresh_everything_a_transaction_change_does_plus_rules_and_mappings_when_categorization_changes', () => {

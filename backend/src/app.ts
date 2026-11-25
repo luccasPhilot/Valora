@@ -18,6 +18,7 @@ import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { categoryRulesRoutes } from './modules/categories/category-rules.routes.js';
 import type { CategorySeedService } from './modules/categories/category-seed.service.js';
 import { pluggyCategoryMappingsRoutes } from './modules/categories/pluggy-category-mappings.routes.js';
+import { ruleSuggestionsRoutes } from './modules/categories/rule-suggestions.routes.js';
 import { categoryInsightsRoutes } from './modules/category-insights/category-insights.routes.js';
 import { CategoryInsightsService } from './modules/category-insights/category-insights.service.js';
 import { ConnectionsRepository } from './modules/connections/connections.repository.js';
@@ -130,6 +131,7 @@ function registerModules(
   const categories = createCategoriesModule(database);
   app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
   app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });
+  app.register(ruleSuggestionsRoutes(categories.ruleSuggestionsService), { prefix: API_PREFIX });
   app.register(pluggyCategoryMappingsRoutes(categories.pluggyCategoryMappingsService), {
     prefix: API_PREFIX,
   });
@@ -174,6 +176,7 @@ function registerModules(
   const transactions = createTransactionsModule({
     database,
     categoryRulesService: categories.categoryRulesService,
+    ruleSuggestionsService: categories.ruleSuggestionsService,
     budgetAlerts: alerts.budgetAlertRefresher,
     now,
   });
@@ -185,6 +188,7 @@ function registerModules(
     accounts: accountsService,
     budgets: budgetsService,
     transactions: transactions.transactionsService,
+    reviews: transactions.reviewService,
     projection: projectionService,
     goals: goalsService,
     netWorth: netWorthService,

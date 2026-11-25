@@ -9,6 +9,8 @@ import {
   assertCategoryMatchesType,
 } from '../categories/category-availability.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
+import type { RuleSuggestion } from '../categories/rule-suggestions.js';
+import type { RuleSuggestionsService } from '../categories/rule-suggestions.service.js';
 import {
   buildManualChanges,
   type ManualTransactionFields,
@@ -27,12 +29,19 @@ function readOnlyError(transaction: TransactionRecord, action: string): OpenFina
   );
 }
 
+export interface TransactionUpdate {
+  readonly transaction: TransactionRecord;
+  /** Depois de uma troca de categoria: a regra sugerida para a descrição, ou nula. */
+  readonly ruleSuggestion: RuleSuggestion | null;
+}
+
 export interface TransactionWritesDependencies {
   readonly reads: Pick<TransactionsService, 'get' | 'changeCategory'>;
   readonly writes: TransactionsWriteRepository;
   readonly categories: CategoriesRepository;
   readonly accounts: Pick<AccountsRepository, 'exists'>;
   readonly rules: Pick<CategoryRulesService, 'learnFromCorrection'>;
+  readonly suggestions: Pick<RuleSuggestionsService, 'suggestionFor'>;
   readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
   readonly now: () => Date;
 }
@@ -58,7 +67,25 @@ export class TransactionWritesService {
     return this.deps.reads.get(transactionId);
   }
 
-  async update(transactionId: string, patch: TransactionPatch): Promise<TransactionRecord> {
+  async update(transactionId: string, patch: TransactionPatch): Promise<TransactionUpdate> {
+    const transaction = await this.applyUpdate(transactionId, patch);
+    const ruleSuggestion = patch.categoryId
+      ? await this.deps.suggestions.suggestionFor([transactionId], patch.categoryId)
+      : null;
+    return { transaction, ruleSuggestion };
+  }
+
+  async remove(transactionId: string): Promise<void> {
+    const current = await this.deps.reads.get(transactionId);
+    if (current.source === 'open_finance') throw readOnlyError(current, 'excluída');
+    await this.deps.writes.deleteManual(transactionId);
+    await this.deps.budgetAlerts.refresh();
+  }
+
+  private async applyUpdate(
+    transactionId: string,
+    patch: TransactionPatch,
+  ): Promise<TransactionRecord> {
     const current = await this.deps.reads.get(transactionId);
     if (current.source === 'open_finance') return this.updateOpenFinance(current, patch);
     await this.assertPatchIsAllowed(current, patch);
@@ -71,13 +98,6 @@ export class TransactionWritesService {
     }
     await this.deps.budgetAlerts.refresh();
     return this.deps.reads.get(transactionId);
-  }
-
-  async remove(transactionId: string): Promise<void> {
-    const current = await this.deps.reads.get(transactionId);
-    if (current.source === 'open_finance') throw readOnlyError(current, 'excluída');
-    await this.deps.writes.deleteManual(transactionId);
-    await this.deps.budgetAlerts.refresh();
   }
 
   private updateOpenFinance(

@@ -462,7 +462,7 @@ describe('detalhe e troca de categoria', () => {
           category: { id: TRANSPORT.id, name: 'Transporte', icon: 'car', kind: 'expense' },
           categorySource: 'user',
         };
-        return Response.json(pharmacy);
+        return Response.json({ ...pharmacy, ruleSuggestion: null });
       },
     });
     renderPage();
@@ -525,5 +525,84 @@ describe('detalhe e troca de categoria', () => {
         .map((button) => button.textContent),
     ).toContain('Transporte');
     expect(within(detail).queryByText('Táxi antigo')).not.toBeInTheDocument();
+  });
+});
+
+describe('modo Selecionar na lista', () => {
+  function bulkBodies(fetchMock: ReturnType<typeof stubApi>) {
+    return fetchMock.mock.calls
+      .filter(([input, init]) => {
+        const url = new URL(String(input), 'http://localhost');
+        return init?.method === 'PATCH' && url.pathname === '/api/v1/transactions/category';
+      })
+      .map(([, init]) => JSON.parse(String(init?.body)));
+  }
+
+  async function startSelecting() {
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Selecionar' }));
+  }
+
+  it('should_change_the_category_of_the_selected_transactions_at_once', async () => {
+    // Arrange
+    const fetchMock = stubApi({
+      'PATCH /api/v1/transactions/category': () =>
+        Response.json({ updatedCount: 2, ruleSuggestion: null }),
+    });
+    await startSelecting();
+    await userEvent.click(screen.getByRole('checkbox', { name: /FARMÁCIA SÃO JOÃO/ }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /TV 3\/10/ }));
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Trocar categoria' }));
+    const panel = await screen.findByRole('dialog', { name: 'Trocar categoria de 2 transações' });
+    await userEvent.click(within(panel).getByRole('button', { name: /Transporte/ }));
+    // Assert
+    expect(bulkBodies(fetchMock)).toEqual([
+      { transactionIds: [PHARMACY.id, YESTERDAY_PURCHASE.id], categoryId: TRANSPORT.id },
+    ]);
+  });
+
+  it('should_leave_the_selection_mode_and_confirm_when_the_bulk_change_succeeds', async () => {
+    // Arrange
+    stubApi({
+      'PATCH /api/v1/transactions/category': () =>
+        Response.json({ updatedCount: 1, ruleSuggestion: null }),
+    });
+    await startSelecting();
+    await userEvent.click(screen.getByRole('checkbox', { name: /FARMÁCIA SÃO JOÃO/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Trocar categoria' }));
+    const panel = await screen.findByRole('dialog', { name: 'Trocar categoria de 1 transação' });
+    // Act
+    await userEvent.click(within(panel).getByRole('button', { name: /Transporte/ }));
+    // Assert
+    await screen.findByText('1 transação trocada para Transporte.');
+    expect(screen.queryByRole('region', { name: 'Ações da seleção' })).toBeNull();
+  });
+
+  it('should_select_the_range_when_shift_clicking_a_later_row', async () => {
+    // Arrange
+    stubApi();
+    await startSelecting();
+    await userEvent.click(screen.getByRole('checkbox', { name: /FARMÁCIA SÃO JOÃO/ }));
+    // Act
+    const user = userEvent.setup();
+    await user.keyboard('{Shift>}');
+    await user.click(screen.getByRole('checkbox', { name: /PAGAMENTO FATURA/ }));
+    await user.keyboard('{/Shift}');
+    // Assert
+    const bar = screen.getByRole('region', { name: 'Ações da seleção' });
+    expect(within(bar).getByText('3 selecionadas')).toBeVisible();
+  });
+
+  it('should_hide_the_apply_always_option_when_changing_in_bulk', async () => {
+    // Arrange
+    stubApi();
+    await startSelecting();
+    await userEvent.click(screen.getByRole('checkbox', { name: /FARMÁCIA SÃO JOÃO/ }));
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Trocar categoria' }));
+    // Assert
+    const panel = await screen.findByRole('dialog', { name: 'Trocar categoria de 1 transação' });
+    expect(within(panel).queryByRole('checkbox', { name: /Aplicar sempre/ })).toBeNull();
   });
 });

@@ -1,7 +1,9 @@
-import { eq, gte, ilike, isNotNull, isNull, lte, type SQL } from 'drizzle-orm';
+import { eq, gte, ilike, inArray, isNotNull, isNull, lte, type SQL } from 'drizzle-orm';
+import { QueryBuilder } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 
-import { transactions } from '../../db/schema.js';
+import { accounts, connections, transactions } from '../../db/schema.js';
+import { accountIsOfActiveConnection } from '../connections/active-connection.js';
 import { type TransactionType, transactionTypeCondition } from './transaction-type-filter.js';
 
 export const transactionSourceSchema = z.enum(['open_finance', 'manual']);
@@ -22,6 +24,21 @@ export interface TransactionFilters {
   readonly possibleDuplicate?: boolean;
   /** Já normalizado (sem acento, maiúsculo), como `description_normalized`. */
   readonly normalizedSearch?: string;
+  /** `false` é a caixa "Para revisar"; `true`, só as já revisadas. */
+  readonly reviewed?: boolean;
+}
+
+/**
+ * A caixa "Para revisar": não revisadas, de bancos ativos ou manuais. Um banco arquivado sai da
+ * caixa e do contador, mas as transações dele continuam na lista.
+ */
+export function unreviewedInboxConditions(): SQL[] {
+  const activeAccountIds = new QueryBuilder()
+    .select({ id: accounts.id })
+    .from(accounts)
+    .leftJoin(connections, eq(connections.id, accounts.connectionId))
+    .where(accountIsOfActiveConnection);
+  return [isNull(transactions.reviewedAt), inArray(transactions.accountId, activeAccountIds)];
 }
 
 /** `%` e `_` do termo digitado valem como texto, não como curinga do LIKE. */
@@ -46,6 +63,8 @@ export function buildConditions(filters: TransactionFilters): SQL[] {
   if (filters.type) conditions.push(transactionTypeCondition(filters.type));
   if (filters.source) conditions.push(eq(transactions.source, filters.source));
   if (filters.possibleDuplicate) conditions.push(isNotNull(transactions.possibleDuplicateOfId));
+  if (filters.reviewed === false) conditions.push(...unreviewedInboxConditions());
+  if (filters.reviewed === true) conditions.push(isNotNull(transactions.reviewedAt));
   if (filters.normalizedSearch) {
     const pattern = `%${escapeLikePattern(filters.normalizedSearch)}%`;
     conditions.push(ilike(transactions.descriptionNormalized, pattern));

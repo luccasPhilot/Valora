@@ -10,6 +10,8 @@ export const queryKeys = {
   budgets: ['budgets'],
   categories: ['categories'],
   categoryRules: ['category-rules'],
+  // Dentro de `categoryRules`: criar ou mudar uma regra muda as sugestões junto.
+  ruleSuggestions: ['category-rules', 'suggestions'],
   pluggyMappings: ['pluggy-category-mappings'],
   connections: ['connections'],
   archivedConnections: ['connections', 'archived'],
@@ -27,6 +29,9 @@ export const queryKeys = {
   // As três abaixo ficam fora de `transactions` de propósito: as atualizações otimistas da lista
   // trocam os dados de toda consulta que começa por `transactions`, e estas não têm o formato da lista.
   transactions: ['transactions'],
+  // A caixa "Para revisar" tem o formato da lista, então fica dentro de `transactions`.
+  reviewInbox: ['transactions', 'review-inbox'],
+  reviewCount: ['review-count'],
   transactionSummary: ['transaction-summary'],
   transactionDetail: ['transaction-detail'],
   duplicateCount: ['possible-duplicate-count'],
@@ -36,6 +41,9 @@ export const queryKeys = {
 export type DataChange =
   | 'transactions'
   | 'transaction-category'
+  | 'transaction-categories'
+  | 'transaction-review'
+  | 'rule-suggestions'
   | 'categorization'
   | 'categories'
   | 'budgets'
@@ -61,16 +69,27 @@ const AFTER_TRANSACTIONS: readonly QueryKey[] = [
   queryKeys.creditCardBills,
 ];
 
+// A lista já mostra a categoria nova (atualização otimista); o resto soma por categoria. Trocar a
+// categoria também marca como revisada e pode criar uma sugestão de regra.
+const AFTER_CATEGORY_CHANGE: readonly QueryKey[] = [
+  queryKeys.budgets,
+  queryKeys.dashboard,
+  queryKeys.reports,
+  queryKeys.alerts,
+  queryKeys.transactionSummary,
+  queryKeys.reviewInbox,
+  queryKeys.reviewCount,
+  queryKeys.ruleSuggestions,
+];
+
 const INVALIDATIONS: Readonly<Record<DataChange, readonly QueryKey[]>> = {
   transactions: AFTER_TRANSACTIONS,
-  // A lista já mostra a categoria nova (atualização otimista); o resto soma por categoria.
-  'transaction-category': [
-    queryKeys.budgets,
-    queryKeys.dashboard,
-    queryKeys.reports,
-    queryKeys.alerts,
-    queryKeys.transactionSummary,
-  ],
+  'transaction-category': AFTER_CATEGORY_CHANGE,
+  // A troca em massa não é otimista: a lista inteira busca de novo.
+  'transaction-categories': [...AFTER_CATEGORY_CHANGE, queryKeys.transactions],
+  // Revisar só tira da caixa e do contador (o Início mostra o contador).
+  'transaction-review': [queryKeys.reviewInbox, queryKeys.reviewCount, queryKeys.dashboard],
+  'rule-suggestions': [queryKeys.ruleSuggestions],
   // Regra ou mapeamento salvo roda a recategorização no servidor: muda tudo o que uma transação muda.
   categorization: [...AFTER_TRANSACTIONS, queryKeys.categoryRules, queryKeys.pluggyMappings],
   categories: [

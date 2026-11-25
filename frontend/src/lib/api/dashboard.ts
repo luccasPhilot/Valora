@@ -85,6 +85,8 @@ const dashboardSchema = z.object({
   projection: projectionSummarySchema.nullable(),
   /** Até 3 metas não concluídas, na ordem da tela de Metas, e o total das não concluídas. */
   goals: z.object({ items: z.array(goalSummarySchema), activeCount: z.int() }),
+  /** Quantas transações esperam na caixa "Para revisar", de qualquer mês. */
+  reviewCount: z.int(),
 });
 
 export type Dashboard = z.infer<typeof dashboardSchema>;

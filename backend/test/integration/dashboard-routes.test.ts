@@ -473,3 +473,33 @@ describe('GET /api/v1/dashboard — entrada', () => {
     expect(response.statusCode).toBe(400);
   });
 });
+
+describe('GET /api/v1/dashboard — para revisar', () => {
+  it('should_return_the_same_count_as_the_review_inbox_from_any_month', async () => {
+    // Arrange
+    const accountId = await insertAccountWith(database.db);
+    await insertTransaction(accountId, -1000, { date: '2026-11-14' });
+    await insertTransaction(accountId, -2000, { date: '2026-08-01' });
+    await insertTransaction(accountId, -3000, { date: '2026-11-14', reviewedAt: NOW });
+    // Act
+    const [dashboard, reviewCount] = await Promise.all([
+      getDashboard(),
+      getJson('/api/v1/transactions/review-count'),
+    ]);
+    // Assert
+    expect({ dashboard: dashboard.reviewCount, inbox: reviewCount.count }).toEqual({
+      dashboard: 2,
+      inbox: 2,
+    });
+  });
+
+  it('should_return_zero_when_everything_was_reviewed', async () => {
+    // Arrange
+    const accountId = await insertAccountWith(database.db);
+    await insertTransaction(accountId, -1000, { reviewedAt: NOW });
+    // Act
+    const dashboard = await getDashboard();
+    // Assert
+    expect(dashboard.reviewCount).toBe(0);
+  });
+});

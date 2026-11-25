@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { apiDelete, apiGet, apiPost, apiPut } from '../api-client';
+import { apiDelete, apiGet, apiPost, apiPostNoContent, apiPut } from '../api-client';
 
 // Contrato de /categories, /category-rules e /pluggy-category-mappings. O backend é o dono; estes
 // schemas são a cópia do front (docs/03-arquitetura.md, "Contrato da API").
@@ -37,7 +37,18 @@ const pluggyMappingSchema = z.object({
 });
 const pluggyMappingListSchema = z.object({ items: z.array(pluggyMappingSchema) });
 
+/** Regra `equals` que as suas correções já pedem: 2 ou mais transações iguais na mesma categoria. */
+export const ruleSuggestionSchema = z.object({
+  pattern: z.string(),
+  categoryId: z.uuid(),
+  categoryName: z.string(),
+  categoryIcon: z.string(),
+  correctionCount: z.int(),
+});
+const ruleSuggestionListSchema = z.object({ items: z.array(ruleSuggestionSchema) });
+
 export type Category = z.infer<typeof categorySchema>;
+export type RuleSuggestion = z.infer<typeof ruleSuggestionSchema>;
 export type CategoryRule = z.infer<typeof ruleSchema>;
 export type PluggyMapping = z.infer<typeof pluggyMappingSchema>;
 
@@ -89,6 +100,28 @@ export function updateCategoryRule(
 
 export function deleteCategoryRule(ruleId: string): Promise<void> {
   return apiDelete(`/category-rules/${ruleId}`);
+}
+
+export async function listRuleSuggestions(): Promise<RuleSuggestion[]> {
+  return (await apiGet('/category-rules/suggestions', ruleSuggestionListSchema)).items;
+}
+
+/** O par descrição e categoria não volta a ser sugerido. */
+export function dismissRuleSuggestion(suggestion: RuleSuggestion): Promise<void> {
+  return apiPostNoContent('/category-rules/suggestions/dismiss', {
+    pattern: suggestion.pattern,
+    categoryId: suggestion.categoryId,
+  });
+}
+
+/** Aceitar a sugestão é criar a regra `equals` pelo caminho de sempre (que aplica ao histórico). */
+export function ruleFromSuggestion(suggestion: RuleSuggestion): CategoryRuleInput {
+  return {
+    pattern: suggestion.pattern,
+    matchType: 'equals',
+    categoryId: suggestion.categoryId,
+    priority: 0,
+  };
 }
 
 export async function listPluggyMappings(): Promise<PluggyMapping[]> {

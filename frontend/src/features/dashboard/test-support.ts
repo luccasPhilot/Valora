@@ -71,6 +71,7 @@ export function dashboard(overrides: Record<string, unknown> = {}) {
       hasPlannedItems: true,
     },
     goals: { items: [TRIP_GOAL], activeCount: 1 },
+    reviewCount: 0,
     ...overrides,
   };
 }

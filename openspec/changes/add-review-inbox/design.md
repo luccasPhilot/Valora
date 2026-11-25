@@ -28,7 +28,7 @@
   - lançamento manual (`POST /transactions`): `now()`;
   - troca de categoria (uma ou em massa): `now()`;
   - "Ok", "Marcar como revisadas" e "Marcar tudo": `now()`;
-  - troca pendente → postada: a postada recebe o `reviewed_at` da pendente quando a pendente tinha um, na mesma operação que leva a categoria.
+  - troca pendente → postada: a postada recebe o `reviewed_at` da pendente quando a pendente tinha um, na mesma operação que leva a categoria. A revisão conta como decisão do usuário, como a categoria `user` e o vínculo com previsão: uma pendente só com "Ok" também entra na troca (e, sem postada equivalente, espera os mesmos 5 dias antes de ser apagada). Decidido com o usuário na implementação.
 - **Alternativa descartada:** um marcador global "revisei até tal hora". Não permite revisar uma por vez nem deixar uma para depois.
 
 ### 2. A caixa
@@ -42,7 +42,7 @@
 ### 3. Categoria em massa
 
 - `PATCH /transactions/category` com `{ transactionIds (1 a 100), categoryId }`. Numa transação do banco de dados: valida a categoria (ativa), grava `category_id`, `category_source = 'user'` e `reviewed_at = now()` em todas as que existem, e reavalia os alertas de orçamento (como a troca de uma). Resposta `{ updatedCount }`.
-- Vale para Open Finance e manual: nas duas, a categoria é editável (regra 9).
+- Vale para Open Finance e manual: nas duas, a categoria é editável (regra 9). Nas manuais vale a mesma checagem da edição de uma só: a categoria precisa ser do tipo do valor (despesa ou receita); se alguma não casar, a troca inteira é recusada com 400.
 - Sem "Aplicar sempre" na troca em massa: a regra sugerida cobre o caso, e uma escolha de várias descrições diferentes não vira uma regra.
 - Front: botão "Selecionar" no topo da lista e da caixa; cada linha ganha uma caixa de seleção de 44 px; uma barra fixa embaixo com "N selecionadas", "Trocar categoria", "Marcar como revisadas" e "Cancelar". No computador, também com Shift+clique para intervalo.
 

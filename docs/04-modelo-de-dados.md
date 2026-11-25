@@ -99,9 +99,10 @@ O que sai quando `archived_at` está preenchido: as contas (e o saldo, as fatura
 | `installment_total` | integer | total de parcelas; pode ser nulo |
 | `possible_duplicate_of_id` | uuid | → `transactions` (a manual parecida); preenchido só em transação do Open Finance; nulo depois que você resolve |
 | `raw` | jsonb | nulo em transação manual |
+| `reviewed_at` | timestamptz | quando foi revisada; nulo = na caixa "Para revisar". A sincronização insere nulo e nunca muda numa transação existente; lançar à mão, trocar a categoria e marcar como revisada gravam. A postada que substitui uma pendente herda o valor da pendente |
 | `created_at`, `updated_at` | timestamptz | |
 
-Índices: (`account_id`, `date`), (`category_id`, `date`), (`date`), (`source`).
+Índices: (`account_id`, `date`), (`category_id`, `date`), (`date`), (`source`) e o parcial (`date`) onde `reviewed_at` é nulo (`transactions_unreviewed_idx`). Na migration que criou `reviewed_at`, todas as transações que já existiam ficaram revisadas.
 
 `possible_duplicate_of_id` usa `ON DELETE SET NULL`: se a transação manual apontada for excluída, a marcação some sozinha. A detecção marca só transações do Open Finance **recém-inseridas** e cada manual só pode ser apontada por uma transação.
 
@@ -141,6 +142,16 @@ O mapeamento inicial de `pluggy_category_mappings` fica em `backend/src/modules/
 | `priority` | integer | a de maior prioridade vence |
 | `learned_from_transaction_id` | uuid | preenchido quando a regra nasceu de uma correção sua |
 | `created_at` | timestamptz | |
+
+**`dismissed_rule_suggestions`**: regras sugeridas que você dispensou ("Agora não" ou "Dispensar").
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `pattern` | text | descrição normalizada, como `description_normalized` |
+| `category_id` | uuid | → `categories`; `ON DELETE CASCADE` |
+| `dismissed_at` | timestamptz | |
+
+Chave primária (`pattern`, `category_id`): dispensar de novo não muda nada. A sugestão em si não é guardada: é calculada a cada consulta.
 
 **`pluggy_category_mappings`**: traduz as categorias do Pluggy para as suas.
 

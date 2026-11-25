@@ -12,11 +12,21 @@ import { IncomeExpenseChart } from './income-expense-chart';
 import { LatestTransactions } from './latest-transactions';
 import { MonthSummary } from './month-summary';
 import { ProjectionCard } from './projection-card';
+import { ReviewNotice } from './review-notice';
 import { Shortcuts } from './shortcuts';
 import { SpendingByCategory } from './spending-by-category';
 
 /** Os blocos na ordem do celular (Design System, "Dashboard"); sem saudação. */
 function DashboardContent({ dashboard }: { dashboard: Dashboard }) {
+  return (
+    <div className="space-y-4">
+      <ReviewNotice count={dashboard.reviewCount} />
+      <DashboardCards dashboard={dashboard} />
+    </div>
+  );
+}
+
+function DashboardCards({ dashboard }: { dashboard: Dashboard }) {
   return (
     <div className={DASHBOARD_GRID_CLASSES}>
       <DashboardCell area="balance">

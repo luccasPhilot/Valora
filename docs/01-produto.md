@@ -91,6 +91,40 @@ Regras:
   - O app nunca junta sozinho.
 - **Saque:** um saque no banco chega pelo Open Finance como saída, com a categoria "Saque". Se você também lançar à mão o que gastou com aquele dinheiro, troque a categoria do saque para uma transferência, para não contar a despesa duas vezes.
 
+## Rotina de revisão
+
+Dois minutos por dia deixam tudo revisado: o que chegou do banco desde a última visita fica numa caixa, e as correções repetidas viram regra.
+
+### Caixa "Para revisar"
+
+Uma visão de Transações (`/transacoes/revisar`, aba "Para revisar" ao lado de "Todas").
+
+- **O que entra:** toda transação que a sincronização insere chega **para revisar**. Lançar à mão, trocar a categoria ou marcar como revisada tira a transação da caixa. A sincronização nunca devolve à caixa uma transação que já existe. Quando uma pendente revisada vira postada com outro id, a postada herda a revisão, como herda a categoria escolhida por você.
+- **O que aparece:** as não revisadas de bancos ativos (e as manuais, que nascem revisadas), de qualquer mês, **da mais antiga para a mais nova**. Um banco arquivado sai da caixa e do contador.
+- **Em cada linha:** "Ok" (marca como revisada) e "Trocar categoria". As etiquetas "Sem categoria" e "Possível duplicata" ficam à vista; a duplicata tem "Conferir", que abre a conferência de sempre. "Ok" numa duplicata só marca como revisada: a conferência continua no fluxo dela.
+- **"Marcar tudo como revisado"**, com confirmação, marca só o que estava na caixa quando a tela foi carregada. O que chegou depois fica. Não dá para desfazer.
+- **Vazia**, a caixa mostra "Tudo revisado".
+- **No Início**, o aviso "12 para revisar" fica acima dos cartões e leva à caixa; some quando ela zera.
+- Na criação da coluna, todas as transações que já existiam entraram revisadas: a caixa começou vazia.
+
+### Categoria em massa
+
+Na lista de Transações e na caixa, **"Selecionar"** liga o modo de seleção: cada linha ganha uma caixa de seleção e uma barra no pé da tela mostra quantas foram escolhidas, com "Trocar categoria", "Marcar como revisadas" e "Cancelar". No computador, Shift+clique marca o intervalo.
+
+- Até 100 de uma vez.
+- Vale para transações do Open Finance e manuais. Todas ficam com a categoria escolhida por você (`category_source = 'user'`) e revisadas.
+- Categoria arquivada é recusada. Numa transação manual, a categoria precisa ser do tipo do valor (despesa ou receita); se alguma não casar, nada muda.
+- Não existe "Aplicar sempre" na troca em massa: a regra sugerida cobre o caso.
+
+### Regra sugerida
+
+Quando há **2 ou mais** transações do Open Finance com a mesma descrição, todas com a mesma categoria escolhida por você, e nenhuma regra já decide essa descrição para essa categoria, o app oferece **"Criar regra para 'UBER *TRIP' → Transporte?"**.
+
+- Aparece logo depois de uma troca de categoria (no detalhe, na caixa e na troca em massa), com "Criar regra" e "Agora não", e numa lista "Sugestões" no topo da aba Regras, com "Criar regra" e "Dispensar".
+- Aceitar cria a regra "igual a" pelo caminho de sempre, que também recategoriza o histórico.
+- "Agora não" e "Dispensar" guardam o par descrição e categoria: ele não volta a ser sugerido, nem depois de uma terceira correção.
+- Lançamentos manuais não contam. Regra fixa, sem IA; só "igual a" (como "Aplicar sempre").
+
 ## Projeção do fim do mês
 
 Responde "como vou chegar ao fim do mês?" com uma conta que dá para conferir à mão:

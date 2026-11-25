@@ -1,15 +1,39 @@
-import { readFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
-import { afterAll, describe, expect, it } from 'vitest';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { afterAll, describe, expect, inject, it } from 'vitest';
 import { z } from 'zod';
 
+import { createDatabase } from '../../src/db/database.js';
 import { runMigrations } from '../../src/db/migrate.js';
 import { connectTestDatabase } from './test-database.js';
 
+const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../drizzle', import.meta.url));
 const JOURNAL_FILE = new URL('../../drizzle/meta/_journal.json', import.meta.url);
-const MIGRATION_COUNT = z
-  .object({ entries: z.array(z.unknown()) })
-  .parse(JSON.parse(readFileSync(JOURNAL_FILE, 'utf-8'))).entries.length;
+const journalSchema = z.looseObject({ entries: z.array(z.looseObject({ tag: z.string() })) });
+const JOURNAL = journalSchema.parse(JSON.parse(readFileSync(JOURNAL_FILE, 'utf-8')));
+const MIGRATION_COUNT = JOURNAL.entries.length;
+const REVIEW_INBOX_MIGRATION = '0012_add_review_inbox';
+const REVIEW_CHECK_DATABASE = 'review_migration_check';
+
+/** Cópia da pasta de migrations só até antes de `tag`, para montar um banco no estado anterior. */
+function migrationsFolderBefore(tag: string): string {
+  const folder = mkdtempSync(join(tmpdir(), 'valora-migrations-'));
+  cpSync(MIGRATIONS_FOLDER, folder, { recursive: true });
+  const cut = JOURNAL.entries.findIndex((entry) => entry.tag === tag);
+  const journal = { ...JOURNAL, entries: JOURNAL.entries.slice(0, cut) };
+  writeFileSync(join(folder, 'meta', '_journal.json'), JSON.stringify(journal));
+  return folder;
+}
+
+function databaseUrlFor(databaseName: string): string {
+  const url = new URL(inject('databaseUrl'));
+  url.pathname = `/${databaseName}`;
+  return url.toString();
+}
 
 const TABLES = [
   'accounts',
@@ -20,6 +44,7 @@ const TABLES = [
   'category_rules',
   'connections',
   'credit_card_bills',
+  'dismissed_rule_suggestions',
   'goal_contributions',
   'goal_links',
   'goals',
@@ -106,5 +131,50 @@ describe('migrations', () => {
     );
     // Assert
     expect(result.rows[0]?.total).toBe(String(MIGRATION_COUNT));
+  });
+
+  describe('0012_add_review_inbox', () => {
+    async function insertTransactionWithRawSql(
+      reviewCheck: ReturnType<typeof createDatabase>,
+      description: string,
+    ): Promise<void> {
+      await reviewCheck.db.execute(sql`
+        insert into transactions (account_id, source, date, description, description_normalized, amount_cents, status)
+        select id, 'manual', '2026-11-03', ${description}, ${description}, -100, 'posted' from accounts limit 1
+      `);
+    }
+
+    async function reviewedByDescription(
+      reviewCheck: ReturnType<typeof createDatabase>,
+    ): Promise<Record<string, boolean>> {
+      const result = await reviewCheck.db.execute<{ description: string; is_reviewed: boolean }>(
+        sql`select description, reviewed_at is not null as is_reviewed from transactions order by description`,
+      );
+      return Object.fromEntries(result.rows.map((row) => [row.description, row.is_reviewed]));
+    }
+
+    it('should_mark_existing_transactions_as_reviewed_and_leave_new_ones_unreviewed', async () => {
+      // Arrange
+      await database.db.execute(sql.raw(`drop database if exists ${REVIEW_CHECK_DATABASE}`));
+      await database.db.execute(sql.raw(`create database ${REVIEW_CHECK_DATABASE}`));
+      const reviewCheck = createDatabase(databaseUrlFor(REVIEW_CHECK_DATABASE));
+      const previousFolder = migrationsFolderBefore(REVIEW_INBOX_MIGRATION);
+      try {
+        await migrate(reviewCheck.db, { migrationsFolder: previousFolder });
+        await reviewCheck.db.execute(
+          sql`insert into accounts (type, name) values ('cash', 'Dinheiro')`,
+        );
+        await insertTransactionWithRawSql(reviewCheck, 'antes');
+        // Act
+        await runMigrations(reviewCheck.db);
+        await insertTransactionWithRawSql(reviewCheck, 'depois');
+        // Assert
+        expect(await reviewedByDescription(reviewCheck)).toEqual({ antes: true, depois: false });
+      } finally {
+        await reviewCheck.pool.end();
+        rmSync(previousFolder, { recursive: true, force: true });
+        await database.db.execute(sql.raw(`drop database if exists ${REVIEW_CHECK_DATABASE}`));
+      }
+    });
   });
 });

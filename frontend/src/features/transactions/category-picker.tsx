@@ -12,8 +12,8 @@ import { KIND_LABELS, KIND_ORDER } from '../categories/category-labels';
 interface CategoryPickerProps {
   categories: readonly Category[];
   currentCategoryId: string | null;
-  /** Texto da caixa "Aplicar sempre para '<descrição>'". */
-  applyAlwaysLabel: string;
+  /** Texto da caixa "Aplicar sempre para '<descrição>'"; sem ele (troca em massa), a caixa some. */
+  applyAlwaysLabel?: string;
   onPick: (category: Category, applyAlways: boolean) => void;
 }
 
@@ -38,19 +38,21 @@ export function CategoryPicker({
 
   return (
     <div className="space-y-3">
-      <label
-        htmlFor={applyAlwaysId}
-        className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md border bg-card p-3 text-sm"
-      >
-        <input
-          id={applyAlwaysId}
-          type="checkbox"
-          checked={applyAlways}
-          onChange={(event) => setApplyAlways(event.target.checked)}
-          className="mt-0.5 size-5 shrink-0 accent-primary"
-        />
-        <span>{applyAlwaysLabel}</span>
-      </label>
+      {applyAlwaysLabel ? (
+        <label
+          htmlFor={applyAlwaysId}
+          className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md border bg-card p-3 text-sm"
+        >
+          <input
+            id={applyAlwaysId}
+            type="checkbox"
+            checked={applyAlways}
+            onChange={(event) => setApplyAlways(event.target.checked)}
+            className="mt-0.5 size-5 shrink-0 accent-primary"
+          />
+          <span>{applyAlwaysLabel}</span>
+        </label>
+      ) : null}
       <div className="space-y-1.5">
         <Label htmlFor={searchId}>Buscar categoria</Label>
         <div className="relative">

@@ -19,6 +19,7 @@ import {
   SNAPSHOT_TOLERANCE_DAYS,
 } from '../net-worth/net-worth-calculations.js';
 import type { ProjectionService } from '../projection/projection.service.js';
+import type { TransactionReviewService } from '../transactions/transaction-review.service.js';
 import type { TransactionTotalsRepository } from '../transactions/transaction-totals.repository.js';
 import type { TransactionRecord } from '../transactions/transactions.repository.js';
 import type { TransactionsService } from '../transactions/transactions.service.js';
@@ -56,6 +57,8 @@ export interface DashboardOverview {
   /** Só existe para o mês atual: para os outros meses a projeção não faz sentido. */
   readonly projection: ProjectionSummary | null;
   readonly goals: GoalsSummary;
+  /** Quantas transações estão na caixa "Para revisar", de qualquer mês. */
+  readonly reviewCount: number;
 }
 
 export interface DashboardServiceDependencies {
@@ -64,6 +67,7 @@ export interface DashboardServiceDependencies {
   readonly accounts: Pick<AccountsService, 'overview'>;
   readonly budgets: Pick<BudgetsService, 'overview'>;
   readonly transactions: Pick<TransactionsService, 'latest'>;
+  readonly reviews: Pick<TransactionReviewService, 'countUnreviewed'>;
   readonly projection: Pick<ProjectionService, 'projection'>;
   readonly goals: Pick<GoalsService, 'list'>;
   readonly netWorth: Pick<NetWorthService, 'summary'>;
@@ -86,6 +90,7 @@ export class DashboardService {
       projection,
       goals,
       netWorth,
+      reviewCount,
     ] = await Promise.all([
       this.deps.accounts.overview(),
       // Os 7 dias antes do mês deixam a tolerância alcançar a foto do mês anterior.
@@ -100,6 +105,7 @@ export class DashboardService {
       this.findProjection(month),
       this.deps.goals.list(),
       this.findNetWorth(month),
+      this.deps.reviews.countUnreviewed(),
     ]);
     const requestedMonthTotals = incomeVsExpense.at(-1);
     const snapshotItems = groupSnapshotRows(snapshotRows);
@@ -121,6 +127,7 @@ export class DashboardService {
       latestTransactions,
       projection,
       goals: summarizeGoals(goals),
+      reviewCount,
     };
   }
 

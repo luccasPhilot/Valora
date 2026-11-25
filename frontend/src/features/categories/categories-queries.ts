@@ -9,9 +9,13 @@ import {
   createCategory,
   createCategoryRule,
   deleteCategoryRule,
+  dismissRuleSuggestion,
   listCategories,
   listCategoryRules,
   listPluggyMappings,
+  listRuleSuggestions,
+  ruleFromSuggestion,
+  type RuleSuggestion,
   setPluggyMapping,
   updateCategory,
   updateCategoryRule,
@@ -71,6 +75,25 @@ export function useDeleteRule() {
   return useMutation({
     mutationFn: deleteCategoryRule,
     onSuccess: useInvalidateAfter('categorization'),
+  });
+}
+
+export function useRuleSuggestions() {
+  return useQuery({ queryKey: queryKeys.ruleSuggestions, queryFn: listRuleSuggestions });
+}
+
+/** Aceitar cria a regra `equals` pelo caminho de sempre, que recategoriza o histórico. */
+export function useAcceptRuleSuggestion() {
+  return useMutation({
+    mutationFn: (suggestion: RuleSuggestion) => createCategoryRule(ruleFromSuggestion(suggestion)),
+    onSuccess: useInvalidateAfter('categorization'),
+  });
+}
+
+export function useDismissRuleSuggestion() {
+  return useMutation({
+    mutationFn: dismissRuleSuggestion,
+    onSuccess: useInvalidateAfter('rule-suggestions'),
   });
 }
 

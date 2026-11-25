@@ -76,6 +76,7 @@ const dashboardResponseSchema = z.object({
   latestTransactions: z.array(transactionResponseSchema),
   projection: projectionSummarySchema.nullable(),
   goals: goalsSummarySchema,
+  reviewCount: z.int(),
 });
 
 export function dashboardRoutes(service: DashboardService): FastifyPluginAsyncZod {
@@ -99,6 +100,7 @@ export function dashboardRoutes(service: DashboardService): FastifyPluginAsyncZo
           latestTransactions: overview.latestTransactions.map(toTransactionResponse),
           projection: overview.projection,
           goals: { ...overview.goals, items: [...overview.goals.items] },
+          reviewCount: overview.reviewCount,
         };
       },
     );

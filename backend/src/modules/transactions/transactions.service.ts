@@ -3,8 +3,14 @@ import { NotFoundError } from '../../shared/errors.js';
 import { normalizeDescription } from '../../shared/text.js';
 import type { BudgetAlertRefresher } from '../alerts/budget-alert-refresher.js';
 import type { CategoriesRepository } from '../categories/categories.repository.js';
-import { assertCategoryIsSelectable } from '../categories/category-availability.js';
+import {
+  assertCategoryIsSelectable,
+  assertCategoryMatchesType,
+} from '../categories/category-availability.js';
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
+import type { RuleSuggestion } from '../categories/rule-suggestions.js';
+import type { RuleSuggestionsService } from '../categories/rule-suggestions.service.js';
+import { typeOfAmount } from './manual-transaction-fields.js';
 import type {
   TransactionSummary,
   TransactionTotalsRepository,
@@ -28,6 +34,23 @@ export interface TransactionListFilters {
   readonly source?: TransactionSource;
   readonly possibleDuplicate?: boolean;
   readonly search?: string;
+  /** `false` é a caixa "Para revisar": sem período padrão e com a mais antiga primeiro. */
+  readonly reviewed?: boolean;
+}
+
+export interface TransactionListResult extends TransactionPage {
+  /** Instante do servidor antes da consulta: o limite de "Marcar tudo como revisado". */
+  readonly loadedAt: Date;
+}
+
+export interface BulkCategoryChange {
+  readonly transactionIds: readonly string[];
+  readonly categoryId: string;
+}
+
+export interface BulkCategoryResult {
+  readonly updatedCount: number;
+  readonly ruleSuggestion: RuleSuggestion | null;
 }
 
 export interface CategoryChange {
@@ -41,6 +64,7 @@ export interface TransactionsServiceDependencies {
   readonly totals: Pick<TransactionTotalsRepository, 'summarize'>;
   readonly categories: CategoriesRepository;
   readonly rules: Pick<CategoryRulesService, 'learnFromCorrection'>;
+  readonly suggestions: Pick<RuleSuggestionsService, 'suggestionFor'>;
   readonly budgetAlerts: Pick<BudgetAlertRefresher, 'refresh'>;
   readonly now: () => Date;
 }
@@ -48,8 +72,16 @@ export interface TransactionsServiceDependencies {
 export class TransactionsService {
   constructor(private readonly deps: TransactionsServiceDependencies) {}
 
-  list(filters: TransactionListFilters, page: PageRequest): Promise<TransactionPage> {
-    return this.deps.transactions.findPage(this.toRepositoryFilters(filters), page);
+  async list(filters: TransactionListFilters, page: PageRequest): Promise<TransactionListResult> {
+    const loadedAt = this.deps.now();
+    // Revisar na ordem em que aconteceu: a caixa começa pela mais antiga.
+    const order = filters.reviewed === false ? 'oldest_first' : 'newest_first';
+    const found = await this.deps.transactions.findPage(
+      this.toRepositoryFilters(filters),
+      page,
+      order,
+    );
+    return { ...found, loadedAt };
   }
 
   /** Mesmos filtros da lista: receita, despesa e quantidade de todo o filtro, não só da página. */
@@ -85,17 +117,45 @@ export class TransactionsService {
     return this.get(transactionId);
   }
 
+  /**
+   * Troca em massa, do Open Finance e manuais: tudo vira escolha sua e fica revisado. Sem "Aplicar
+   * sempre": uma seleção de descrições diferentes não vira regra, a sugestão cobre o caso.
+   */
+  async changeCategoryOfMany(change: BulkCategoryChange): Promise<BulkCategoryResult> {
+    await assertCategoryIsSelectable(this.deps.categories, change.categoryId);
+    await this.assertManualTypesMatch(change);
+    const updatedCount = await this.deps.transactions.setUserCategoryOfMany(
+      change.transactionIds,
+      change.categoryId,
+    );
+    await this.deps.budgetAlerts.refresh();
+    const ruleSuggestion = await this.deps.suggestions.suggestionFor(
+      change.transactionIds,
+      change.categoryId,
+    );
+    return { updatedCount, ruleSuggestion };
+  }
+
+  /** Numa manual, a categoria precisa ser do tipo do valor, como na edição de uma só. */
+  private async assertManualTypesMatch(change: BulkCategoryChange): Promise<void> {
+    const amounts = await this.deps.transactions.findManualAmounts(change.transactionIds);
+    const types = new Set(amounts.map(typeOfAmount));
+    for (const type of types) {
+      await assertCategoryMatchesType(this.deps.categories, change.categoryId, type);
+    }
+  }
+
   private toRepositoryFilters(filters: TransactionListFilters): TransactionFilters {
     const { search, ...otherFilters } = filters;
     const normalizedSearch = search ? normalizeDescription(search) : undefined;
     return { ...this.withDefaultPeriod(otherFilters), normalizedSearch };
   }
 
-  /** Sem nenhuma das duas datas, a lista é do mês atual (fuso de São Paulo). */
-  private withDefaultPeriod<Filters extends { from?: string; to?: string }>(
+  /** Sem nenhuma das duas datas, a lista é do mês atual (fuso de São Paulo). A caixa não tem período. */
+  private withDefaultPeriod<Filters extends { from?: string; to?: string; reviewed?: boolean }>(
     filters: Filters,
   ): Filters {
-    if (filters.from || filters.to) return filters;
+    if (filters.from || filters.to || filters.reviewed === false) return filters;
     const today = todayInSaoPaulo(this.deps.now());
     return { ...filters, from: firstDayOfMonth(today), to: lastDayOfMonth(today) };
   }

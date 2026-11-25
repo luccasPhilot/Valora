@@ -105,8 +105,8 @@ export function apiDeleteReturning<T>(path: string, responseSchema: z.ZodType<T>
 }
 
 /** Para os POST que respondem 204, sem corpo (ações como "marcar como lido"). */
-export async function apiPostNoContent(path: string): Promise<void> {
-  const response = await fetchOrThrow(path, 'POST');
+export async function apiPostNoContent(path: string, body?: unknown): Promise<void> {
+  const response = await fetchOrThrow(path, 'POST', body);
   if (!response.ok) throw await toApiError(response);
 }
 

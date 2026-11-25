@@ -1,4 +1,4 @@
-import { Copy, PencilLine } from 'lucide-react';
+import { Copy, PencilLine, Tag } from 'lucide-react';
 
 import type { Transaction } from '@/lib/api/transactions';
 
@@ -21,6 +21,16 @@ export function PossibleDuplicateBadge() {
     <span className={`${BADGE_BASE_CLASSES} bg-warning-surface text-warning`}>
       <Copy className="size-3" aria-hidden="true" />
       Possível duplicata
+    </span>
+  );
+}
+
+/** Na caixa "Para revisar": a transação ainda não tem categoria. Neutro, sem cor de alerta. */
+export function UncategorizedBadge() {
+  return (
+    <span className={`${BADGE_BASE_CLASSES} bg-muted text-foreground`}>
+      <Tag className="size-3" aria-hidden="true" />
+      Sem categoria
     </span>
   );
 }

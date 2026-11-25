@@ -9,6 +9,7 @@ import { REPORT_DEFINITIONS, REPORTS_BASE_PATH } from '@/features/reports/report
 const areaRoutes: RouteObject[] = [
   { index: true, lazy: () => import('@/features/dashboard/dashboard-page') },
   { path: 'transacoes', lazy: () => import('@/features/transactions/transactions-page') },
+  { path: 'transacoes/revisar', lazy: () => import('@/features/transactions/review-page') },
   { path: 'orcamentos', lazy: () => import('@/features/budgets/budgets-page') },
   { path: 'planejamento', lazy: () => import('@/features/planning/planning-page') },
   { path: 'metas', lazy: () => import('@/features/goals/goals-page') },

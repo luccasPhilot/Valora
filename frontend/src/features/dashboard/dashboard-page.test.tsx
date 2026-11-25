@@ -669,3 +669,27 @@ describe('Início — estados', () => {
     expect(within(alert).getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
   });
 });
+
+describe('Início — para revisar', () => {
+  it('should_link_to_the_review_inbox_when_there_are_transactions_to_review', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ reviewCount: 12 }));
+    // Act
+    renderDashboard();
+    // Assert
+    expect(await screen.findByRole('link', { name: '12 para revisar' })).toHaveAttribute(
+      'href',
+      '/transacoes/revisar',
+    );
+  });
+
+  it('should_not_show_the_notice_when_everything_was_reviewed', async () => {
+    // Arrange
+    stubDashboardApi(dashboard({ reviewCount: 0 }));
+    // Act
+    renderDashboard();
+    await screen.findByRole('heading', { name: /Saldo/ });
+    // Assert
+    expect(screen.queryByRole('link', { name: /para revisar/ })).toBeNull();
+  });
+});

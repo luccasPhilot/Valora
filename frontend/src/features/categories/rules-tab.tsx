@@ -3,10 +3,12 @@ import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FormPanel } from '@/components/form-panel';
+import { NoticeRegion } from '@/components/notice-region';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { RowsSkeleton } from '@/components/states/skeletons';
 import { Button } from '@/components/ui/button';
+import { useNotice } from '@/hooks/use-notice';
 import type { Category, CategoryRule } from '@/lib/api/categories';
 
 import { useCategories, useCategoryRules, useDeleteRule, useSaveRule } from './categories-queries';
@@ -14,6 +16,7 @@ import { CategoryBadgeIcon } from './category-icons';
 import { describeError, MATCH_TYPE_LABELS } from './category-labels';
 import { EditableRow } from './editable-row';
 import { RuleForm } from './rule-form';
+import { RuleSuggestionsList } from './rule-suggestions-list';
 
 const UNKNOWN_CATEGORY_NAME = 'Categoria removida';
 
@@ -70,6 +73,7 @@ export function RulesTab() {
   const deleteRule = useDeleteRule();
   const [editing, setEditing] = useState<EditorTarget>(undefined);
   const [deleting, setDeleting] = useState<CategoryRule | undefined>(undefined);
+  const { notice, showNotice } = useNotice();
 
   if (rulesQuery.isPending || categoriesQuery.isPending) return <RowsSkeleton rowCount={4} />;
   if (rulesQuery.isError || categoriesQuery.isError) {
@@ -107,6 +111,7 @@ export function RulesTab() {
           Nova regra
         </Button>
       </div>
+      <RuleSuggestionsList showNotice={showNotice} />
       {rules.length === 0 ? (
         <EmptyState
           icon={ListFilter}
@@ -158,6 +163,7 @@ export function RulesTab() {
           if (deleting) deleteRule.mutate(deleting.id, { onSuccess: closeDeleteDialog });
         }}
       />
+      <NoticeRegion notice={notice} />
     </>
   );
 }

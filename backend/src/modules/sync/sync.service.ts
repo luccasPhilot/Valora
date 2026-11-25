@@ -588,17 +588,20 @@ interface DecisionsCarry {
   readonly plan: PendingReplacementPlan;
 }
 
-/** Antes de apagar a pendente: a categoria (se era sua) e o vínculo com a previsão vão para a postada. */
+/**
+ * Antes de apagar a pendente: a categoria (se era sua), a revisão e o vínculo com a previsão vão
+ * para a postada.
+ */
 async function carryDecisions(
   transactions: ItemRepositories['transactions'],
   { vanishedPendings, plan }: DecisionsCarry,
 ): Promise<void> {
-  const categoryByPendingId = new Map(
-    vanishedPendings.map((pending) => [pending.id, pending.userCategoryId]),
-  );
+  const pendingById = new Map(vanishedPendings.map((pending) => [pending.id, pending]));
   for (const { pendingId, postedId } of plan.replacements) {
-    const categoryId = categoryByPendingId.get(pendingId);
-    if (categoryId) await transactions.carryUserCategory(postedId, categoryId);
+    const pending = pendingById.get(pendingId);
+    if (pending?.userCategoryId)
+      await transactions.carryUserCategory(postedId, pending.userCategoryId);
+    if (pending?.reviewedAt) await transactions.carryReview(postedId, pending.reviewedAt);
     await transactions.moveOccurrenceLink(pendingId, postedId);
   }
 }
