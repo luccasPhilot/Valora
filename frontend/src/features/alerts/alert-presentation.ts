@@ -3,6 +3,7 @@ import {
   CalendarX,
   CircleAlert,
   CopyX,
+  KeyRound,
   type LucideIcon,
   Repeat,
   TriangleAlert,
@@ -30,6 +31,8 @@ const APPEARANCE_BY_TYPE: Readonly<Record<string, AlertAppearance>> = {
   budget_warning: { icon: TriangleAlert, label: 'Orçamento em 80%', tone: 'warning' },
   budget_exceeded: { icon: CircleAlert, label: 'Orçamento estourado', tone: 'critical' },
   connection_error: { icon: Unplug, label: 'Banco sem sincronizar', tone: 'critical' },
+  // Ainda dá tempo de renovar: aviso, não erro. Vencido, o `connection_error` assume.
+  consent_expiring: { icon: KeyRound, label: 'Consentimento a vencer', tone: 'warning' },
   duplicate_charge: { icon: CopyX, label: 'Cobrança duplicada', tone: 'warning' },
   subscription_detected: { icon: Repeat, label: 'Assinatura', tone: 'neutral' },
   // No próprio dia ainda dá para sincronizar; depois da virada, só conferir nos informes.

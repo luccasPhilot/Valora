@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import { ThemeProvider } from '@/components/theme-provider';
@@ -11,7 +12,9 @@ const MINIMUM_TOUCH_TARGET_CLASS = 'h-11';
 function renderSettings() {
   return render(
     <ThemeProvider>
-      <SettingsPage />
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>
     </ThemeProvider>,
   );
 }
@@ -61,5 +64,17 @@ describe('SettingsPage theme control', () => {
     renderSettings();
     // Assert
     expect(screen.getByRole('radio', { name: 'Claro' })).toHaveClass(MINIMUM_TOUCH_TARGET_CLASS);
+  });
+});
+
+describe('SettingsPage data health link', () => {
+  it('should_link_to_the_data_health_screen', () => {
+    // Arrange / Act
+    renderSettings();
+    // Assert
+    expect(screen.getByRole('link', { name: /Saúde dos dados/ })).toHaveAttribute(
+      'href',
+      '/ajustes/saude-dos-dados',
+    );
   });
 });

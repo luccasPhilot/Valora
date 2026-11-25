@@ -174,13 +174,13 @@ describe('invalidationsAfter', () => {
     expect(names).toEqual(['dashboard', 'goals', 'investments', 'net-worth']);
   });
 
-  it('should_refresh_accounts_home_net_worth_and_projection_when_accounts_change', () => {
+  it('should_refresh_accounts_home_net_worth_projection_and_data_health_when_accounts_change', () => {
     // Arrange
     const change = 'accounts';
     // Act
     const names = invalidatedNames(change);
     // Assert
-    expect(names).toEqual(['accounts', 'dashboard', 'net-worth', 'projection']);
+    expect(names).toEqual(['accounts', 'dashboard', 'data-health', 'net-worth', 'projection']);
   });
 
   it('should_refresh_only_the_alerts_when_an_alert_is_read_or_dismissed', () => {

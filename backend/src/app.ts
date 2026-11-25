@@ -29,6 +29,9 @@ import { creditCardBillsRoutes } from './modules/credit-card-bills/credit-card-b
 import { CreditCardBillsService } from './modules/credit-card-bills/credit-card-bills.service.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
+import { DataHealthRepository } from './modules/data-health/data-health.repository.js';
+import { dataHealthRoutes } from './modules/data-health/data-health.routes.js';
+import { DataHealthService } from './modules/data-health/data-health.service.js';
 import { GoalsRepository } from './modules/goals/goals.repository.js';
 import { goalsRoutes } from './modules/goals/goals.routes.js';
 import { GoalsService } from './modules/goals/goals.service.js';
@@ -128,6 +131,12 @@ function registerModules(
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
   app.register(alertsRoutes(alerts.alertsService), { prefix: API_PREFIX });
+  const dataHealthService = new DataHealthService({
+    repository: new DataHealthRepository(database.db),
+    connections: new ConnectionsRepository(database.db),
+    now,
+  });
+  app.register(dataHealthRoutes(dataHealthService), { prefix: API_PREFIX });
   const categories = createCategoriesModule(database);
   app.register(categoriesRoutes(categories.categoriesService), { prefix: API_PREFIX });
   app.register(categoryRulesRoutes(categories.categoryRulesService), { prefix: API_PREFIX });

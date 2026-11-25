@@ -68,6 +68,27 @@ describe('findScreenTitle', () => {
   });
 });
 
+describe('data health screen', () => {
+  const DATA_HEALTH_PATH = '/ajustes/saude-dos-dados';
+
+  it('should_title_the_screen_saude_dos_dados', () => {
+    // Arrange & Act
+    const title = findScreenTitle(DATA_HEALTH_PATH);
+    // Assert
+    expect(title).toBe('Saúde dos dados');
+  });
+
+  it('should_keep_settings_active_when_the_data_health_screen_is_open', () => {
+    // Arrange
+    const settingsArea = APP_AREAS.find((area) => area.path === '/ajustes');
+    if (!settingsArea) throw new Error('Teste: área Ajustes não existe');
+    // Act
+    const current = getAreaCurrent(settingsArea, DATA_HEALTH_PATH);
+    // Assert
+    expect(current).toBe('true');
+  });
+});
+
 describe('isAreaActive', () => {
   it('should_keep_accounts_active_when_the_card_bills_screen_is_open', () => {
     // Arrange & Act

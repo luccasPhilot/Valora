@@ -28,12 +28,16 @@
 - Entrada, por conta corrente ou poupança de banco ativo: as fotos dos últimos 60 dias e as transações **postadas** do Open Finance da conta no mesmo período. Manuais ficam de fora (a conta "Dinheiro" não tem foto, e manual em conta do banco é justamente o complemento).
 - Para cada par de fotos seguidas `(d1, d2)` com `d2 <= hoje − 3`: `esperado = foto(d2) − foto(d1)`, `real = soma das transações com data em [d1, d2)`. Se `esperado ≠ real`, é uma divergência `{ accountId, from: d1, to: d2, differenceCents: esperado − real }`.
 - **A janela `[d1, d2)`** supõe que a foto das 07:00 de um dia ainda não tem as transações daquele dia. A tarefa 1 confere isso **só com contagens** na cópia do backup de produção (quantos pares batem com `[d1, d2)` e quantos com `(d1, d2]`) antes de fixar a regra. Se nenhuma janela bater na maioria dos pares, a conciliação passa a comparar semanas em vez de dias.
+- **Conferido em 24/11/2026 (tarefa 1)** na cópia do backup de 17/11 (só contagens): 44 pares de fotos seguidas, todos de dias consecutivos, em 4 contas correntes (nenhuma poupança com foto ainda), de 05/11 a 17/11. Sem juntar nada, `[d1, d2)` bate 39 pares e `(d1, d2]` bate 40; nos 11 pares com transação, 6 e 7. Juntando os pares seguidos com diferença, `[d1, d2)` fica com 5 pares num bloco só que soma zero (**0 divergências**) e `(d1, d2]` fica com **2 divergências**. **Vale `[d1, d2)`**, com a junção dos pares seguidos; continua diária. A amostra é curta (13 dias): se houver falso positivo com mais histórico, rever.
 - **Por que 3 dias:** transação lançada com atraso (data anterior à da chegada) muda o passado; 3 dias deixa assentar.
 - Divergências de dias seguidos da mesma conta com diferenças que se anulam (uma chegou no dia errado) são juntadas num período só ou descartadas quando a soma é zero.
 
 ### 3. Conta parada (função pura)
 
 Conta `checking` ou `credit_card`, não oculta, de banco ativo com `status = 'ok'`, cuja transação mais recente tem 10 dias ou mais (ou nenhuma transação e conta criada há 10 dias ou mais). Poupança fica de fora: ficar parada é normal.
+
+- `accounts` não tem data de criação: a **primeira foto de saldo** da conta é o dia em que ela apareceu. Sem transação e sem foto, a conta não aparece.
+- Só contam transações do Open Finance: a manual não diz nada sobre o banco ainda mandar dados.
 
 ### 4. API
 

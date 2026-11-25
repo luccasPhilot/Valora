@@ -70,6 +70,11 @@ const BILLS_TITLE = 'Faturas';
 const REVIEW_INBOX_PATH = '/transacoes/revisar';
 const TRANSACTIONS_PATH = '/transacoes';
 
+// A Saúde dos dados abre a partir de Ajustes: o item do menu marcado é o de Ajustes.
+const DATA_HEALTH_PATH = '/ajustes/saude-dos-dados';
+const DATA_HEALTH_TITLE = 'Saúde dos dados';
+const SETTINGS_PATH = '/ajustes';
+
 // Áreas que têm uma tela por endereço (um relatório por endereço): o item e o título valem em `/relatorios/*`.
 const REPORTS_PATH = '/relatorios';
 
@@ -81,6 +86,7 @@ export function isInsideReports(pathname: string): boolean {
 export function findScreenTitle(pathname: string): string | undefined {
   if (BILLS_PATH_PATTERN.test(pathname)) return BILLS_TITLE;
   if (pathname === REVIEW_INBOX_PATH) return findAreaByPath(TRANSACTIONS_PATH)?.title;
+  if (pathname === DATA_HEALTH_PATH) return DATA_HEALTH_TITLE;
   if (isInsideReports(pathname)) return findAreaByPath(REPORTS_PATH)?.title;
   return findAreaByPath(pathname)?.title;
 }
@@ -89,6 +95,7 @@ export function isAreaActive(area: AppArea, pathname: string): boolean {
   if (pathname === area.path) return true;
   if (area.path === REPORTS_PATH) return isInsideReports(pathname);
   if (area.path === TRANSACTIONS_PATH) return pathname === REVIEW_INBOX_PATH;
+  if (area.path === SETTINGS_PATH) return pathname === DATA_HEALTH_PATH;
   return area.path === '/contas' && BILLS_PATH_PATTERN.test(pathname);
 }
 

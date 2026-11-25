@@ -1,4 +1,4 @@
-import { CalendarX, CopyX, Repeat } from 'lucide-react';
+import { CalendarX, CopyX, KeyRound, Repeat } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -115,6 +115,19 @@ describe('appearanceOf', () => {
     const { label, tone } = appearanceOf(type);
     // Assert
     expect({ label, tone }).toEqual({ label: 'Orçamento estourado', tone: 'critical' });
+  });
+
+  it('should_return_a_warning_with_text_when_the_consent_is_expiring', () => {
+    // Arrange
+    const type = 'consent_expiring';
+    // Act
+    const { icon, label, tone } = appearanceOf(type);
+    // Assert
+    expect({ icon, label, tone }).toEqual({
+      icon: KeyRound,
+      label: 'Consentimento a vencer',
+      tone: 'warning',
+    });
   });
 
   it('should_return_the_generic_appearance_when_the_type_is_unknown', () => {

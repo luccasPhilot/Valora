@@ -9,6 +9,7 @@ import {
   budgetSituations,
   CONNECTION_ALERT_TYPES,
   connectionSituations,
+  consentExpiringSituations,
   YEAR_END_PENDING_ALERT_TYPES,
   type YearEndCheck,
   yearEndCheckFor,
@@ -57,7 +58,10 @@ export class AlertEvaluator {
 
   async evaluateConnections(): Promise<void> {
     const connections = await this.deps.connections.findActive();
-    await this.reconcile(CONNECTION_ALERT_TYPES, connectionSituations(connections));
+    await this.reconcile(CONNECTION_ALERT_TYPES, [
+      ...connectionSituations(connections),
+      ...consentExpiringSituations(connections, this.deps.now()),
+    ]);
   }
 
   /**

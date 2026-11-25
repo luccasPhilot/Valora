@@ -34,6 +34,16 @@ export interface SyncRunRecord {
   readonly errorMessage: string | null;
 }
 
+export interface SyncRunPageRequest {
+  readonly page: number;
+  readonly limit: number;
+}
+
+export interface SyncRunPage {
+  readonly items: readonly SyncRunRecord[];
+  readonly total: number;
+}
+
 export interface SyncRunOutcome {
   readonly status: FinishedSyncRunStatus;
   readonly stats: SyncStats;
@@ -71,6 +81,18 @@ export class SyncRunsRepository {
   async findLatest(): Promise<SyncRunRecord | null> {
     const [row] = await this.db.select().from(syncRuns).orderBy(desc(syncRuns.startedAt)).limit(1);
     return row ? toRecord(row) : null;
+  }
+
+  /** Da mais recente para a mais antiga. */
+  async findPage({ page, limit }: SyncRunPageRequest): Promise<SyncRunPage> {
+    const rows = await this.db
+      .select()
+      .from(syncRuns)
+      .orderBy(desc(syncRuns.startedAt))
+      .limit(limit)
+      .offset((page - 1) * limit);
+    const total = await this.db.$count(syncRuns);
+    return { items: rows.map(toRecord), total };
   }
 
   /** Fecha as execuções que ficaram `running` porque o processo parou no meio. */

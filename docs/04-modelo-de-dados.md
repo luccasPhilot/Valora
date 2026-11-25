@@ -48,6 +48,7 @@ Se um banco novo mandar algo diferente, rode `npm run fixtures:record` em `backe
 | `status_detail` | text | mensagem para mostrar na tela |
 | `last_synced_at` | timestamptz | |
 | `archived_at` | timestamptz | pode ser nulo. Preenchido quando o usuário remove o banco do Valora: nada é apagado, o banco sai das telas e a sincronização o pula. Nulo = banco ativo |
+| `consent_expires_at` | timestamptz | pode ser nulo. Vencimento do consentimento (`consentExpiresAt` do Pluggy), regravado a cada leitura do item, mesmo que a leitura dos dados falhe depois. Nulo quando o Pluggy não manda. Alimenta o alerta `consent_expiring` e a tela Saúde dos dados |
 | `created_at`, `updated_at` | timestamptz | |
 
 O que sai quando `archived_at` está preenchido: as contas (e o saldo, as faturas e a projeção), a faixa de aviso e os alertas de conexão. O que fica: todas as transações, faturas, investimentos e fotos de saldo, que continuam contando em receitas, despesas e orçamentos. A curva de saldo do Início soma o banco só nos dias anteriores ao dia do arquivamento. Se o `PLUGGY_ITEM_IDS` não tem mais o id do banco, isso não é gravado: a API calcula `isConfigured` na leitura.
@@ -308,13 +309,13 @@ Exatamente uma entre `account_id` e `investment_id` é preenchida (`CHECK`). Ín
 | Coluna | Tipo | Observação |
 |---|---|---|
 | `id` | uuid | |
-| `type` | text | `duplicate_charge`, `subscription_detected`, `budget_warning`, `budget_exceeded`, `connection_error`, `year_end_snapshot_pending`, `year_end_snapshot_missing` |
+| `type` | text | `duplicate_charge`, `subscription_detected`, `budget_warning`, `budget_exceeded`, `connection_error`, `year_end_snapshot_pending`, `year_end_snapshot_missing`, `consent_expiring` |
 | `transaction_id` | uuid | pode ser nulo |
 | `category_id` | uuid | pode ser nulo |
 | `connection_id` | uuid | pode ser nulo |
 | `message` | text | |
 | `created_at` | timestamptz | |
-| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>`, `year_end_snapshot_pending:AAAA`, `year_end_snapshot_missing:AAAA` (o ano de 31/12) |
-| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento, conexão e `year_end_snapshot_pending`; `duplicate_charge`, `subscription_detected` e `year_end_snapshot_missing` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
+| `dedupe_key` | text | identifica a situação que gerou o alerta: `budget_warning:<categoryId>:AAAA-MM`, `budget_exceeded:<categoryId>:AAAA-MM`, `connection_error:<connectionId>`, `consent_expiring:<connectionId>:30` (de 30 a 8 dias antes) e `consent_expiring:<connectionId>:7` (a partir de 7 dias antes; chave nova, então nasce mesmo com o de 30 dispensado), `year_end_snapshot_pending:AAAA`, `year_end_snapshot_missing:AAAA` (o ano de 31/12) |
+| `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento, conexão, `consent_expiring` e `year_end_snapshot_pending`; `duplicate_charge`, `subscription_detected` e `year_end_snapshot_missing` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
 
 `type` tem `CHECK` com os sete tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.

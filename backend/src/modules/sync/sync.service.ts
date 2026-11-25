@@ -26,6 +26,8 @@ import { addStats, EMPTY_STATS, type ItemOutcome, summarizeRun } from './sync-ou
 import type {
   FinishedSyncRunStatus,
   SyncRunOutcome,
+  SyncRunPage,
+  SyncRunPageRequest,
   SyncRunRecord,
   SyncRunsRepository,
   SyncStats,
@@ -203,6 +205,10 @@ export class SyncService {
     return this.deps.syncRuns.findLatest();
   }
 
+  listRuns(request: SyncRunPageRequest): Promise<SyncRunPage> {
+    return this.deps.syncRuns.findPage(request);
+  }
+
   /** Ao iniciar a API: fecha as execuções que ficaram `running` porque o processo parou no meio. */
   failInterruptedRuns(): Promise<number> {
     return this.deps.syncRuns.failInterrupted(INTERRUPTED_RUN_MESSAGE);
@@ -321,6 +327,8 @@ export class SyncService {
       this.deps.pluggy.getItem(itemId),
     );
     if (!overview) return FAILED_ITEM;
+    // Antes de ler os dados: o vencimento fica gravado mesmo que a leitura falhe depois.
+    await this.deps.connections.updateConsentExpiry(connection.id, overview.consentExpiresAt);
     await this.updateConnectionStatus(connection, overview.connection);
     if (!overview.connection.canReadData) return FAILED_ITEM;
     const window = this.windowFor(connection);

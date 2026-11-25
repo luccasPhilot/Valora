@@ -43,6 +43,8 @@ export const connections = pgTable(
     lastSyncedAt: timestamptz('last_synced_at'),
     // Preenchido quando o usuário tira o banco do dia a dia (nada é apagado). Nulo = banco ativo.
     archivedAt: timestamptz('archived_at'),
+    // Vencimento do consentimento informado pelo Pluggy na última leitura do item; nulo se não veio.
+    consentExpiresAt: timestamptz('consent_expires_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
@@ -481,7 +483,7 @@ export const alerts = pgTable(
     index('alerts_created_at_idx').on(table.createdAt),
     check(
       'alerts_type_check',
-      sql`${table.type} in ('duplicate_charge', 'subscription_detected', 'budget_warning', 'budget_exceeded', 'connection_error', 'year_end_snapshot_pending', 'year_end_snapshot_missing')`,
+      sql`${table.type} in ('duplicate_charge', 'subscription_detected', 'budget_warning', 'budget_exceeded', 'connection_error', 'year_end_snapshot_pending', 'year_end_snapshot_missing', 'consent_expiring')`,
     ),
   ],
 );

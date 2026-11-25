@@ -5,6 +5,7 @@ import {
   budgetSituations,
   connectionDedupeKey,
   connectionSituations,
+  consentExpiringSituations,
   type MissingSnapshotCounts,
   yearEndCheckFor,
   yearEndSnapshotSituation,
@@ -42,6 +43,7 @@ function connection(
     statusDetail: null,
     lastSyncedAt: null,
     archivedAt: null,
+    consentExpiresAt: null,
     ...overrides,
   };
 }
@@ -361,5 +363,96 @@ describe('yearEndSnapshotSituation', () => {
     ].join(' ');
     // Assert
     expect(messages).not.toMatch(/R\$|\d+,\d{2}/);
+  });
+});
+
+describe('consentExpiringSituations', () => {
+  // 28/11/2026 às 07:00 em São Paulo.
+  const NOW = new Date('2026-11-28T10:00:00Z');
+
+  function expiringIn(days: number, status: ConnectionStatus = 'ok'): ConnectionRecord {
+    const expiresAt = new Date(NOW.getTime() + days * 86_400_000 + 3_600_000);
+    return connection(status, { institutionName: 'Itaú', consentExpiresAt: expiresAt });
+  }
+
+  it('should_return_nothing_when_the_consent_expires_in_31_days', () => {
+    // Arrange
+    const connections = [expiringIn(31)];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
+  });
+
+  it('should_return_the_30_day_alert_when_the_consent_expires_in_30_days', () => {
+    // Arrange
+    const connections = [expiringIn(30)];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([
+      {
+        type: 'consent_expiring',
+        dedupeKey: `consent_expiring:${connections[0]?.id ?? ''}:30`,
+        message: 'O consentimento do Itaú vence em 28/12. Renove a conexão no Meu Pluggy.',
+        categoryId: null,
+        connectionId: connections[0]?.id,
+        transactionId: null,
+      },
+    ]);
+  });
+
+  it('should_keep_the_30_day_alert_when_the_consent_expires_in_8_days', () => {
+    // Arrange
+    const connections = [expiringIn(8)];
+    // Act
+    const [situation] = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situation?.dedupeKey).toMatch(/:30$/);
+  });
+
+  it('should_return_the_7_day_alert_when_the_consent_expires_in_7_days', () => {
+    // Arrange
+    const connections = [expiringIn(7)];
+    // Act
+    const [situation] = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situation?.dedupeKey).toMatch(/:7$/);
+  });
+
+  it('should_return_the_7_day_alert_when_the_consent_expires_later_today', () => {
+    // Arrange
+    const connections = [expiringIn(0)];
+    // Act
+    const [situation] = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situation?.dedupeKey).toMatch(/:7$/);
+  });
+
+  it('should_return_nothing_when_the_consent_already_expired', () => {
+    // Arrange
+    const connections = [connection('ok', { consentExpiresAt: new Date('2026-11-27T10:00:00Z') })];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
+  });
+
+  it('should_return_nothing_when_the_connection_status_is_consent_expired', () => {
+    // Arrange
+    const connections = [expiringIn(5, 'consent_expired')];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
+  });
+
+  it('should_return_nothing_when_the_bank_did_not_inform_the_expiry', () => {
+    // Arrange
+    const connections = [connection('ok')];
+    // Act
+    const situations = consentExpiringSituations(connections, NOW);
+    // Assert
+    expect(situations).toEqual([]);
   });
 });

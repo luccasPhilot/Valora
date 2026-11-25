@@ -16,6 +16,8 @@ export const queryKeys = {
   connections: ['connections'],
   archivedConnections: ['connections', 'archived'],
   latestSyncRun: ['sync-runs', 'latest'],
+  syncRunHistory: ['sync-runs', 'history'],
+  dataHealth: ['data-health'],
   creditCardBills: ['credit-card-bills'],
   dashboard: ['dashboard'],
   goals: ['goals'],
@@ -104,7 +106,14 @@ const INVALIDATIONS: Readonly<Record<DataChange, readonly QueryKey[]>> = {
   'planned-entries': [queryKeys.plannedEntries, queryKeys.projection, queryKeys.dashboard],
   // A posição manual entra no patrimônio, no Início e nas metas vinculadas.
   investments: [queryKeys.investments, queryKeys.netWorth, queryKeys.dashboard, queryKeys.goals],
-  accounts: [queryKeys.accounts, queryKeys.dashboard, queryKeys.netWorth, queryKeys.projection],
+  // Ocultar uma conta tira ela das contas paradas da Saúde dos dados.
+  accounts: [
+    queryKeys.accounts,
+    queryKeys.dashboard,
+    queryKeys.netWorth,
+    queryKeys.projection,
+    queryKeys.dataHealth,
+  ],
   alerts: [queryKeys.alerts],
 };
 

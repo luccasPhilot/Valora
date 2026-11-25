@@ -55,6 +55,10 @@ const areaRoutes: RouteObject[] = [
     lazy: () => import('@/features/categories/categories-page'),
   },
   { path: 'ajustes', lazy: () => import('@/features/settings/settings-page') },
+  {
+    path: 'ajustes/saude-dos-dados',
+    lazy: () => import('@/features/data-health/data-health-page'),
+  },
 ];
 
 export const appRoutes: RouteObject[] = [

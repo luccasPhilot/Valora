@@ -284,6 +284,15 @@ De que o patrimônio é feito e como ele andou (`/relatorios/patrimonio`), no pe
 - **O que não entra:** gastos no cartão ainda fora de fatura fechada; um banco removido do Valora sai do patrimônio a partir do dia do arquivamento (a curva do passado não muda); bens que não vêm do Open Finance; patrimônio por tipo de investimento ao longo do tempo; projeção, meta de patrimônio e comparação com inflação.
 - **Sem nenhuma foto:** a tela diz "O patrimônio aparece depois da primeira sincronização" e leva a "Ver contas".
 
+## Saúde dos dados
+
+Em Ajustes (e por um link em Contas), a tela **Saúde dos dados** (`/ajustes/saude-dos-dados`) diz se os números batem com o banco. Ela só lê: nada é corrigido sozinho. Um resumo no topo conta os pontos para conferir; cada seção diz "Tudo certo" quando não há nada.
+
+- **Consentimentos:** cada banco ativo com o vencimento do consentimento informado pelo Pluggy, marcando os que vencem em até 30 dias. Sem a data, "O banco não informou o vencimento".
+- **Conciliação:** em cada conta corrente e poupança de banco ativo, nos últimos 60 dias, a variação do saldo entre duas fotos diárias seguidas é comparada com a soma das transações postadas do Open Finance do período. Quando não fecha, aparece "Possível transação faltando entre 03/11 e 04/11" com a diferença, e tocar abre Transações filtrada pela conta e pelas datas. Os últimos 3 dias ficam de fora até tudo chegar, e períodos seguidos cujas diferenças se anulam (transação que chegou com outra data) não contam. Cartão não entra: o saldo dele é a fatura. Lançar a transação que falta é o [lançamento manual](#lançamento-manual) de sempre.
+- **Contas paradas:** conta corrente ou cartão, visível, de banco ativo que sincroniza normalmente, sem transação do Open Finance há 10 dias ou mais ("Sem transações há 14 dias"). Poupança fica de fora: ficar parada é normal.
+- **Sincronizações:** as últimas 30 execuções, com quando, como começou (Agendada ou Botão), o resultado com ícone e texto e as contagens ("12 novas, 3 atualizadas"), sem valores.
+
 ## Fora do escopo
 
 Estes itens ficam de fora, inclusive no futuro:
@@ -304,6 +313,7 @@ O sino no topo de cada tela lista os alertas ativos, com um contador de não lid
 | Orçamento em 80% | o gasto da categoria no mês chega a 80% do limite | o gasto cai (estorno), o limite sobe ou é removido, ou o mês acaba |
 | Orçamento estourado | o gasto passa do limite; substitui o aviso de 80% da mesma categoria | igual ao anterior |
 | Conexão com banco caída | a conexão fica com erro ou com o consentimento expirado | a conexão volta ao normal |
+| Consentimento a vencer | faltam 30 dias ou menos para o consentimento do banco vencer ("O consentimento do Itaú vence em 28/12. Renove a conexão no Meu Pluggy."); um segundo aviso, separado, a partir de 7 dias antes, mesmo que o primeiro tenha sido dispensado | o consentimento é renovado, vence (o de conexão assume) ou o banco é arquivado |
 | Cobrança duplicada | uma saída postada de uma conta repete a descrição e o valor de outra da mesma conta, com até 3 dias de diferença (só cobranças dos últimos 7 dias); o alerta é da mais recente | só quando você dispensa |
 | Assinatura detectada | 3 ou mais cobranças de mesmo valor e descrição em sequência, com 25 a 35 dias entre elas, a última com até 45 dias | só quando você dispensa |
 | Foto de 31/12 pendente | em 31/12, ao fim de uma sincronização, alguma conta ou posição de investimento ainda está sem a foto do dia | uma sincronização completa as fotos, ou o dia acaba |

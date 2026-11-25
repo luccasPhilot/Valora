@@ -24,6 +24,7 @@ export interface AlertTargetSource {
 // Contas é onde ficam o status da sincronização e o botão de sincronizar.
 const ACCOUNTS_ALERT_TYPES: readonly AlertType[] = [
   'connection_error',
+  'consent_expiring',
   'year_end_snapshot_pending',
   'year_end_snapshot_missing',
 ];

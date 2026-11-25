@@ -121,6 +121,20 @@ describe('AccountsPage summary', () => {
   });
 });
 
+describe('AccountsPage data health link', () => {
+  it('should_link_to_the_data_health_screen_when_there_are_accounts', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/accounts': overview([CHECKING]) });
+    // Act
+    renderPage();
+    // Assert
+    expect(await screen.findByRole('link', { name: /Saúde dos dados/ })).toHaveAttribute(
+      'href',
+      '/ajustes/saude-dos-dados',
+    );
+  });
+});
+
 describe('AccountsPage institutions', () => {
   it('should_group_accounts_under_their_bank_with_name_digits_and_balance', async () => {
     // Arrange

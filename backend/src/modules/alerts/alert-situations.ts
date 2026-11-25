@@ -1,6 +1,8 @@
+import { toSaoPauloDate } from '../../shared/dates.js';
 import { budgetStatus } from '../budgets/budget-status.js';
 import type { BudgetRecord } from '../budgets/budgets.repository.js';
 import type { ConnectionRecord } from '../connections/connections.repository.js';
+import { consentDaysLeft } from '../connections/consent-expiry.js';
 
 export const ALERT_TYPES = [
   'duplicate_charge',
@@ -10,6 +12,7 @@ export const ALERT_TYPES = [
   'connection_error',
   'year_end_snapshot_pending',
   'year_end_snapshot_missing',
+  'consent_expiring',
 ] as const;
 
 export type AlertType = (typeof ALERT_TYPES)[number];
@@ -19,7 +22,10 @@ type BudgetAlertType = 'budget_warning' | 'budget_exceeded';
 /** Tipos que o avaliador de orçamento gerencia: o que ele não recalcular como ativo é resolvido. */
 export const BUDGET_ALERT_TYPES: readonly BudgetAlertType[] = ['budget_warning', 'budget_exceeded'];
 
-export const CONNECTION_ALERT_TYPES: readonly AlertType[] = ['connection_error'];
+export const CONNECTION_ALERT_TYPES: readonly AlertType[] = [
+  'connection_error',
+  'consent_expiring',
+];
 
 /** Só o alerta do próprio dia 31/12 é reconciliado; o de depois da virada é de evento. */
 export const YEAR_END_PENDING_ALERT_TYPES: readonly AlertType[] = ['year_end_snapshot_pending'];
@@ -111,6 +117,42 @@ export function connectionSituations(connections: readonly ConnectionRecord[]): 
       connectionId: connection.id,
       transactionId: null,
     }));
+}
+
+const FIRST_CONSENT_NOTICE_DAYS = 30;
+const SECOND_CONSENT_NOTICE_DAYS = 7;
+
+/** "28/12" a partir do instante, no fuso de São Paulo. */
+function dayAndMonth(instant: Date): string {
+  const isoDate = toSaoPauloDate(instant);
+  return `${isoDate.slice(8, 10)}/${isoDate.slice(5, 7)}`;
+}
+
+function consentExpiringSituation(connection: ConnectionRecord, now: Date): AlertSituation | null {
+  const expiresAt = connection.consentExpiresAt;
+  // Vencido, quem avisa é o `connection_error`.
+  if (!expiresAt || expiresAt <= now || connection.status === 'consent_expired') return null;
+  const daysLeft = consentDaysLeft(expiresAt, now);
+  if (daysLeft > FIRST_CONSENT_NOTICE_DAYS) return null;
+  // Limiares diferentes têm chaves diferentes: o segundo aviso nasce mesmo com o primeiro dispensado.
+  const threshold =
+    daysLeft <= SECOND_CONSENT_NOTICE_DAYS ? SECOND_CONSENT_NOTICE_DAYS : FIRST_CONSENT_NOTICE_DAYS;
+  return {
+    type: 'consent_expiring',
+    dedupeKey: `consent_expiring:${connection.id}:${threshold}`,
+    message: `O consentimento do ${connection.institutionName} vence em ${dayAndMonth(expiresAt)}. Renove a conexão no Meu Pluggy.`,
+    categoryId: null,
+    connectionId: connection.id,
+    transactionId: null,
+  };
+}
+
+/** Um aviso por conexão cujo consentimento vence nos próximos 30 dias: de 30 a 8 dias e a partir de 7. */
+export function consentExpiringSituations(
+  connections: readonly ConnectionRecord[],
+  now: Date,
+): AlertSituation[] {
+  return connections.flatMap((connection) => consentExpiringSituation(connection, now) ?? []);
 }
 
 /**
