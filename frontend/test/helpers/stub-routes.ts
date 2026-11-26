@@ -20,6 +20,8 @@ export const SHELL_ROUTES: Readonly<Record<string, RouteHandler>> = {
     Response.json({ items: [], unreadCount: 0, pagination: { page: 1, limit: 50, total: 0 } }),
   'GET /api/v1/sync-runs/latest': () => Response.json(LAST_SYNC_RUN),
   'GET /api/v1/connections': () => Response.json({ items: [] }),
+  // Não é do shell, mas vários filtros e painéis leem as etiquetas: sem nenhuma, por padrão.
+  'GET /api/v1/tags': () => Response.json({ items: [] }),
 };
 
 /**

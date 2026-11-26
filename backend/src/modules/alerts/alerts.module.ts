@@ -2,7 +2,7 @@ import type { Database } from '../../db/database.js';
 import { BudgetsRepository } from '../budgets/budgets.repository.js';
 import { ConnectionsRepository } from '../connections/connections.repository.js';
 import { AlertChargesRepository } from './alert-charges.repository.js';
-import { AlertEvaluator } from './alert-evaluator.js';
+import { AlertEvaluator, type AlertEvaluatorDependencies } from './alert-evaluator.js';
 import { AlertsRepository } from './alerts.repository.js';
 import { AlertsService } from './alerts.service.js';
 import { type AlertsLogger, BudgetAlertRefresher } from './budget-alert-refresher.js';
@@ -13,6 +13,8 @@ export interface AlertsModuleDependencies {
   readonly database: Database;
   readonly logger: AlertsLogger;
   readonly now: () => Date;
+  /** Sem ele, nenhum alerta novo vira push. */
+  readonly pushNotifier?: AlertEvaluatorDependencies['notifier'];
 }
 
 export interface AlertsModule {
@@ -32,6 +34,7 @@ export function createAlertsModule(deps: AlertsModuleDependencies): AlertsModule
     charges: new AlertChargesRepository(db),
     yearEndSnapshots: new YearEndSnapshotsRepository(db),
     now: deps.now,
+    notifier: deps.pushNotifier,
   });
   return {
     alertsService: new AlertsService(alerts),

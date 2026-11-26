@@ -15,6 +15,8 @@ const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_SEARCH_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 120;
+const MAX_NOTE_LENGTH = 500;
+const MAX_TAGS_PER_TRANSACTION = 10;
 /** Revisar ou trocar a categoria de até 100 de uma vez (o tamanho de uma página). */
 const MAX_BULK_IDS = 100;
 
@@ -28,6 +30,7 @@ const filterShape = {
   source: z.enum(['open_finance', 'manual']).optional(),
   possibleDuplicate: z.stringbool().optional(),
   search: z.string().trim().max(MAX_SEARCH_LENGTH).optional(),
+  tagId: z.uuid().optional(),
   // `false` é a caixa "Para revisar".
   reviewed: z.stringbool().optional(),
 };
@@ -77,7 +80,15 @@ const createBodySchema = z.object(manualFieldsShape);
 
 // Uma só rota para as duas origens: a regra "o banco só muda a categoria" fica no service.
 const updateBodySchema = z
-  .object({ ...manualFieldsShape, applyAlways: z.boolean() })
+  .object({
+    ...manualFieldsShape,
+    applyAlways: z.boolean(),
+    note: z.string().max(MAX_NOTE_LENGTH, { error: 'A nota aceita até 500 caracteres' }).nullable(),
+    tagIds: z
+      .array(z.uuid())
+      .max(MAX_TAGS_PER_TRANSACTION, { error: 'Use até 10 etiquetas' })
+      .refine((ids) => new Set(ids).size === ids.length, { error: 'Há etiquetas repetidas' }),
+  })
   .partial()
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: 'Envie ao menos um campo para alterar',
@@ -135,6 +146,8 @@ export const transactionResponseSchema = z.object({
   installmentNumber: z.int().nullable(),
   installmentTotal: z.int().nullable(),
   possibleDuplicateOfId: z.uuid().nullable(),
+  note: z.string().nullable(),
+  tags: z.array(z.object({ id: z.uuid(), name: z.string() })),
 });
 
 const transactionListResponseSchema = z.object({
@@ -164,6 +177,8 @@ export function toTransactionResponse(
     installmentNumber: transaction.installmentNumber,
     installmentTotal: transaction.installmentTotal,
     possibleDuplicateOfId: transaction.possibleDuplicateOfId,
+    note: transaction.note,
+    tags: transaction.tags.map(({ id, name }) => ({ id, name })),
   };
 }
 

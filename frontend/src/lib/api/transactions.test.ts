@@ -6,6 +6,7 @@ import {
   changeTransactionCategory,
   listReviewInbox,
   reviewAllTransactions,
+  saveTransactionAnnotations,
 } from './transactions';
 
 const TRANSACTION = {
@@ -21,6 +22,8 @@ const TRANSACTION = {
   installmentNumber: null,
   installmentTotal: null,
   possibleDuplicateOfId: null,
+  note: null,
+  tags: [],
 };
 
 const SUGGESTION = {
@@ -103,5 +106,38 @@ describe('API da troca de categoria', () => {
     const result = await changeCategoryOfMany([TRANSACTION.id], SUGGESTION.categoryId);
     // Assert
     expect(result).toEqual({ updatedCount: 5, ruleSuggestion: null });
+  });
+});
+
+describe('API de nota e etiquetas', () => {
+  it('should_patch_only_the_annotations_when_saving_the_note_and_tags', async () => {
+    // Arrange
+    const tagId = '66666666-6666-4666-8666-666666666666';
+    const fetchMock = stubResponse({ ...TRANSACTION, note: 'Reembolsar', ruleSuggestion: null });
+    // Act
+    const saved = await saveTransactionAnnotations(TRANSACTION.id, {
+      note: 'Reembolsar',
+      tagIds: [tagId],
+    });
+    // Assert
+    expect(JSON.parse(String(requestOf(fetchMock).body))).toEqual({
+      note: 'Reembolsar',
+      tagIds: [tagId],
+    });
+    expect(saved.note).toBe('Reembolsar');
+  });
+
+  it('should_reject_a_transaction_without_tags', async () => {
+    // Arrange
+    const { tags: _tags, ...withoutTags } = TRANSACTION;
+    stubResponse({
+      items: [withoutTags],
+      pagination: { page: 1, limit: 50, total: 1 },
+      loadedAt: LOADED_AT,
+    });
+    // Act
+    const listing = listReviewInbox(1);
+    // Assert
+    await expect(listing).rejects.toBeInstanceOf(ApiError);
   });
 });

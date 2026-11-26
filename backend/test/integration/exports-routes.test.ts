@@ -4,7 +4,7 @@ import { strFromU8, unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as schema from '../../src/db/schema.js';
-import { syncRuns, transactions } from '../../src/db/schema.js';
+import { pushSubscriptions, syncRuns, transactions } from '../../src/db/schema.js';
 import { buildTestApp, type TestApp } from '../helpers/test-app.js';
 import {
   insertAccountSnapshot,
@@ -78,9 +78,10 @@ async function seedPharmacyPurchase(): Promise<string> {
 }
 
 const SCHEMA_EXPORTS: readonly unknown[] = Object.values(schema);
-const ALL_TABLE_NAMES = SCHEMA_EXPORTS.filter((exported) => is(exported, PgTable)).map((table) =>
-  getTableName(table),
-);
+const PUSH_SUBSCRIPTIONS_TABLE = 'push_subscriptions';
+const EXPORTED_TABLE_NAMES = SCHEMA_EXPORTS.filter((exported) => is(exported, PgTable))
+  .map((table) => getTableName(table))
+  .filter((tableName) => tableName !== PUSH_SUBSCRIPTIONS_TABLE);
 
 describe('GET /api/v1/exports/all.zip', () => {
   it('should_answer_a_zip_attachment_named_with_the_day_when_downloading', async () => {
@@ -103,8 +104,25 @@ describe('GET /api/v1/exports/all.zip', () => {
     const { files } = await downloadExport();
     // Assert
     expect(Object.keys(files).sort()).toEqual(
-      [...ALL_TABLE_NAMES.map((name) => `${name}.csv`), README_FILE].sort(),
+      [...EXPORTED_TABLE_NAMES.map((name) => `${name}.csv`), README_FILE].sort(),
     );
+  });
+
+  it('should_leave_the_push_subscriptions_out_of_the_zip_when_a_device_is_subscribed', async () => {
+    // Arrange
+    const deviceEndpoint = 'https://push.example.test/device-endpoint-secret';
+    await database.db.insert(pushSubscriptions).values({
+      endpoint: deviceEndpoint,
+      p256dh: 'device-p256dh-secret',
+      auth: 'device-auth-secret',
+    });
+    // Act
+    const { files } = await downloadExport();
+    // Assert
+    expect({
+      hasPushFile: `${PUSH_SUBSCRIPTIONS_TABLE}.csv` in files,
+      leaksEndpoint: JSON.stringify(files).includes(deviceEndpoint),
+    }).toEqual({ hasPushFile: false, leaksEndpoint: false });
   });
 
   it('should_keep_the_header_when_a_table_is_empty', async () => {

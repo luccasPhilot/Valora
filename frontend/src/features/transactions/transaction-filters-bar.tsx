@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select } from '@/components/ui/select';
 import type { Category } from '@/lib/api/categories';
+import type { Tag } from '@/lib/api/tags';
 import {
   type AccountOption,
   TRANSACTION_TYPES,
@@ -55,6 +56,7 @@ interface TransactionFiltersBarProps {
   filters: TransactionFilters;
   categories: readonly Category[];
   accounts: readonly AccountOption[];
+  tags: readonly Tag[];
   isPhone: boolean;
   /** Quantas transações o filtro traz (do resumo); nulo enquanto carrega. */
   resultCount: number | null;
@@ -135,7 +137,7 @@ function SearchField({ value, onCommit }: SearchFieldProps) {
           <Input
             id={fieldId}
             type="search"
-            placeholder="Buscar na descrição"
+            placeholder="Buscar na descrição ou na nota"
             value={text}
             onChange={(event) => handleChange(event.target.value)}
             className="pl-9"
@@ -210,11 +212,12 @@ interface PanelFieldsProps {
   filters: TransactionFilters;
   categories: readonly Category[];
   accounts: readonly AccountOption[];
+  tags: readonly Tag[];
   onChange: (filters: TransactionFilters) => void;
 }
 
-/** Os filtros que abrem sob demanda: categoria, tipo, origem e conta. */
-function PanelFields({ filters, categories, accounts, onChange }: PanelFieldsProps) {
+/** Os filtros que abrem sob demanda: categoria, tipo, origem, conta e etiqueta. */
+function PanelFields({ filters, categories, accounts, tags, onChange }: PanelFieldsProps) {
   return (
     <>
       <Field label="Categoria">
@@ -277,6 +280,22 @@ function PanelFields({ filters, categories, accounts, onChange }: PanelFieldsPro
           </Select>
         )}
       </Field>
+      <Field label="Etiqueta">
+        {(fieldId) => (
+          <Select
+            id={fieldId}
+            value={filters.tagId ?? ''}
+            onChange={(event) => onChange({ ...filters, tagId: event.target.value || null })}
+          >
+            <option value="">Todas as etiquetas</option>
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.name}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
     </>
   );
 }
@@ -285,11 +304,12 @@ interface FilterChipsProps {
   filters: TransactionFilters;
   categories: readonly Category[];
   accounts: readonly AccountOption[];
+  tags: readonly Tag[];
   onChange: (filters: TransactionFilters) => void;
 }
 
-function FilterChips({ filters, categories, accounts, onChange }: FilterChipsProps) {
-  const chips = describeActiveFilters(filters, { categories, accounts });
+function FilterChips({ filters, categories, accounts, tags, onChange }: FilterChipsProps) {
+  const chips = describeActiveFilters(filters, { categories, accounts, tags });
   if (chips.length === 0) return null;
   return (
     <ul aria-label="Filtros ativos" className="flex flex-wrap items-center gap-2">
@@ -321,6 +341,7 @@ export function TransactionFiltersBar({
   filters,
   categories,
   accounts,
+  tags,
   isPhone,
   resultCount,
   onChange,
@@ -331,7 +352,7 @@ export function TransactionFiltersBar({
   useImperativeHandle(handleRef, () => ({
     focusPeriod: () => (isPhone ? setIsPanelOpen(true) : periodRef.current?.focus()),
   }));
-  const fieldProps = { filters, categories, accounts, onChange };
+  const fieldProps = { filters, categories, accounts, tags, onChange };
   const activeCount = activeFilterCount(filters, { isPeriodInside: isPhone });
   const filtersLabel = `Filtros${activeCount > 0 ? ` (${activeCount})` : ''}`;
 
@@ -353,7 +374,7 @@ export function TransactionFiltersBar({
             open={isPanelOpen}
             onOpenChange={setIsPanelOpen}
             title="Filtros"
-            description="Período, categoria, tipo, origem e conta."
+            description="Período, categoria, tipo, origem, conta e etiqueta."
           >
             <div className="space-y-4">
               <PeriodFields filters={filters} onChange={onChange} />

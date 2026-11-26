@@ -19,7 +19,9 @@ Formato
   diante.
 
 O que fica de fora
-- O JSON bruto recebido do Open Finance (coluna raw). O resto de cada tabela está aqui.
+- O JSON bruto recebido do Open Finance (coluna raw).
+- As inscrições de notificação push (tabela push_subscriptions): são credenciais de envio do
+  aparelho, não dado seu. O resto de cada tabela está aqui.
 
 Todas as tabelas foram lidas de uma vez só, numa foto consistente do banco.
 

@@ -31,9 +31,23 @@ const incomeExpenseReportSchema = z.object({
 export type IncomeExpenseMonth = z.infer<typeof incomeExpenseMonthSchema>;
 export type IncomeExpenseReport = z.infer<typeof incomeExpenseReportSchema>;
 
-/** `from` e `to` são meses no formato `AAAA-MM`. */
-export function getIncomeExpenseReport(from: string, to: string): Promise<IncomeExpenseReport> {
-  return apiGet(`/reports/income-expense?from=${from}&to=${to}`, incomeExpenseReportSchema);
+/** Período e, se houver, a etiqueta que restringe o relatório. */
+function rangeQuery(from: string, to: string, tagId: string | undefined): string {
+  const params = new URLSearchParams({ from, to });
+  if (tagId) params.set('tagId', tagId);
+  return params.toString();
+}
+
+/** `from` e `to` são meses no formato `AAAA-MM`; `tagId` considera só as transações com a etiqueta. */
+export function getIncomeExpenseReport(
+  from: string,
+  to: string,
+  tagId?: string,
+): Promise<IncomeExpenseReport> {
+  return apiGet(
+    `/reports/income-expense?${rangeQuery(from, to, tagId)}`,
+    incomeExpenseReportSchema,
+  );
 }
 
 // Contrato de /reports/category-spending (backend/src/modules/reports/reports.routes.ts).
@@ -72,8 +86,12 @@ export type CategorySpendingReport = z.infer<typeof categorySpendingReportSchema
 export function getCategorySpendingReport(
   from: string,
   to: string,
+  tagId?: string,
 ): Promise<CategorySpendingReport> {
-  return apiGet(`/reports/category-spending?from=${from}&to=${to}`, categorySpendingReportSchema);
+  return apiGet(
+    `/reports/category-spending?${rangeQuery(from, to, tagId)}`,
+    categorySpendingReportSchema,
+  );
 }
 
 // Contrato de /reports/savings-evolution (backend/src/modules/reports/reports.routes.ts).

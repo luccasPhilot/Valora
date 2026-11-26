@@ -5,6 +5,8 @@ import { centsSchema } from '../../shared/money.js';
 import { monthRangeQuerySchema } from '../../shared/month-range.js';
 import type { ReportsService } from './reports.service.js';
 
+const taggedMonthRangeQuerySchema = monthRangeQuerySchema.extend({ tagId: z.uuid().optional() });
+
 const monthLabelSchema = z.string().regex(/^\d{4}-\d{2}$/);
 
 const incomeExpenseResponseSchema = z.object({
@@ -78,7 +80,7 @@ export function reportsRoutes(service: ReportsService): FastifyPluginAsyncZod {
       '/reports/income-expense',
       {
         schema: {
-          querystring: monthRangeQuerySchema,
+          querystring: taggedMonthRangeQuerySchema,
           response: { 200: incomeExpenseResponseSchema },
         },
       },
@@ -92,7 +94,7 @@ export function reportsRoutes(service: ReportsService): FastifyPluginAsyncZod {
       '/reports/category-spending',
       {
         schema: {
-          querystring: monthRangeQuerySchema,
+          querystring: taggedMonthRangeQuerySchema,
           response: { 200: categorySpendingResponseSchema },
         },
       },

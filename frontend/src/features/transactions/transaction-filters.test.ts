@@ -95,6 +95,7 @@ describe('parseFilters and serializeFilters', () => {
       source: 'manual' as const,
       possibleDuplicate: true,
       search: 'farmácia',
+      tagId: '66666666-6666-4666-8666-666666666666',
     };
     // Act
     const parsed = parseFilters(serializeFilters(filters));
@@ -156,11 +157,43 @@ describe('filtros de origem e de duplicatas', () => {
     expect(filters.source).toBeNull();
   });
 
+  it('should_name_the_tag_in_the_chip_when_filtering_by_tag', () => {
+    // Arrange
+    const trip = {
+      id: '66666666-6666-4666-8666-666666666666',
+      name: 'Viagem Chile',
+      transactionCount: 3,
+    };
+    const filters = { ...NO_FILTERS, tagId: trip.id };
+    // Act
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [], tags: [trip] });
+    // Assert
+    expect(chips.map((chip) => chip.label)).toEqual(['Etiqueta: Viagem Chile']);
+  });
+
+  it('should_count_the_tag_in_the_filters_button_when_a_tag_is_chosen', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, tagId: '66666666-6666-4666-8666-666666666666' };
+    // Act
+    const count = activeFilterCount(filters, { isPeriodInside: false });
+    // Assert
+    expect(count).toBe(1);
+  });
+
+  it('should_send_the_tag_in_the_query_when_a_tag_is_chosen', () => {
+    // Arrange
+    const filters = { ...NO_FILTERS, tagId: '66666666-6666-4666-8666-666666666666' };
+    // Act
+    const query = toTransactionQuery(filters, '2026-11-15');
+    // Assert
+    expect(query.tagId).toBe('66666666-6666-4666-8666-666666666666');
+  });
+
   it('should_name_the_source_and_the_duplicates_in_chips_when_they_are_active', () => {
     // Arrange
     const filters = { ...NO_FILTERS, source: 'manual' as const, possibleDuplicate: true };
     // Act
-    const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [], tags: [] });
     // Assert
     expect(chips.map((chip) => chip.label)).toEqual([
       'Origem: Lançamento manual',
@@ -251,7 +284,7 @@ describe('describeActiveFilters', () => {
   it('should_return_no_chips_when_only_the_default_period_is_active', () => {
     // Arrange
     // Act
-    const chips = describeActiveFilters(NO_FILTERS, { categories: [], accounts: [] });
+    const chips = describeActiveFilters(NO_FILTERS, { categories: [], accounts: [], tags: [] });
     // Assert
     expect(chips).toEqual([]);
   });
@@ -260,7 +293,11 @@ describe('describeActiveFilters', () => {
     // Arrange
     const filters = { ...NO_FILTERS, categoryId: TRANSPORT.id, accountId: CHECKING.id };
     // Act
-    const chips = describeActiveFilters(filters, { categories: [TRANSPORT], accounts: [CHECKING] });
+    const chips = describeActiveFilters(filters, {
+      categories: [TRANSPORT],
+      accounts: [CHECKING],
+      tags: [],
+    });
     // Assert
     expect(chips.map((chip) => chip.label)).toEqual([
       'Categoria: Transporte',
@@ -272,7 +309,7 @@ describe('describeActiveFilters', () => {
     // Arrange
     const filters = { ...NO_FILTERS, period: 'custom' as const, from: '2026-10-01' };
     // Act
-    const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [], tags: [] });
     // Assert
     expect(chips).toEqual([]);
   });
@@ -281,7 +318,7 @@ describe('describeActiveFilters', () => {
     // Arrange
     const filters = { ...NO_FILTERS, type: 'expense' as const };
     // Act
-    const chips = describeActiveFilters(filters, { categories: [], accounts: [] });
+    const chips = describeActiveFilters(filters, { categories: [], accounts: [], tags: [] });
     // Assert
     expect(chips.map((chip) => chip.label)).toEqual(['Tipo: Despesas']);
   });
@@ -290,7 +327,11 @@ describe('describeActiveFilters', () => {
     // Arrange
     const filters = { ...NO_FILTERS, categoryId: UNCATEGORIZED_FILTER };
     // Act
-    const chips = describeActiveFilters(filters, { categories: [TRANSPORT], accounts: [] });
+    const chips = describeActiveFilters(filters, {
+      categories: [TRANSPORT],
+      accounts: [],
+      tags: [],
+    });
     // Assert
     expect(chips.map((chip) => chip.label)).toEqual(['Categoria: Sem categoria']);
   });
@@ -301,6 +342,7 @@ describe('describeActiveFilters', () => {
     const [categoryChip] = describeActiveFilters(filters, {
       categories: [TRANSPORT],
       accounts: [],
+      tags: [],
     });
     // Act
     const remaining = categoryChip?.filtersWithoutIt;

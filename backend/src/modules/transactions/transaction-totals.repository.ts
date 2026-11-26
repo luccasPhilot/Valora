@@ -4,7 +4,11 @@ import { and, between, count, eq, min, sql } from 'drizzle-orm';
 import type { DbExecutor } from '../../db/database.js';
 import { categories, transactions } from '../../db/schema.js';
 import type { MonthTotals } from '../../shared/months.js';
-import { buildConditions, type TransactionFilters } from './transaction-filter-conditions.js';
+import {
+  buildConditions,
+  hasTag,
+  type TransactionFilters,
+} from './transaction-filter-conditions.js';
 import { transactionTypeCondition } from './transaction-type-filter.js';
 
 export interface TransactionSummary {
@@ -33,9 +37,10 @@ const netSpentCents = sql`greatest(0, -coalesce(sum(${transactions.amountCents})
 );
 
 // Sem transferências internas; sem categoria, só a saída é despesa (a entrada é receita).
-function isCategorySpendingIn(from: string, to: string): SQL | undefined {
+function isCategorySpendingIn(from: string, to: string, tagId?: string): SQL | undefined {
   return and(
     between(transactions.date, from, to),
+    tagId ? hasTag(tagId) : undefined,
     sql`${categories.kind} is distinct from 'transfer'`,
     sql`(${transactions.categoryId} is not null or ${transactions.amountCents} < 0)`,
   );
@@ -53,7 +58,7 @@ export class TransactionTotalsRepository {
   constructor(private readonly db: DbExecutor) {}
 
   /** Receitas e despesas por mês (sem transferências). Meses sem transações não vêm. */
-  async findMonthTotals(from: string, to: string): Promise<MonthTotals[]> {
+  async findMonthTotals(from: string, to: string, tagId?: string): Promise<MonthTotals[]> {
     const month = sql<string>`to_char(${transactions.date}, 'YYYY-MM')`;
     return this.db
       .select({
@@ -63,7 +68,7 @@ export class TransactionTotalsRepository {
       })
       .from(transactions)
       .leftJoin(categories, eq(categories.id, transactions.categoryId))
-      .where(between(transactions.date, from, to))
+      .where(and(between(transactions.date, from, to), tagId ? hasTag(tagId) : undefined))
       .groupBy(month)
       .orderBy(month);
   }
@@ -105,7 +110,11 @@ export class TransactionTotalsRepository {
    * Como `findCategorySpending`, mas por mês: o gasto líquido de cada par mês e categoria (mínimo de
    * zero em cada mês). Pares sem gasto não vêm.
    */
-  async findCategorySpendingByMonth(from: string, to: string): Promise<MonthCategorySpending[]> {
+  async findCategorySpendingByMonth(
+    from: string,
+    to: string,
+    tagId?: string,
+  ): Promise<MonthCategorySpending[]> {
     const month = sql<string>`to_char(${transactions.date}, 'YYYY-MM')`;
     return this.db
       .select({
@@ -117,7 +126,7 @@ export class TransactionTotalsRepository {
       })
       .from(transactions)
       .leftJoin(categories, eq(categories.id, transactions.categoryId))
-      .where(isCategorySpendingIn(from, to))
+      .where(isCategorySpendingIn(from, to, tagId))
       .groupBy(month, categories.id, categories.name, categories.icon)
       .having(sql`${netSpentCents} > 0`)
       .orderBy(month);

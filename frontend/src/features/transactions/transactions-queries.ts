@@ -20,7 +20,9 @@ import {
   getTransactionSummary,
   listTransactions,
   resolveDuplicate,
+  saveTransactionAnnotations,
   type Transaction,
+  type TransactionAnnotations,
   type TransactionInput,
   type TransactionPage,
   type TransactionQuery,
@@ -181,5 +183,19 @@ export function useResolveDuplicate() {
     mutationFn: ({ transaction, action }: DuplicateResolutionRequest) =>
       resolveDuplicate(transaction.id, action),
     onSuccess: useInvalidateAfter('transactions'),
+  });
+}
+
+export interface AnnotationsSave {
+  readonly transactionId: string;
+  readonly annotations: TransactionAnnotations;
+}
+
+/** Nota e etiquetas, em transação do banco ou manual: a lista e o filtro por etiqueta buscam de novo. */
+export function useSaveAnnotations() {
+  return useMutation({
+    mutationFn: ({ transactionId, annotations }: AnnotationsSave) =>
+      saveTransactionAnnotations(transactionId, annotations),
+    onSuccess: useInvalidateAfter('transaction-annotations'),
   });
 }

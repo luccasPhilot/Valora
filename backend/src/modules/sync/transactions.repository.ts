@@ -1,7 +1,7 @@
 import { and, asc, eq, gte, isNotNull, isNull, lte, ne, type SQL, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/database.js';
-import { plannedEntryOccurrences, transactions } from '../../db/schema.js';
+import { plannedEntryOccurrences, transactions, transactionTags } from '../../db/schema.js';
 import type { ReplacementTransaction } from './pending-replacement.js';
 import type { SyncedTransaction, TransactionWindow } from './sync.types.js';
 
@@ -94,6 +94,10 @@ export class TransactionsRepository {
   async findVanishedPendingWithDecision(scope: VanishedPendingScope): Promise<VanishedPending[]> {
     const isUserCategory = eq(transactions.categorySource, 'user');
     const isReviewed = isNotNull(transactions.reviewedAt);
+    // Nota e etiqueta também são decisão do usuário: a pendente espera pela postada.
+    const hasAnnotation = sql`(${transactions.note} is not null or exists (
+      select 1 from ${transactionTags} where ${transactionTags.transactionId} = ${transactions.id}
+    ))`;
     const hasOccurrence = sql`exists (
       select 1 from ${plannedEntryOccurrences}
       where ${plannedEntryOccurrences.transactionId} = ${transactions.id}
@@ -109,7 +113,7 @@ export class TransactionsRepository {
       .where(
         and(
           vanishedPendingFilter(scope),
-          sql`(${isUserCategory} or ${hasOccurrence} or ${isReviewed})`,
+          sql`(${isUserCategory} or ${hasOccurrence} or ${isReviewed} or ${hasAnnotation})`,
         ),
       );
     return rows.map(({ categoryId, categorySource, ...row }) => ({
@@ -144,6 +148,25 @@ export class TransactionsRepository {
       .update(transactions)
       .set({ categoryId, categorySource: 'user', updatedAt: sql`now()` })
       .where(and(eq(transactions.id, postedId), ne(transactions.categorySource, 'user')));
+  }
+
+  /** Leva a nota (se a postada não tiver uma) e a união das etiquetas da pendente para a postada. */
+  async carryNoteAndTags(pendingId: string, postedId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(sql`
+        update ${transactions} as posted
+        set note = pending.note, note_normalized = pending.note_normalized, updated_at = now()
+        from ${transactions} as pending
+        where pending.id = ${pendingId} and posted.id = ${postedId}
+          and posted.note is null and pending.note is not null
+      `);
+      await tx.execute(sql`
+        insert into ${transactionTags} (transaction_id, tag_id)
+        select ${postedId}::uuid, tag_id from ${transactionTags}
+        where transaction_id = ${pendingId}::uuid
+        on conflict do nothing
+      `);
+    });
   }
 
   /** Leva a revisão da pendente para a postada, a menos que ela já tenha sido revisada. */

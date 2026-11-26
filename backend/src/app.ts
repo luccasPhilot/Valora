@@ -52,12 +52,18 @@ import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.
 import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
 import { projectionRoutes } from './modules/projection/projection.routes.js';
 import { ProjectionService } from './modules/projection/projection.service.js';
+import { createPushModule } from './modules/push/push.module.js';
+import { pushRoutes } from './modules/push/push.routes.js';
+import type { PushSender } from './modules/push/push-sender.js';
 import { reportsRoutes } from './modules/reports/reports.routes.js';
 import { ReportsService } from './modules/reports/reports.service.js';
 import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
 import type { SyncService } from './modules/sync/sync.service.js';
+import { TagsRepository } from './modules/tags/tags.repository.js';
+import { tagsRoutes } from './modules/tags/tags.routes.js';
+import { TagsService } from './modules/tags/tags.service.js';
 import { TransactionTotalsRepository } from './modules/transactions/transaction-totals.repository.js';
 import { createTransactionsModule } from './modules/transactions/transactions.module.js';
 import { transactionsRoutes } from './modules/transactions/transactions.routes.js';
@@ -75,6 +81,8 @@ export interface AppDependencies {
   readonly logStream?: DestinationStream;
   /** Relógio da sincronização; os testes fixam a data das fixtures. */
   readonly now?: () => Date;
+  /** Quem envia o push; os testes passam um falso. Sem ele, o `web-push` com as chaves do `.env`. */
+  readonly pushSender?: PushSender;
 }
 
 export interface ValoraApp {
@@ -111,7 +119,19 @@ function registerModules(
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
   const now = deps.now ?? (() => new Date());
-  const alerts = createAlertsModule({ database, logger: app.log, now });
+  const push = createPushModule({
+    config: deps.config,
+    database,
+    logger: app.log,
+    now,
+    sender: deps.pushSender,
+  });
+  const alerts = createAlertsModule({
+    database,
+    logger: app.log,
+    now,
+    pushNotifier: push.pushNotifier,
+  });
   const connectionsService = new ConnectionsService(
     new ConnectionsRepository(database.db),
     deps.config.pluggyItemIds,
@@ -127,6 +147,7 @@ function registerModules(
     pluggySdk: deps.pluggySdk,
     alerts: alerts.evaluator,
     manualInvestments: investmentsService,
+    reviewInboxNotifier: push.pushNotifier,
     logger: app.log,
     now,
   });
@@ -134,6 +155,7 @@ function registerModules(
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
   app.register(alertsRoutes(alerts.alertsService), { prefix: API_PREFIX });
+  app.register(pushRoutes(push.pushService), { prefix: API_PREFIX });
   const dataHealthService = new DataHealthService({
     repository: new DataHealthRepository(database.db),
     connections: new ConnectionsRepository(database.db),
@@ -198,6 +220,9 @@ function registerModules(
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
+  app.register(tagsRoutes(new TagsService(new TagsRepository(database.db))), {
+    prefix: API_PREFIX,
+  });
   const transactionTotals = new TransactionTotalsRepository(database.db);
   const dashboardService = new DashboardService({
     snapshots: netWorthRepository,
@@ -212,9 +237,14 @@ function registerModules(
     now,
   });
   app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });
-  app.register(reportsRoutes(new ReportsService({ totals: transactionTotals, now })), {
-    prefix: API_PREFIX,
-  });
+  app.register(
+    reportsRoutes(
+      new ReportsService({ totals: transactionTotals, tags: new TagsRepository(database.db), now }),
+    ),
+    {
+      prefix: API_PREFIX,
+    },
+  );
   app.register(
     categoryInsightsRoutes(
       new CategoryInsightsService({

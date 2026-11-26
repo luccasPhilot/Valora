@@ -10,6 +10,7 @@ import {
   investmentSnapshots,
   transactions,
 } from '../../src/db/schema.js';
+import type { PushSender } from '../../src/modules/push/push-sender.js';
 import type { SyncService } from '../../src/modules/sync/sync.service.js';
 import type {
   FinishedSyncRunStatus,
@@ -45,6 +46,7 @@ export interface HarnessOptions {
   readonly database?: Database;
   readonly fixtures?: PluggyItemFixture[];
   readonly config?: Config;
+  readonly pushSender?: PushSender;
 }
 
 /** App com banco real (Testcontainers) e Pluggy falso servido pelas fixtures. */
@@ -54,7 +56,12 @@ export function buildSyncHarness(options: HarnessOptions = {}): SyncHarness {
   const sdk = new FakePluggySdk(fixtures);
   const clock = { now: fixturesRecordedAt(fixtures) };
   const config = options.config ?? TEST_CONFIG;
-  const testApp = buildTestApp(database, { pluggySdk: sdk, now: () => clock.now, config });
+  const testApp = buildTestApp(database, {
+    pluggySdk: sdk,
+    now: () => clock.now,
+    config,
+    pushSender: options.pushSender,
+  });
   return { ...testApp, sdk, fixtures, database, clock };
 }
 

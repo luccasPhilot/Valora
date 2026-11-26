@@ -7,10 +7,17 @@ import * as schema from '../../db/schema.js';
 /** O JSON bruto do Pluggy fica de fora: é grande, muda de formato e não é dado do Valora. */
 const EXCLUDED_COLUMN = 'raw';
 
-// Toda tabela do schema entra: uma tabela nova vai para o `.zip` sem mudar este arquivo.
+/**
+ * As inscrições de push guardam o endereço do aparelho no serviço de push e as chaves da inscrição:
+ * são credenciais de envio, não dado do usuário, e não servem para reprocessar nada.
+ */
+const EXCLUDED_TABLES: readonly PgTable[] = [schema.pushSubscriptions];
+
+// Toda tabela do schema entra, menos as excluídas: uma tabela nova vai para o `.zip` sem mudar este
+// arquivo.
 const SCHEMA_EXPORTS: readonly unknown[] = Object.values(schema);
-const EXPORTED_TABLES: readonly PgTable[] = SCHEMA_EXPORTS.filter((exported) =>
-  is(exported, PgTable),
+const EXPORTED_TABLES: readonly PgTable[] = SCHEMA_EXPORTS.filter(
+  (exported): exported is PgTable => is(exported, PgTable) && !EXCLUDED_TABLES.includes(exported),
 );
 
 export interface TableDump {

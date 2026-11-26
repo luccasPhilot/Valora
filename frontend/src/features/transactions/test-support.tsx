@@ -99,6 +99,8 @@ export function fixture(id: number, overrides: Record<string, unknown>) {
     installmentNumber: null,
     installmentTotal: null,
     possibleDuplicateOfId: null,
+    note: null,
+    tags: [],
     ...overrides,
   };
 }
@@ -173,6 +175,7 @@ export function stubApi(overrides: Record<string, Handler> = {}) {
     ...SHELL_ROUTES,
     'GET /api/v1/categories': () => Response.json({ items: CATEGORIES }),
     'GET /api/v1/accounts': () => accountsResponse([CASH_ACCOUNT, ACCOUNT]),
+    'GET /api/v1/tags': () => Response.json({ items: [] }),
     'GET /api/v1/transactions': () => pageResponse(DEFAULT_PAGE),
     'GET /api/v1/transactions/summary': () => summaryResponse(),
     [DUPLICATE_COUNT_ROUTE]: () => pageResponse([], 1, 0),

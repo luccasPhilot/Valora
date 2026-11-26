@@ -395,3 +395,34 @@ describe('Relatório de receitas e despesas — resposta e contexto', () => {
     expect(screen.getByRole('link', { name: 'Ver contas' })).toBeInTheDocument();
   });
 });
+
+describe('Relatórios — etiqueta', () => {
+  const TRIP_ID = '66666666-6666-4666-8666-666666666666';
+
+  it('should_send_the_tag_id_and_show_it_selected_when_the_url_has_a_tag', async () => {
+    // Arrange
+    const fetchMock = stubRoutes({
+      [REPORT_ROUTE]: () => Response.json(reportBody()),
+      'GET /api/v1/tags': () =>
+        Response.json({ items: [{ id: TRIP_ID, name: 'Viagem Chile', transactionCount: 2 }] }),
+    });
+    // Act
+    renderApp(`${REPORT_PATH}?etiqueta=${TRIP_ID}`);
+    await findReport();
+    // Assert
+    expect(requestedUrls(fetchMock, '/api/v1/reports/')).toEqual([
+      `/api/v1/reports/income-expense?from=2025-12&to=2026-11&tagId=${TRIP_ID}`,
+    ]);
+    expect(await screen.findByRole('combobox', { name: 'Etiqueta' })).toHaveValue(TRIP_ID);
+  });
+
+  it('should_use_all_tags_by_default_when_the_url_has_no_tag', async () => {
+    // Arrange
+    stubReport();
+    // Act
+    renderApp(REPORT_PATH);
+    await findReport();
+    // Assert
+    expect(await screen.findByRole('combobox', { name: 'Etiqueta' })).toHaveValue('');
+  });
+});

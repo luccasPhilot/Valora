@@ -16,6 +16,10 @@ export interface ManualTransactionFields {
 /** Edição parcial: só o que veio no corpo muda. `applyAlways` só vale junto com a categoria. */
 export type TransactionPatch = Partial<ManualTransactionFields> & {
   readonly applyAlways?: boolean;
+  /** Texto vazio vira nulo. Vale para qualquer origem. */
+  readonly note?: string | null;
+  /** A lista inteira de etiquetas. Vale para qualquer origem. */
+  readonly tagIds?: readonly string[];
 };
 
 /** Despesa guarda valor negativo; receita, positivo. */

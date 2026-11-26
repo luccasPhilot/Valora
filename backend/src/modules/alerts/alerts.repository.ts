@@ -40,15 +40,18 @@ const isActive = and(isNull(alerts.dismissedAt), isNull(alerts.resolvedAt));
 export class AlertsRepository {
   constructor(private readonly db: DbExecutor) {}
 
-  /** Cria os alertas das situações novas. Quem já tem alerta ativo (lido ou dispensado) é ignorado. */
-  async createIgnoringConflict(situations: readonly AlertSituation[]): Promise<number> {
-    if (situations.length === 0) return 0;
+  /**
+   * Cria os alertas das situações novas e devolve os tipos dos que foram de fato inseridos. Quem já
+   * tem alerta ativo (lido ou dispensado) é ignorado e não aparece no resultado.
+   */
+  async createIgnoringConflict(situations: readonly AlertSituation[]): Promise<AlertType[]> {
+    if (situations.length === 0) return [];
     const rows = await this.db
       .insert(alerts)
       .values(situations.map((situation) => ({ ...situation })))
       .onConflictDoNothing()
-      .returning({ id: alerts.id });
-    return rows.length;
+      .returning({ type: alerts.type });
+    return rows.map((row) => alertTypeSchema.parse(row.type));
   }
 
   /** Resolve os alertas ativos dos `types` cuja situação não está em `activeDedupeKeys`. */

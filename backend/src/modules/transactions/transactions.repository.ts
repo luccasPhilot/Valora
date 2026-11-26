@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../db/database.js';
-import { accounts, categories, transactions } from '../../db/schema.js';
+import { accounts, categories, tags, transactions, transactionTags } from '../../db/schema.js';
 import {
   buildConditions,
   type TransactionFilters,
@@ -15,6 +15,15 @@ const transactionStatusSchema = z.enum(['pending', 'posted']);
 const categorySourceSchema = z.enum(['user', 'rule', 'pluggy', 'none']);
 const categoryKindSchema = z.enum(['expense', 'income', 'transfer']);
 const accountTypeSchema = z.enum(['checking', 'savings', 'credit_card', 'cash']);
+const transactionTagsSchema = z.array(z.object({ id: z.uuid(), name: z.string() }));
+
+// Uma subconsulta por linha dentro da mesma consulta: as etiquetas vêm sem N+1.
+const tagsOfTransaction = sql<unknown>`coalesce((
+  select json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}) order by ${tags.name})
+  from ${transactionTags}
+  inner join ${tags} on ${tags.id} = ${transactionTags.tagId}
+  where ${transactionTags.transactionId} = ${transactions.id}
+), '[]'::json)`;
 
 export interface PageRequest {
   readonly page: number;
@@ -52,6 +61,8 @@ export interface TransactionRecord {
   readonly installmentTotal: number | null;
   /** Na transação do banco marcada como possível duplicata: o id da manual parecida. */
   readonly possibleDuplicateOfId: string | null;
+  readonly note: string | null;
+  readonly tags: readonly { readonly id: string; readonly name: string }[];
 }
 
 export interface TransactionPage {
@@ -72,6 +83,8 @@ function selectTransactions(db: DbExecutor) {
       installmentNumber: transactions.installmentNumber,
       installmentTotal: transactions.installmentTotal,
       possibleDuplicateOfId: transactions.possibleDuplicateOfId,
+      note: transactions.note,
+      tags: tagsOfTransaction.as('tag_list'),
       categoryId: categories.id,
       categoryName: categories.name,
       categoryIcon: categories.icon,
@@ -113,6 +126,8 @@ function toRecord(row: TransactionRow): TransactionRecord {
     installmentNumber: row.installmentNumber,
     installmentTotal: row.installmentTotal,
     possibleDuplicateOfId: row.possibleDuplicateOfId,
+    note: row.note,
+    tags: transactionTagsSchema.parse(row.tags),
   };
 }
 

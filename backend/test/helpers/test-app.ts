@@ -5,6 +5,7 @@ import { buildApp } from '../../src/app.js';
 import { createDatabase, type Database } from '../../src/db/database.js';
 import type { AccountsService } from '../../src/modules/accounts/accounts.service.js';
 import type { CategorySeedService } from '../../src/modules/categories/category-seed.service.js';
+import type { PushSender } from '../../src/modules/push/push-sender.js';
 import type { PluggySdk } from '../../src/modules/sync/pluggy-sdk.js';
 import type { SyncService } from '../../src/modules/sync/sync.service.js';
 import type { Config } from '../../src/shared/config.js';
@@ -24,6 +25,7 @@ export const TEST_CONFIG: Config = {
   pluggyItemIds: ['item-1', 'item-2', 'item-3'],
   syncCron: '0 7 * * *',
   healthcheckSyncUrl: null,
+  vapid: null,
 };
 
 export type LogLine = Record<string, unknown>;
@@ -40,6 +42,8 @@ export interface TestAppOptions {
   readonly pluggySdk?: PluggySdk;
   readonly now?: () => Date;
   readonly config?: Config;
+  /** Com `config.vapid` preenchido, os testes usam este envio falso em vez do `web-push`. */
+  readonly pushSender?: PushSender;
 }
 
 export function buildTestApp(
@@ -58,6 +62,7 @@ export function buildTestApp(
     logStream,
     pluggySdk: options.pluggySdk ?? new FakePluggySdk(loadPluggyFixtures()),
     now: options.now,
+    pushSender: options.pushSender,
   });
   return { app, logLines, syncService, categorySeedService, accountsService };
 }

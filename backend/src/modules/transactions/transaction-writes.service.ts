@@ -11,6 +11,7 @@ import {
 import type { CategoryRulesService } from '../categories/category-rules.service.js';
 import type { RuleSuggestion } from '../categories/rule-suggestions.js';
 import type { RuleSuggestionsService } from '../categories/rule-suggestions.service.js';
+import type { TagsRepository } from '../tags/tags.repository.js';
 import {
   buildManualChanges,
   type ManualTransactionFields,
@@ -19,6 +20,11 @@ import {
   type TransactionPatch,
   typeOfAmount,
 } from './manual-transaction-fields.js';
+import type {
+  AnnotationChanges,
+  NoteValue,
+  TransactionAnnotationsRepository,
+} from './transaction-annotations.repository.js';
 import type { TransactionRecord } from './transactions.repository.js';
 import type { TransactionsService } from './transactions.service.js';
 import type { TransactionsWriteRepository } from './transactions-write.repository.js';
@@ -27,6 +33,12 @@ function readOnlyError(transaction: TransactionRecord, action: string): OpenFina
   return new OpenFinanceReadOnlyError(
     `A transação ${transaction.id} veio do Open Finance e não pode ser ${action}`,
   );
+}
+
+function toNoteValue(note: string | null): NoteValue {
+  const trimmed = note?.trim() ?? '';
+  if (trimmed === '') return { note: null, noteNormalized: null };
+  return { note: trimmed, noteNormalized: normalizeDescription(trimmed) };
 }
 
 export interface TransactionUpdate {
@@ -38,6 +50,8 @@ export interface TransactionUpdate {
 export interface TransactionWritesDependencies {
   readonly reads: Pick<TransactionsService, 'get' | 'changeCategory'>;
   readonly writes: TransactionsWriteRepository;
+  readonly annotations: TransactionAnnotationsRepository;
+  readonly tags: Pick<TagsRepository, 'findExistingIds'>;
   readonly categories: CategoriesRepository;
   readonly accounts: Pick<AccountsRepository, 'exists'>;
   readonly rules: Pick<CategoryRulesService, 'learnFromCorrection'>;
@@ -87,34 +101,52 @@ export class TransactionWritesService {
     patch: TransactionPatch,
   ): Promise<TransactionRecord> {
     const current = await this.deps.reads.get(transactionId);
-    if (current.source === 'open_finance') return this.updateOpenFinance(current, patch);
-    await this.assertPatchIsAllowed(current, patch);
-    await this.deps.writes.updateManual(
-      transactionId,
-      buildManualChanges(current.amountCents, patch),
-    );
-    if (patch.applyAlways && patch.categoryId) {
-      await this.deps.rules.learnFromCorrection(transactionId, patch.categoryId);
+    const annotations = await this.buildAnnotations(patch);
+    if (current.source === 'open_finance') {
+      await this.updateOpenFinance(current, patch);
+    } else {
+      await this.updateManual(current, patch);
     }
-    await this.deps.budgetAlerts.refresh();
+    await this.deps.annotations.apply(transactionId, annotations);
     return this.deps.reads.get(transactionId);
   }
 
-  private updateOpenFinance(
+  private async updateManual(current: TransactionRecord, patch: TransactionPatch): Promise<void> {
+    await this.assertPatchIsAllowed(current, patch);
+    await this.deps.writes.updateManual(current.id, buildManualChanges(current.amountCents, patch));
+    if (patch.applyAlways && patch.categoryId) {
+      await this.deps.rules.learnFromCorrection(current.id, patch.categoryId);
+    }
+    await this.deps.budgetAlerts.refresh();
+  }
+
+  /** No Open Finance só a categoria, a nota e as etiquetas mudam (decisão de 24/11/2026). */
+  private async updateOpenFinance(
     current: TransactionRecord,
-    { categoryId, applyAlways, ...otherFields }: TransactionPatch,
-  ): Promise<TransactionRecord> {
+    { categoryId, applyAlways, note: _note, tagIds: _tagIds, ...otherFields }: TransactionPatch,
+  ): Promise<void> {
     if (Object.values(otherFields).some((value) => value !== undefined)) {
-      throw readOnlyError(current, 'alterada além da categoria');
+      throw readOnlyError(current, 'alterada além da categoria, da nota e das etiquetas');
     }
-    if (categoryId === undefined) {
-      throw new ValidationError(`Nenhuma categoria enviada para a transação ${current.id}`, {
-        details: [{ field: 'categoryId', message: 'Escolha uma categoria' }],
-      });
-    }
-    return this.deps.reads.changeCategory(current.id, {
+    if (categoryId === undefined) return;
+    await this.deps.reads.changeCategory(current.id, {
       categoryId,
       applyAlways: applyAlways ?? false,
+    });
+  }
+
+  /** Valida as etiquetas (todas precisam existir) e normaliza a nota; nada é gravado ainda. */
+  private async buildAnnotations({ note, tagIds }: TransactionPatch): Promise<AnnotationChanges> {
+    if (tagIds !== undefined) await this.assertTagsExist(tagIds);
+    return { note: note === undefined ? undefined : toNoteValue(note), tagIds };
+  }
+
+  private async assertTagsExist(tagIds: readonly string[]): Promise<void> {
+    const existingIds = new Set(await this.deps.tags.findExistingIds(tagIds));
+    const missingIds = tagIds.filter((tagId) => !existingIds.has(tagId));
+    if (missingIds.length === 0) return;
+    throw new ValidationError(`Etiquetas ${missingIds.join(', ')} não existem`, {
+      details: [{ field: 'tagIds', message: 'Há etiqueta que não existe' }],
     });
   }
 

@@ -16,6 +16,7 @@ import { todayInSaoPaulo } from '@/lib/dates';
 import { useCategories } from '../categories/categories-queries';
 import { RuleSuggestionPrompt } from '../categories/rule-suggestion-prompt';
 import { useRuleSuggestionOffer } from '../categories/use-rule-suggestion-offer';
+import { useTags } from '../tags/tags-queries';
 import { BulkSelectionControls, useBulkActions } from './bulk-selection';
 import { DuplicatesBanner } from './duplicates-banner';
 import { ExportCsvButton } from './export-csv-button';
@@ -56,6 +57,7 @@ export function Component() {
   const summary = useTransactionSummary(transactionQuery);
   const categoriesQuery = useCategories();
   const accountsQuery = useAccountOptions();
+  const tagsQuery = useTags();
   const duplicateCount = useDuplicateCount(today);
   const { notice, showNotice } = useNotice();
   const suggestionOffer = useRuleSuggestionOffer(showNotice);
@@ -113,6 +115,7 @@ export function Component() {
         filters={filters}
         categories={categories}
         accounts={accountsQuery.data ?? []}
+        tags={tagsQuery.data ?? []}
         isPhone={isPhone}
         resultCount={summary.data?.count ?? null}
         onChange={updateFilters}

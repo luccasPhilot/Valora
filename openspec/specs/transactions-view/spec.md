@@ -237,3 +237,13 @@ O painel de detalhes da transação MUST ser a única área com rolagem: a lista
 - **WHEN** o modo "Selecionar" está ativo com 390 px de largura
 - **THEN** a barra de ações fica fixa embaixo, acima da área segura, sem cobrir a última linha da lista
 
+### Requirement: Filtro por etiqueta e busca na nota
+`GET /api/v1/transactions` e `GET /api/v1/transactions/summary` MUST aceitar `tagId` e trazer só as transações com aquela etiqueta. A busca MUST encontrar o termo também na nota, sem diferenciar maiúsculas e acentos. A tela MUST ter o filtro "Etiqueta" junto dos outros filtros, com o chip "Etiqueta: <nome>".
+
+#### Scenario: Filtrar pela viagem
+- **WHEN** o usuário filtra pela etiqueta "Viagem Chile"
+- **THEN** a lista e o resumo mostram só as transações com essa etiqueta
+
+#### Scenario: Buscar na nota
+- **WHEN** a busca é `reembolso` e uma compra tem a nota "Pedir reembolso à empresa"
+- **THEN** a compra aparece no resultado

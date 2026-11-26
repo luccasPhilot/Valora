@@ -14,6 +14,7 @@ function buildService(firstTransactionDay: string | null) {
       findCategorySpendingByMonth,
       findFirstTransactionDay: async () => firstTransactionDay,
     },
+    tags: { findExistingIds: async (tagIds: readonly string[]) => [...tagIds] },
     now: () => NOW,
   });
   return { service, findMonthTotals, findCategorySpendingByMonth };
@@ -39,7 +40,17 @@ describe('ReportsService.incomeExpense', () => {
     // Act
     await service.incomeExpense({});
     // Assert
-    expect(findMonthTotals).toHaveBeenCalledWith('2025-12-01', '2026-11-30');
+    expect(findMonthTotals).toHaveBeenCalledWith('2025-12-01', '2026-11-30', undefined);
+  });
+
+  it('should_pass_the_tag_to_the_totals_when_a_tag_id_is_given', async () => {
+    // Arrange
+    const { service, findMonthTotals } = buildService('2020-01-01');
+    const tagId = '00000000-0000-4000-8000-000000000001';
+    // Act
+    await service.incomeExpense({ tagId });
+    // Assert
+    expect(findMonthTotals).toHaveBeenCalledWith('2025-12-01', '2026-11-30', tagId);
   });
 
   it('should_reject_the_range_when_from_is_after_to', async () => {
@@ -68,7 +79,7 @@ describe('ReportsService.categorySpending', () => {
     // Act
     await service.categorySpending({});
     // Assert
-    expect(findCategorySpendingByMonth).toHaveBeenCalledWith('2025-12-01', '2026-11-30');
+    expect(findCategorySpendingByMonth).toHaveBeenCalledWith('2025-12-01', '2026-11-30', undefined);
   });
 
   it('should_return_no_months_when_there_is_no_transaction', async () => {

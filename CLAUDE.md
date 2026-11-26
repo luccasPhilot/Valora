@@ -77,7 +77,7 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
 9. **Lançamento manual só como complemento** ([regras](docs/01-produto.md#lançamento-manual)): dinheiro em espécie (conta "Dinheiro"), transações que o Open Finance não trouxe e posições de investimento de instituições fora do Open Finance (INCO, Binance, corretoras sem conector).
    - "Dinheiro" **não é carteira com saldo**: não tem saldo e fica fora do saldo total. Ignore o item "Carteiras" do guia visual.
    - Transação manual (`source = 'manual'`) pode ser editada e excluída por inteiro e a sincronização nunca a altera nem apaga.
-   - Numa transação do Open Finance, só a categoria é editável.
+   - Numa transação do Open Finance, só a categoria, a nota e as etiquetas são editáveis.
    - Possível duplicata entre manual e Open Finance é sugerida; **nunca juntar sozinho**.
    - Posição manual de investimento (`investments.source = 'manual'`): valor informado em reais, editável e excluível por inteira. A sincronização nunca a altera nem zera, e grava a foto diária dela. Não é carteira com saldo, não busca cotação e não calcula rentabilidade ([regras](docs/01-produto.md#posições-manuais)).
 10. **Sem IA conversacional.** Funcionalidade nova vira tela ou regra, não pergunta a um modelo.
@@ -148,7 +148,7 @@ Os comandos rodam dentro da pasta da parte (`cd backend` ou `cd frontend`). As d
 | `npm run format` / `npm run format:check` | Formata / confere com o Prettier (estilo único, definido na raiz) |
 | `npm test` | Roda os testes Vitest |
 
-O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration`, `db:generate`, `fixtures:record` e `fixtures:categories` (veja o README dele). O `fixtures:record` chama a API real do Pluggy uma vez, com as credenciais do `backend/.env`, e regrava as fixtures anonimizadas de `backend/test/fixtures/pluggy/`; os testes nunca chamam o Pluggy.
+O backend ainda tem `dev`, `build`, `start`, `test:unit`, `test:integration`, `db:generate`, `push:keys` (gera o par de chaves VAPID do push, uma vez; docs/05-deploy.md), `fixtures:record` e `fixtures:categories` (veja o README dele). O `fixtures:record` chama a API real do Pluggy uma vez, com as credenciais do `backend/.env`, e regrava as fixtures anonimizadas de `backend/test/fixtures/pluggy/`; os testes nunca chamam o Pluggy.
 
 Sincronizar na hora, em desenvolvimento (com o `npm run dev` rodando): `curl -X POST http://127.0.0.1:3000/api/v1/sync-runs`. O resultado sai em `curl http://127.0.0.1:3000/api/v1/sync-runs/latest`. O frontend ainda tem `dev` (Vite em `http://localhost:5173`, com proxy de `/api` para o backend em `localhost:3000`), `build`, `preview` e `check:tokens` (falha se achar cor em hex em `src/components` ou `src/features`; roda junto com o `lint`).
 

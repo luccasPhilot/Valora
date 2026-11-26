@@ -34,6 +34,7 @@ export interface TransactionListFilters {
   readonly source?: TransactionSource;
   readonly possibleDuplicate?: boolean;
   readonly search?: string;
+  readonly tagId?: string;
   /** `false` é a caixa "Para revisar": sem período padrão e com a mais antiga primeiro. */
   readonly reviewed?: boolean;
 }

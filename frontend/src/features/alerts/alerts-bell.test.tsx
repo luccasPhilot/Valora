@@ -82,11 +82,11 @@ function LocationProbe() {
   return <p data-testid="location">{`${location.pathname}${location.search}`}</p>;
 }
 
-function renderBell() {
+function renderBell(initialEntry = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <AlertsBell />
         <LocationProbe />
       </MemoryRouter>
@@ -400,5 +400,37 @@ describe('no celular', () => {
     // Assert
     const sheet = await screen.findByRole('dialog', { name: 'Alertas' });
     expect(sheet).toHaveAttribute('data-slot', 'sheet-content');
+  });
+});
+
+describe('link de notificação', () => {
+  it('should_open_the_panel_when_the_address_has_the_alerts_param', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/alerts': alertList([alert()]) });
+    // Act
+    renderBell('/?alertas=1');
+    // Assert
+    expect(
+      await screen.findByText('Mercado chegou a 80% do orçamento de novembro'),
+    ).toBeInTheDocument();
+  });
+
+  it('should_remove_the_param_from_the_address_after_opening_the_panel', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/alerts': alertList([alert()]) });
+    // Act
+    renderBell('/?alertas=1');
+    // Assert
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/));
+  });
+
+  it('should_keep_the_panel_closed_when_the_address_has_no_param', async () => {
+    // Arrange
+    stubRoutes({ 'GET /api/v1/alerts': alertList([alert()]) });
+    // Act
+    renderBell('/');
+    // Assert
+    await screen.findByRole('button', { name: /^Alertas/ });
+    expect(screen.queryByText('Mercado chegou a 80% do orçamento de novembro')).toBeNull();
   });
 });

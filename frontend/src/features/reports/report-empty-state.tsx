@@ -13,13 +13,29 @@ interface ReportEmptyStateProps {
   icon: LucideIcon;
   title: string;
   period: ReportPeriod;
+  /** Com um filtro de etiqueta ativo, a saída é tirar o filtro, não mudar o período. */
+  onClearTag?: () => void;
 }
 
 /**
  * Sem dados no período. Num período curto, vale tentar um maior; no maior, não há mais para onde
  * ir: o que falta é a sincronização trazer as transações.
  */
-export function ReportEmptyState({ icon, title, period }: ReportEmptyStateProps) {
+export function ReportEmptyState({ icon, title, period, onClearTag }: ReportEmptyStateProps) {
+  if (onClearTag) {
+    return (
+      <EmptyState
+        icon={icon}
+        title={title}
+        description="Nada neste período tem a etiqueta escolhida. Veja todas as etiquetas ou tente outro período."
+        action={
+          <Button variant="outline" onClick={onClearTag}>
+            Ver todas as etiquetas
+          </Button>
+        }
+      />
+    );
+  }
   if (period === LONGEST_REPORT_PERIOD) {
     return (
       <EmptyState

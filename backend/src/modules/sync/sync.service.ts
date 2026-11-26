@@ -68,6 +68,8 @@ export interface SyncServiceDependencies {
   readonly unitOfWork: SyncUnitOfWork;
   readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
   readonly manualInvestments: Pick<InvestmentsService, 'snapshotManualPositions'>;
+  /** Avisa por push quando a caixa "Para revisar" enche; sem ele, ninguém é avisado. */
+  readonly reviewInboxNotifier?: { notifyReviewInboxIfFull(): Promise<void> };
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -180,6 +182,7 @@ export class SyncService {
       return SKIPPED_REPORT;
     }
     const result = await started.finished;
+    await this.deps.reviewInboxNotifier?.notifyReviewInboxIfFull();
     return { result, pendingItemCount: await this.countItemsDueToday() };
   }
 
@@ -597,8 +600,8 @@ interface DecisionsCarry {
 }
 
 /**
- * Antes de apagar a pendente: a categoria (se era sua), a revisão e o vínculo com a previsão vão
- * para a postada.
+ * Antes de apagar a pendente: a categoria (se era sua), a revisão, a nota, as etiquetas e o vínculo
+ * com a previsão vão para a postada.
  */
 async function carryDecisions(
   transactions: ItemRepositories['transactions'],
@@ -610,6 +613,7 @@ async function carryDecisions(
     if (pending?.userCategoryId)
       await transactions.carryUserCategory(postedId, pending.userCategoryId);
     if (pending?.reviewedAt) await transactions.carryReview(postedId, pending.reviewedAt);
+    await transactions.carryNoteAndTags(pendingId, postedId);
     await transactions.moveOccurrenceLink(pendingId, postedId);
   }
 }

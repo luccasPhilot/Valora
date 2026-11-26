@@ -103,8 +103,8 @@ function ReportContent({ report, period, view }: ReportContentProps) {
 
 /** Gasto líquido por categoria ao longo dos meses: o total em destaque, o gráfico ou a tabela e, abaixo, o ranking. */
 export function Component() {
-  const { period, view } = useReportFilters();
-  const reportQuery = useCategorySpendingReport(period);
+  const { period, view, tagId, setTagId } = useReportFilters();
+  const reportQuery = useCategorySpendingReport(period, tagId);
   if (reportQuery.isPending) return <ReportSkeleton />;
   if (reportQuery.isError) {
     return (
@@ -118,8 +118,9 @@ export function Component() {
     return (
       <ReportEmptyState
         icon={ChartColumnStacked}
-        title="Nenhum gasto neste período"
+        title={tagId ? 'Nenhum gasto com esta etiqueta' : 'Nenhum gasto neste período'}
         period={period}
+        onClearTag={tagId ? () => setTagId(null) : undefined}
       />
     );
   }
