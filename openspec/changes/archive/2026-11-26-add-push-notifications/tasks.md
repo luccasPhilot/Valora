@@ -31,4 +31,4 @@
 ## 6. Documentação
 
 - [x] 6.1 `docs/03-arquitetura.md` (Segurança: o push sai do servidor sem dados, cifrado; Decisões: Web Push com VAPID, textos fixos), `docs/01-produto.md` (notificações), `docs/04-modelo-de-dados.md` (`push_subscriptions`), `docs/05-deploy.md` (gerar as chaves e ativar no iPhone), `CLAUDE.md` (Comandos: `push:keys`)
-- [ ] 6.2 Ao arquivar: marcar "Push no iPhone" como feito e tirar o push de "Decisões que dependem de você" em `docs/08-revisao-e-proximas-fases.md`
+- [x] 6.2 Ao arquivar: marcar "Push no iPhone" como feito e tirar o push de "Decisões que dependem de você" em `docs/08-revisao-e-proximas-fases.md`

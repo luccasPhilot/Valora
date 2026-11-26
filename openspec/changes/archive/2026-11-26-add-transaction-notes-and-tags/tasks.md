@@ -30,4 +30,4 @@
 ## 6. Documentação
 
 - [x] 6.1 `CLAUDE.md` (regra 9: categoria, nota e etiquetas editáveis no Open Finance), `docs/01-produto.md`, `docs/03-arquitetura.md` (rotas, `PATCH`, Decisões) e `docs/04-modelo-de-dados.md` (`note`, `tags`, `transaction_tags`)
-- [ ] 6.2 Ao arquivar: marcar "Notas e etiquetas" como feito e tirar o item de "Decisões que dependem de você" em `docs/08-revisao-e-proximas-fases.md`
+- [x] 6.2 Ao arquivar: marcar "Notas e etiquetas" como feito e tirar o item de "Decisões que dependem de você" em `docs/08-revisao-e-proximas-fases.md`
