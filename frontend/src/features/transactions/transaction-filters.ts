@@ -1,4 +1,5 @@
 import type { Category } from '@/lib/api/categories';
+import type { Tag } from '@/lib/api/tags';
 import {
   type AccountOption,
   TRANSACTION_TYPES,
@@ -59,6 +60,7 @@ export interface TransactionFilters {
   /** Só as transações do banco com possível duplicata esperando conferência. */
   readonly possibleDuplicate: boolean;
   readonly search: string;
+  readonly tagId: string | null;
 }
 
 export const NO_FILTERS: TransactionFilters = {
@@ -71,6 +73,7 @@ export const NO_FILTERS: TransactionFilters = {
   source: null,
   possibleDuplicate: false,
   search: '',
+  tagId: null,
 };
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -103,6 +106,7 @@ export function parseFilters(params: URLSearchParams): TransactionFilters {
     source: readSource(params.get('source')),
     possibleDuplicate: params.get('duplicates') === POSSIBLE_DUPLICATES_PARAM_VALUE,
     search: params.get('search') ?? '',
+    tagId: params.get('tag'),
   };
 }
 
@@ -118,6 +122,7 @@ export function serializeFilters(filters: TransactionFilters): URLSearchParams {
   if (filters.source) params.set('source', filters.source);
   if (filters.possibleDuplicate) params.set('duplicates', POSSIBLE_DUPLICATES_PARAM_VALUE);
   if (filters.search) params.set('search', filters.search);
+  if (filters.tagId) params.set('tag', filters.tagId);
   return params;
 }
 
@@ -157,6 +162,7 @@ export function toTransactionQuery(filters: TransactionFilters, today: string): 
     source: filters.source ?? undefined,
     possibleDuplicate: filters.possibleDuplicate || undefined,
     search: filters.search || undefined,
+    tagId: filters.tagId ?? undefined,
   };
 }
 
@@ -167,6 +173,7 @@ export function hasFiltersBesidesPeriod(filters: TransactionFilters): boolean {
     filters.accountId ||
     filters.source ||
     filters.possibleDuplicate ||
+    filters.tagId ||
     filters.search.trim() !== '',
   );
 }
@@ -177,23 +184,27 @@ interface FilterCountOptions {
 }
 
 /**
- * Quantos filtros o botão "Filtros" guarda: categoria, tipo, origem e conta, e o período quando ele
+ * Quantos filtros o botão "Filtros" guarda: categoria, tipo, origem, conta e etiqueta, e o período quando ele
  * fica dentro do painel e não é "Este mês".
  */
 export function activeFilterCount(
   filters: TransactionFilters,
   { isPeriodInside }: FilterCountOptions,
 ): number {
-  const panelCount = [filters.categoryId, filters.type, filters.source, filters.accountId].filter(
-    Boolean,
-  ).length;
+  const panelCount = [
+    filters.categoryId,
+    filters.type,
+    filters.source,
+    filters.accountId,
+    filters.tagId,
+  ].filter(Boolean).length;
   const isPeriodCounted = isPeriodInside && filters.period !== DEFAULT_PERIOD;
   return panelCount + (isPeriodCounted ? 1 : 0);
 }
 
-/** "Limpar filtros" do popover: tira categoria, tipo, origem e conta; período e busca ficam. */
+/** "Limpar filtros" do popover: tira categoria, tipo, origem, conta e etiqueta; período e busca ficam. */
 export function withoutPanelFilters(filters: TransactionFilters): TransactionFilters {
-  return { ...filters, categoryId: null, type: null, source: null, accountId: null };
+  return { ...filters, categoryId: null, type: null, source: null, accountId: null, tagId: null };
 }
 
 export interface FilterChip {
@@ -209,6 +220,7 @@ export function accountOptionLabel(account: AccountOption): string {
 interface ChipLookups {
   readonly categories: readonly Category[];
   readonly accounts: readonly AccountOption[];
+  readonly tags: readonly Tag[];
 }
 
 function customPeriodLabel(filters: TransactionFilters): string {
@@ -286,6 +298,14 @@ export function describeActiveFilters(
       key: 'source',
       label: `Origem: ${SOURCE_LABELS[filters.source]}`,
       filtersWithoutIt: { ...filters, source: null },
+    });
+  }
+  if (filters.tagId) {
+    const tag = lookups.tags.find((candidate) => candidate.id === filters.tagId);
+    chips.push({
+      key: 'tag',
+      label: tag ? `Etiqueta: ${tag.name}` : 'Etiqueta',
+      filtersWithoutIt: { ...filters, tagId: null },
     });
   }
   if (filters.possibleDuplicate) {

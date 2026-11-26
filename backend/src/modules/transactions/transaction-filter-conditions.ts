@@ -1,8 +1,20 @@
-import { eq, gte, ilike, inArray, isNotNull, isNull, lte, type SQL } from 'drizzle-orm';
+import {
+  eq,
+  exists,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import { QueryBuilder } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 
-import { accounts, connections, transactions } from '../../db/schema.js';
+import { accounts, connections, transactions, transactionTags } from '../../db/schema.js';
 import { accountIsOfActiveConnection } from '../connections/active-connection.js';
 import { type TransactionType, transactionTypeCondition } from './transaction-type-filter.js';
 
@@ -26,6 +38,8 @@ export interface TransactionFilters {
   readonly normalizedSearch?: string;
   /** `false` é a caixa "Para revisar"; `true`, só as já revisadas. */
   readonly reviewed?: boolean;
+  /** Só as transações com esta etiqueta. */
+  readonly tagId?: string;
 }
 
 /**
@@ -67,7 +81,25 @@ export function buildConditions(filters: TransactionFilters): SQL[] {
   if (filters.reviewed === true) conditions.push(isNotNull(transactions.reviewedAt));
   if (filters.normalizedSearch) {
     const pattern = `%${escapeLikePattern(filters.normalizedSearch)}%`;
-    conditions.push(ilike(transactions.descriptionNormalized, pattern));
+    conditions.push(
+      or(
+        ilike(transactions.descriptionNormalized, pattern),
+        ilike(transactions.noteNormalized, pattern),
+      ) as SQL,
+    );
   }
+  if (filters.tagId) conditions.push(hasTag(filters.tagId));
   return conditions;
+}
+
+/** A transação tem a etiqueta (`exists`, para não multiplicar linhas nem somas). */
+export function hasTag(tagId: string): SQL {
+  return exists(
+    new QueryBuilder()
+      .select({ one: sql`1` })
+      .from(transactionTags)
+      .where(
+        sql`${transactionTags.transactionId} = ${transactions.id} and ${transactionTags.tagId} = ${tagId}`,
+      ),
+  );
 }

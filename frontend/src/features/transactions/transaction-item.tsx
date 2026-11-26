@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/format';
 
 import { CategoryBadgeIcon } from '../categories/category-icons';
 import { isTransfer } from './day-groups';
+import { AnnotationMarks, hasAnnotationMarks } from './transaction-annotation-marks';
 import { hasOriginBadges, OriginBadges } from './transaction-badges';
 
 const TRANSFER_ICON = 'arrow-left-right';
@@ -120,9 +121,10 @@ function StackedRow(props: RowProps) {
           {/* Abaixo de 360 px a conta sai: a linha fica só com a categoria. */}
           <span className="max-[359px]:hidden"> · {transaction.account.name}</span>
         </span>
-        {hasOriginBadges(transaction) ? (
+        {hasOriginBadges(transaction) || hasAnnotationMarks(transaction) ? (
           <span className="mt-1 flex flex-wrap items-center gap-1">
             <OriginBadges transaction={transaction} />
+            <AnnotationMarks transaction={transaction} />
           </span>
         ) : null}
       </span>
@@ -156,6 +158,7 @@ function ColumnsRow(props: RowProps) {
         <span className="truncate text-sm font-medium">{transaction.description}</span>
         <InstallmentBadge transaction={transaction} />
         <OriginBadges transaction={transaction} />
+        <AnnotationMarks transaction={transaction} />
       </span>
       <span className="truncate text-sm">{categoryLabel(transaction)}</span>
       <span className="truncate text-sm text-muted-foreground">{transaction.account.name}</span>

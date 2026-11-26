@@ -100,6 +100,8 @@ O que sai quando `archived_at` está preenchido: as contas (e o saldo, as fatura
 | `installment_total` | integer | total de parcelas; pode ser nulo |
 | `possible_duplicate_of_id` | uuid | → `transactions` (a manual parecida); preenchido só em transação do Open Finance; nulo depois que você resolve |
 | `raw` | jsonb | nulo em transação manual |
+| `note` | text | nota livre do usuário, qualquer origem; `CHECK` de até 500 caracteres; nulo sem nota (texto vazio é gravado como nulo). A sincronização nunca a altera |
+| `note_normalized` | text | a nota em maiúsculas e sem acento, para a busca; nulo sem nota |
 | `reviewed_at` | timestamptz | quando foi revisada; nulo = na caixa "Para revisar". A sincronização insere nulo e nunca muda numa transação existente; lançar à mão, trocar a categoria e marcar como revisada gravam. A postada que substitui uma pendente herda o valor da pendente |
 | `created_at`, `updated_at` | timestamptz | |
 
@@ -108,6 +110,17 @@ O que sai quando `archived_at` está preenchido: as contas (e o saldo, as fatura
 `possible_duplicate_of_id` usa `ON DELETE SET NULL`: se a transação manual apontada for excluída, a marcação some sozinha. A detecção marca só transações do Open Finance **recém-inseridas** e cada manual só pode ser apontada por uma transação.
 
 Transação manual tem sempre `status = 'posted'`.
+
+**`tags`**: etiquetas das transações.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | uuid | |
+| `name` | text | até 40 caracteres, sem espaço nas pontas |
+| `name_normalized` | text | único; o nome em maiúsculas e sem acento, então "Viagem" e "viagem" são a mesma etiqueta |
+| `created_at` | timestamptz | |
+
+**`transaction_tags`**: quais etiquetas cada transação tem (até 10 por transação, regra da API). Chave primária (`transaction_id`, `tag_id`), `ON DELETE CASCADE` nos dois lados (excluir a etiqueta a tira das transações; excluir uma transação manual leva as ligações dela) e índice em `tag_id` para o filtro.
 
 **`categories`**
 

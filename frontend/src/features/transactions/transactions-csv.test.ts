@@ -40,6 +40,8 @@ function transaction(overrides: Partial<Transaction>): Transaction {
     installmentNumber: null,
     installmentTotal: null,
     possibleDuplicateOfId: null,
+    note: null,
+    tags: [],
     ...overrides,
   };
 }

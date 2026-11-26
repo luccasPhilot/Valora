@@ -99,8 +99,8 @@ function ReportContent({ report, period, view }: ReportContentProps) {
 
 /** Histórico de receitas e despesas: o resultado do período em destaque e, abaixo, o gráfico ou a tabela. */
 export function Component() {
-  const { period, view } = useReportFilters();
-  const reportQuery = useIncomeExpenseReport(period);
+  const { period, view, tagId } = useReportFilters();
+  const reportQuery = useIncomeExpenseReport(period, tagId);
   if (reportQuery.isPending) return <ReportSkeleton />;
   if (reportQuery.isError) {
     return (

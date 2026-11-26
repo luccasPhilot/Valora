@@ -26,6 +26,7 @@ export const queryKeys = {
   plannedEntries: ['planned-entries'],
   projection: ['projection'],
   reports: ['reports'],
+  tags: ['tags'],
   // Dentro de `reports`: o que muda os relatórios muda a análise de categorias junto.
   categoryInsights: ['reports', 'category-insights'],
   // As três abaixo ficam fora de `transactions` de propósito: as atualizações otimistas da lista
@@ -43,6 +44,8 @@ export const queryKeys = {
 export type DataChange =
   | 'transactions'
   | 'transaction-category'
+  | 'transaction-annotations'
+  | 'tags'
   | 'transaction-categories'
   | 'transaction-review'
   | 'rule-suggestions'
@@ -84,8 +87,20 @@ const AFTER_CATEGORY_CHANGE: readonly QueryKey[] = [
   queryKeys.ruleSuggestions,
 ];
 
+// Nota e etiqueta não mudam valor nem categoria: só a lista, o filtro por etiqueta (lista, resumo e
+// relatórios) e a contagem de cada etiqueta.
+const AFTER_ANNOTATIONS: readonly QueryKey[] = [
+  queryKeys.transactions,
+  queryKeys.transactionSummary,
+  queryKeys.transactionDetail,
+  queryKeys.reports,
+  queryKeys.tags,
+];
+
 const INVALIDATIONS: Readonly<Record<DataChange, readonly QueryKey[]>> = {
   transactions: AFTER_TRANSACTIONS,
+  'transaction-annotations': AFTER_ANNOTATIONS,
+  tags: AFTER_ANNOTATIONS,
   'transaction-category': AFTER_CATEGORY_CHANGE,
   // A troca em massa não é otimista: a lista inteira busca de novo.
   'transaction-categories': [...AFTER_CATEGORY_CHANGE, queryKeys.transactions],

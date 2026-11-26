@@ -6,21 +6,30 @@ export type ReportView = 'grafico' | 'tabela';
 
 const PERIOD_PARAM = 'periodo';
 const VIEW_PARAM = 'visao';
+const TAG_PARAM = 'etiqueta';
 const TABLE_VIEW_VALUE: ReportView = 'tabela';
 
 export interface ReportFilters {
   readonly period: ReportPeriod;
   readonly view: ReportView;
+  /** A etiqueta que restringe os relatórios de receitas e despesas e de gasto por categoria; nulo = todas. */
+  readonly tagId: string | null;
   /** Período e visão, para os links entre relatórios: "?periodo=24m&visao=tabela", ou vazio quando a URL não tem. */
   readonly filtersSearch: string;
   readonly setPeriod: (period: ReportPeriod) => void;
   readonly setView: (view: ReportView) => void;
+  readonly setTagId: (tagId: string | null) => void;
 }
 
-function buildFiltersSearch(period: ReportPeriod | null, view: ReportView): string {
+function buildFiltersSearch(
+  period: ReportPeriod | null,
+  view: ReportView,
+  tagId: string | null,
+): string {
   const params = new URLSearchParams();
   if (period !== null) params.set(PERIOD_PARAM, period);
   if (view === TABLE_VIEW_VALUE) params.set(VIEW_PARAM, view);
+  if (tagId !== null) params.set(TAG_PARAM, tagId);
   const search = params.toString();
   return search === '' ? '' : `?${search}`;
 }
@@ -31,15 +40,27 @@ export function useReportFilters(): ReportFilters {
   const rawPeriod = searchParams.get(PERIOD_PARAM);
   const period = parseReportPeriod(rawPeriod);
   const view: ReportView = searchParams.get(VIEW_PARAM) === TABLE_VIEW_VALUE ? 'tabela' : 'grafico';
+  const tagId = searchParams.get(TAG_PARAM);
   return {
     period,
     view,
-    filtersSearch: buildFiltersSearch(rawPeriod === null ? null : period, view),
+    tagId,
+    filtersSearch: buildFiltersSearch(rawPeriod === null ? null : period, view, tagId),
     setPeriod: (period) =>
       setSearchParams(
         (current) => {
           const next = new URLSearchParams(current);
           next.set(PERIOD_PARAM, period);
+          return next;
+        },
+        { replace: true },
+      ),
+    setTagId: (tagId) =>
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (tagId === null) next.delete(TAG_PARAM);
+          else next.set(TAG_PARAM, tagId);
           return next;
         },
         { replace: true },

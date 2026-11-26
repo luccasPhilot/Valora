@@ -39,6 +39,30 @@ describe('invalidationsAfter', () => {
     expect(names).toEqual(TRANSACTION_CHANGE_KEYS);
   });
 
+  it('should_refresh_the_list_the_summary_the_reports_and_the_tags_when_a_note_or_tag_changes', () => {
+    // Arrange
+    const change = 'transaction-annotations';
+    // Act
+    const names = invalidatedNames(change);
+    // Assert
+    expect(names).toEqual([
+      'reports',
+      'tags',
+      'transaction-detail',
+      'transaction-summary',
+      'transactions',
+    ]);
+  });
+
+  it('should_not_refresh_budgets_or_home_when_a_note_or_tag_changes', () => {
+    // Arrange
+    const screens = [queryKeys.budgets, queryKeys.dashboard];
+    // Act
+    const stale = screens.map((queryKey) => isInvalidated('transaction-annotations', queryKey));
+    // Assert
+    expect(stale).toEqual([false, false]);
+  });
+
   it('should_refresh_budgets_home_reports_alerts_and_summary_when_one_category_changes', () => {
     // Arrange
     const change = 'transaction-category';

@@ -4,6 +4,7 @@ import {
   eq,
   exists,
   inArray,
+  isNull,
   notExists,
   type SQL,
   sql,
@@ -12,7 +13,7 @@ import {
 import { alias } from 'drizzle-orm/pg-core';
 
 import type { DbExecutor } from '../../db/database.js';
-import { transactions } from '../../db/schema.js';
+import { transactions, transactionTags } from '../../db/schema.js';
 
 /** Quantos dias de diferença ainda contam como "a mesma compra" (docs/01-produto.md). */
 export const DUPLICATE_WINDOW_DAYS = 3;
@@ -107,11 +108,18 @@ export class PossibleDuplicatesRepository {
       .where(eq(transactions.id, transactionId));
   }
 
-  /** Numa transação de banco só: a do banco fica com a categoria da manual e a manual some. */
+  /**
+   * Numa transação de banco só: a do banco fica com a categoria da manual, a nota (se não tiver
+   * uma) e a união das etiquetas, e a manual some.
+   */
   async merge(transactionId: string, manualId: string): Promise<void> {
     await this.db.transaction(async (tx) => {
       const [manualRow] = await tx
-        .select({ categoryId: transactions.categoryId })
+        .select({
+          categoryId: transactions.categoryId,
+          note: transactions.note,
+          noteNormalized: transactions.noteNormalized,
+        })
         .from(transactions)
         .where(eq(transactions.id, manualId));
       const inheritedCategory = manualRow?.categoryId
@@ -121,6 +129,18 @@ export class PossibleDuplicatesRepository {
         .update(transactions)
         .set({ ...inheritedCategory, possibleDuplicateOfId: null, updatedAt: new Date() })
         .where(eq(transactions.id, transactionId));
+      if (manualRow?.note) {
+        await tx
+          .update(transactions)
+          .set({ note: manualRow.note, noteNormalized: manualRow.noteNormalized })
+          .where(and(eq(transactions.id, transactionId), isNull(transactions.note)));
+      }
+      await tx.execute(sql`
+        insert into ${transactionTags} (transaction_id, tag_id)
+        select ${transactionId}::uuid, tag_id from ${transactionTags}
+        where transaction_id = ${manualId}::uuid
+        on conflict do nothing
+      `);
       await tx
         .delete(transactions)
         .where(and(eq(transactions.id, manualId), eq(transactions.source, 'manual')));

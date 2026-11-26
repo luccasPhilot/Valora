@@ -264,6 +264,8 @@ describe('GET /api/v1/transactions', () => {
       installmentNumber: 3,
       installmentTotal: 10,
       possibleDuplicateOfId: null,
+      note: null,
+      tags: [],
     });
   });
 });

@@ -99,6 +99,13 @@
       "when": 1795570724874,
       "tag": "0013_add_consent_expires_at",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795656330272,
+      "tag": "0014_add_transaction_notes_and_tags",
+      "breakpoints": true
     }
   ]
 }

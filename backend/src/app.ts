@@ -58,6 +58,9 @@ import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
 import { createSyncService } from './modules/sync/sync.module.js';
 import { syncRoutes } from './modules/sync/sync.routes.js';
 import type { SyncService } from './modules/sync/sync.service.js';
+import { TagsRepository } from './modules/tags/tags.repository.js';
+import { tagsRoutes } from './modules/tags/tags.routes.js';
+import { TagsService } from './modules/tags/tags.service.js';
 import { TransactionTotalsRepository } from './modules/transactions/transaction-totals.repository.js';
 import { createTransactionsModule } from './modules/transactions/transactions.module.js';
 import { transactionsRoutes } from './modules/transactions/transactions.routes.js';
@@ -198,6 +201,9 @@ function registerModules(
     now,
   });
   app.register(transactionsRoutes(transactions), { prefix: API_PREFIX });
+  app.register(tagsRoutes(new TagsService(new TagsRepository(database.db))), {
+    prefix: API_PREFIX,
+  });
   const transactionTotals = new TransactionTotalsRepository(database.db);
   const dashboardService = new DashboardService({
     snapshots: netWorthRepository,
@@ -212,9 +218,14 @@ function registerModules(
     now,
   });
   app.register(dashboardRoutes(dashboardService), { prefix: API_PREFIX });
-  app.register(reportsRoutes(new ReportsService({ totals: transactionTotals, now })), {
-    prefix: API_PREFIX,
-  });
+  app.register(
+    reportsRoutes(
+      new ReportsService({ totals: transactionTotals, tags: new TagsRepository(database.db), now }),
+    ),
+    {
+      prefix: API_PREFIX,
+    },
+  );
   app.register(
     categoryInsightsRoutes(
       new CategoryInsightsService({

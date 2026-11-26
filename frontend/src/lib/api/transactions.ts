@@ -40,6 +40,10 @@ export const transactionSchema = z.object({
   installmentTotal: z.int().nullable(),
   /** Na transação do banco marcada como possível duplicata: o id da manual parecida. */
   possibleDuplicateOfId: z.uuid().nullable(),
+  /** Texto livre de até 500 caracteres; nulo sem nota. */
+  note: z.string().nullable(),
+  /** Por nome. */
+  tags: z.array(z.object({ id: z.uuid(), name: z.string() })),
 });
 
 const transactionPageSchema = z.object({
@@ -99,6 +103,13 @@ export interface TransactionQuery {
   readonly source?: TransactionSource;
   readonly possibleDuplicate?: boolean;
   readonly search?: string;
+  readonly tagId?: string;
+}
+
+/** Nota e etiquetas valem em qualquer origem; `tagIds` é a lista inteira que a transação passa a ter. */
+export interface TransactionAnnotations {
+  readonly note?: string | null;
+  readonly tagIds?: readonly string[];
 }
 
 /** Lançamento manual: o valor é sempre positivo, e o sinal vem do tipo (a API grava a despesa negativa). */
@@ -145,6 +156,14 @@ export function changeTransactionCategory(
   change: CategoryChange,
 ): Promise<TransactionUpdate> {
   return apiPatch(`/transactions/${transactionId}`, change, transactionUpdateSchema);
+}
+
+/** Grava a nota e/ou as etiquetas, em transação do banco ou manual (o resto continua só leitura no banco). */
+export function saveTransactionAnnotations(
+  transactionId: string,
+  annotations: TransactionAnnotations,
+): Promise<Transaction> {
+  return apiPatch(`/transactions/${transactionId}`, annotations, transactionUpdateSchema);
 }
 
 /** Do Open Finance e manuais: todas ficam com a categoria escolhida por você e revisadas. */

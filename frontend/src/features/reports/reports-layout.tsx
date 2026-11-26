@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useOutletContext } from 'react-router';
 
 import { SegmentedControl } from '@/components/segmented-control';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 
+import { useTags } from '../tags/tags-queries';
 import { REPORT_DEFINITIONS } from './report-definitions';
 import { REPORT_PERIOD_OPTIONS } from './report-period';
 import { ReportsNav } from './reports-nav';
@@ -36,10 +39,44 @@ export function useReportPeriodUnused(isUnused: boolean): void {
   }, [isUnused, setIsPeriodUnused]);
 }
 
-function useReportTitle(): string {
+function useOpenReport() {
   const { pathname } = useLocation();
-  const openReport = REPORT_DEFINITIONS.find((report) => pathname.endsWith(`/${report.path}`));
+  return REPORT_DEFINITIONS.find((report) => pathname.endsWith(`/${report.path}`));
+}
+
+function useReportTitle(): string {
+  const openReport = useOpenReport();
   return openReport ? `${openReport.label} | ${REPORTS_TITLE}` : REPORTS_TITLE;
+}
+
+interface TagFilterProps {
+  tagId: string | null;
+  onChange: (tagId: string | null) => void;
+}
+
+/** "Todas" é o padrão; uma etiqueta com o id que a URL guardou e que sumiu continua escolhida até trocar. */
+function TagFilter({ tagId, onChange }: TagFilterProps) {
+  const tagsQuery = useTags();
+  const tags = tagsQuery.data ?? [];
+  const isMissing = tagId !== null && !tags.some((tag) => tag.id === tagId);
+  return (
+    <div className="min-w-0 space-y-1.5 sm:w-56">
+      <Label htmlFor="report-tag-filter">Etiqueta</Label>
+      <Select
+        id="report-tag-filter"
+        value={tagId ?? ''}
+        onChange={(event) => onChange(event.target.value || null)}
+      >
+        <option value="">Todas</option>
+        {isMissing ? <option value={tagId}>Etiqueta removida</option> : null}
+        {tags.map((tag) => (
+          <option key={tag.id} value={tag.id}>
+            {tag.name}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
 }
 
 /**
@@ -47,13 +84,15 @@ function useReportTitle(): string {
  * fica no cartão que ele troca, não aqui.
  */
 export function Component() {
-  const { period, filtersSearch, setPeriod } = useReportFilters();
+  const { period, tagId, filtersSearch, setPeriod, setTagId } = useReportFilters();
+  const openReport = useOpenReport();
+  const isTagSupported = openReport?.supportsTag === true;
   const [isPeriodUnused, setIsPeriodUnused] = useState(false);
   useDocumentTitle(useReportTitle());
   return (
     <div className="space-y-4">
       <ReportsNav reports={REPORT_DEFINITIONS} filtersSearch={filtersSearch} />
-      <div id={REPORT_FILTERS_ID}>
+      <div id={REPORT_FILTERS_ID} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         {isPeriodUnused ? (
           <p className="text-sm text-muted-foreground">{UNUSED_PERIOD_NOTE}</p>
         ) : (
@@ -66,6 +105,7 @@ export function Component() {
             className="w-full sm:w-fit"
           />
         )}
+        {isTagSupported ? <TagFilter tagId={tagId} onChange={setTagId} /> : null}
       </div>
       <Outlet context={{ setIsPeriodUnused } satisfies ReportsOutletContext} />
     </div>

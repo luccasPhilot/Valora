@@ -142,6 +142,10 @@ export const transactions = pgTable(
       { onDelete: 'set null' },
     ),
     raw: jsonb('raw'),
+    // Texto livre do usuário (até 500 caracteres); a sincronização nunca o toca. `note_normalized`
+    // é a mesma nota sem acento e em maiúsculas, para a busca.
+    note: text('note'),
+    noteNormalized: text('note_normalized'),
     // Nulo = para revisar. A sincronização insere nulo e nunca muda numa transação que já existe.
     reviewedAt: timestamptz('reviewed_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
@@ -164,6 +168,31 @@ export const transactions = pgTable(
       'transactions_category_source_check',
       sql`${table.categorySource} in ('user', 'rule', 'pluggy', 'none')`,
     ),
+    check('transactions_note_length_check', sql`char_length(${table.note}) <= 500`),
+  ],
+);
+
+export const tags = pgTable('tags', {
+  id: primaryId(),
+  name: text('name').notNull(),
+  // "Viagem" e "viagem" são a mesma etiqueta: a unicidade vale para o nome normalizado.
+  nameNormalized: text('name_normalized').notNull().unique(),
+  createdAt: timestamptz('created_at').notNull().defaultNow(),
+});
+
+export const transactionTags = pgTable(
+  'transaction_tags',
+  {
+    transactionId: uuid('transaction_id')
+      .notNull()
+      .references(() => transactions.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.transactionId, table.tagId] }),
+    index('transaction_tags_tag_id_idx').on(table.tagId),
   ],
 );
 

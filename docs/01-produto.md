@@ -83,13 +83,23 @@ O Open Finance traz quase tudo, mas não tudo. O lançamento manual cobre três 
 Regras:
 
 - **"Dinheiro" não é uma carteira com saldo.** É só a origem do lançamento. As entradas e saídas em dinheiro contam nas receitas, nas despesas, nos orçamentos e nos relatórios, mas não existe "saldo em dinheiro" e ele não entra no saldo total.
-- **Uma transação manual pode ser editada e excluída por inteiro.** Numa transação do Open Finance, só a categoria muda.
+- **Uma transação manual pode ser editada e excluída por inteiro.** Numa transação do Open Finance, só a categoria, a nota e as etiquetas mudam ([regras](#notas-e-etiquetas)).
 - **A sincronização nunca altera nem apaga uma transação manual.**
 - **Possível duplicata:** se você lançou à mão uma transação numa conta conectada e depois ela chega pelo Open Finance (mesma conta, mesmo valor, data até 3 dias de diferença), o app avisa. Você escolhe:
-  - **Juntar:** fica a do banco, com a categoria que você escolheu;
+  - **Juntar:** fica a do banco, com a categoria que você escolheu e com a nota e as etiquetas da manual;
   - **São diferentes:** as duas ficam, e o aviso não volta.
   - O app nunca junta sozinho.
 - **Saque:** um saque no banco chega pelo Open Finance como saída, com a categoria "Saque". Se você também lançar à mão o que gastou com aquele dinheiro, troque a categoria do saque para uma transferência, para não contar a despesa duas vezes.
+
+## Notas e etiquetas
+
+Dão contexto a uma transação sem inventar categorias falsas ("Viagem", "Reembolso") que bagunçariam orçamentos e relatórios. Valem em **qualquer** transação, do Open Finance ou manual.
+
+- **Nota:** texto livre de até 500 caracteres. É salva ao sair do campo, no detalhe da transação, e aparece na linha da lista como um ícone. A busca de Transações procura também na nota.
+- **Etiquetas:** até 10 por transação, com nome de até 40 caracteres, único sem diferenciar maiúsculas e acentos ("Viagem" e "viagem" são a mesma). Criadas na hora, em "Adicionar etiqueta" no detalhe, e gerenciadas na aba "Etiquetas" de "Categorias e regras" (renomear e excluir; excluir tira a etiqueta das transações, que continuam).
+- **Onde filtram:** o filtro "Etiqueta" de Transações (lista e resumo) e o seletor dos relatórios de receitas e despesas e de gasto por categoria. Etiqueta não entra em orçamentos, no gasto por categoria, nas regras de categorização nem na detecção de possível duplicata.
+- **Sincronização:** nunca altera nem apaga nota ou etiqueta. Quando uma pendente vira postada com outro id, a postada herda a nota e as etiquetas, junto com a categoria. Uma pendente só com nota ou etiqueta espera pela postada pelo mesmo prazo de 5 dias.
+- **No Open Finance** continuam só leitura o valor, a data, a descrição e a conta.
 
 ## Rotina de revisão
 

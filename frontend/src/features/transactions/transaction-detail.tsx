@@ -12,6 +12,8 @@ import { CategoryBadgeIcon } from '../categories/category-icons';
 import { CategoryPicker } from './category-picker';
 import { DuplicateComparison } from './duplicate-comparison';
 import { useTransactionAmountClass } from './transaction-item';
+import { TransactionNoteField } from './transaction-note-field';
+import { TransactionTagsField } from './transaction-tags-field';
 
 const STATUS_LABELS: Readonly<Record<Transaction['status'], string>> = {
   pending: 'Pendente',
@@ -127,6 +129,8 @@ function DetailBody({
       {transaction.source === 'manual' ? (
         <ManualActions transaction={transaction} onEdit={onEdit} onDelete={onDelete} />
       ) : null}
+      <TransactionNoteField transaction={transaction} />
+      <TransactionTagsField transaction={transaction} />
       <section aria-labelledby="change-category-title" className="space-y-3">
         <h3 id="change-category-title" className="font-display text-lg font-semibold">
           Trocar categoria
@@ -149,7 +153,7 @@ export function TransactionDetail({ transaction, onClose, ...bodyProps }: Transa
       open={transaction !== undefined}
       onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}
       title="Detalhes da transação"
-      description="Veja os dados completos e troque a categoria."
+      description="Veja os dados completos, troque a categoria e escreva uma nota ou etiquetas."
     >
       {transaction ? (
         <DetailBody key={transaction.id} transaction={transaction} {...bodyProps} />

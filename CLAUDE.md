@@ -77,7 +77,7 @@ Se uma skill sugerir algo diferente (outra paleta, outra fonte, rosca colorida p
 9. **Lançamento manual só como complemento** ([regras](docs/01-produto.md#lançamento-manual)): dinheiro em espécie (conta "Dinheiro"), transações que o Open Finance não trouxe e posições de investimento de instituições fora do Open Finance (INCO, Binance, corretoras sem conector).
    - "Dinheiro" **não é carteira com saldo**: não tem saldo e fica fora do saldo total. Ignore o item "Carteiras" do guia visual.
    - Transação manual (`source = 'manual'`) pode ser editada e excluída por inteiro e a sincronização nunca a altera nem apaga.
-   - Numa transação do Open Finance, só a categoria é editável.
+   - Numa transação do Open Finance, só a categoria, a nota e as etiquetas são editáveis.
    - Possível duplicata entre manual e Open Finance é sugerida; **nunca juntar sozinho**.
    - Posição manual de investimento (`investments.source = 'manual'`): valor informado em reais, editável e excluível por inteira. A sincronização nunca a altera nem zera, e grava a foto diária dela. Não é carteira com saldo, não busca cotação e não calcula rentabilidade ([regras](docs/01-produto.md#posições-manuais)).
 10. **Sem IA conversacional.** Funcionalidade nova vira tela ou regra, não pergunta a um modelo.

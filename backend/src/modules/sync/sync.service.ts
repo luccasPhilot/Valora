@@ -597,8 +597,8 @@ interface DecisionsCarry {
 }
 
 /**
- * Antes de apagar a pendente: a categoria (se era sua), a revisão e o vínculo com a previsão vão
- * para a postada.
+ * Antes de apagar a pendente: a categoria (se era sua), a revisão, a nota, as etiquetas e o vínculo
+ * com a previsão vão para a postada.
  */
 async function carryDecisions(
   transactions: ItemRepositories['transactions'],
@@ -610,6 +610,7 @@ async function carryDecisions(
     if (pending?.userCategoryId)
       await transactions.carryUserCategory(postedId, pending.userCategoryId);
     if (pending?.reviewedAt) await transactions.carryReview(postedId, pending.reviewedAt);
+    await transactions.carryNoteAndTags(pendingId, postedId);
     await transactions.moveOccurrenceLink(pendingId, postedId);
   }
 }
