@@ -21,6 +21,7 @@
     "test:integration": "vitest run --project api:integration",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
+    "push:keys": "tsx scripts/generate-push-keys.ts",
     "fixtures:record": "tsx --env-file=.env scripts/record-pluggy-fixtures.ts",
     "fixtures:categories": "tsx --env-file=.env scripts/record-pluggy-categories.ts"
   },
@@ -29,6 +30,7 @@
     "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.11",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
@@ -47,6 +49,7 @@
     "fflate": "^0.8.3",
     "pg": "^8.23.1",
     "pluggy-sdk": "^0.94.0",
+    "web-push": "^4.0.0",
     "zod": "^4.6.7"
   }
 }

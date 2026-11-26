@@ -110,9 +110,9 @@ export async function apiPostNoContent(path: string, body?: unknown): Promise<vo
   if (!response.ok) throw await toApiError(response);
 }
 
-/** Para as rotas que respondem 204, sem corpo. */
-export async function apiDelete(path: string): Promise<void> {
-  const response = await fetchOrThrow(path, 'DELETE');
+/** Para as rotas que respondem 204, sem corpo. O `body` é opcional (a inscrição de push vai nele). */
+export async function apiDelete(path: string, body?: unknown): Promise<void> {
+  const response = await fetchOrThrow(path, 'DELETE', body);
   if (!response.ok) throw await toApiError(response);
 }
 

@@ -332,3 +332,15 @@ Exatamente uma entre `account_id` e `investment_id` é preenchida (`CHECK`). Ín
 | `read_at`, `dismissed_at`, `resolved_at` | timestamptz | podem ser nulos. `resolved_at` marca que a causa acabou (só os alertas de orçamento, conexão, `consent_expiring` e `year_end_snapshot_pending`; `duplicate_charge`, `subscription_detected` e `year_end_snapshot_missing` nunca são resolvidos); `dismissed_at` é você dispensando e **não** resolve |
 
 `type` tem `CHECK` com os sete tipos. Índice **único parcial** em `dedupe_key` onde `resolved_at` é nulo: uma situação ativa tem um alerta só, e depois de resolvida outro pode nascer. Um alerta dispensado continua segurando o índice enquanto a causa durar, por isso a sincronização não o recria. Índice em `created_at`.
+
+**`push_subscriptions`**
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | uuid | |
+| `endpoint` | text | único; identifica o aparelho no serviço de push. Nunca vai para o log |
+| `p256dh`, `auth` | text | as chaves da inscrição, usadas para cifrar o conteúdo do push |
+| `created_at` | timestamptz | |
+| `last_success_at` | timestamptz | o último envio aceito pelo serviço de push; pode ser nulo |
+
+Uma linha por aparelho. A inscrição é gravada ou atualizada pelo `endpoint` e apagada quando o usuário desativa ou quando o serviço de push responde 404 ou 410.

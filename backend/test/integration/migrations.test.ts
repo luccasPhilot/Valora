@@ -53,6 +53,7 @@ const TABLES = [
   'planned_entries',
   'planned_entry_occurrences',
   'pluggy_category_mappings',
+  'push_subscriptions',
   'sync_runs',
   'tags',
   'transaction_tags',

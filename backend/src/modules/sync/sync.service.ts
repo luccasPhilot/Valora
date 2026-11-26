@@ -68,6 +68,8 @@ export interface SyncServiceDependencies {
   readonly unitOfWork: SyncUnitOfWork;
   readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
   readonly manualInvestments: Pick<InvestmentsService, 'snapshotManualPositions'>;
+  /** Avisa por push quando a caixa "Para revisar" enche; sem ele, ninguém é avisado. */
+  readonly reviewInboxNotifier?: { notifyReviewInboxIfFull(): Promise<void> };
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -180,6 +182,7 @@ export class SyncService {
       return SKIPPED_REPORT;
     }
     const result = await started.finished;
+    await this.deps.reviewInboxNotifier?.notifyReviewInboxIfFull();
     return { result, pendingItemCount: await this.countItemsDueToday() };
   }
 

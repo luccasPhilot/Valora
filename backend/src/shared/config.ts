@@ -44,17 +44,36 @@ const optionalHttpsUrlSchema = z
   .transform((value) => (value ? value : null))
   .pipe(z.url({ protocol: HTTPS_PROTOCOL }).nullable());
 
-const configSchema = z.object({
-  DATABASE_URL: z.url(),
-  HOST: z.string().min(1).default('127.0.0.1'),
-  PORT: z.coerce.number().int().min(MIN_PORT).max(MAX_PORT).default(3000),
-  LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
-  PLUGGY_CLIENT_ID: z.string().trim().min(1),
-  PLUGGY_CLIENT_SECRET: z.string().trim().min(1),
-  PLUGGY_ITEM_IDS: itemIdsSchema,
-  SYNC_CRON: z.string().trim().default(DEFAULT_SYNC_CRON).refine(isValidCronPattern),
-  HEALTHCHECK_SYNC_URL: optionalHttpsUrlSchema,
-});
+// Vazia ou ausente = não definida (a linha do .env.example vem vazia).
+const optionalTextSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
+const VAPID_VARIABLES = ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'] as const;
+
+const configSchema = z
+  .object({
+    DATABASE_URL: z.url(),
+    HOST: z.string().min(1).default('127.0.0.1'),
+    PORT: z.coerce.number().int().min(MIN_PORT).max(MAX_PORT).default(3000),
+    LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
+    PLUGGY_CLIENT_ID: z.string().trim().min(1),
+    PLUGGY_CLIENT_SECRET: z.string().trim().min(1),
+    PLUGGY_ITEM_IDS: itemIdsSchema,
+    SYNC_CRON: z.string().trim().default(DEFAULT_SYNC_CRON).refine(isValidCronPattern),
+    HEALTHCHECK_SYNC_URL: optionalHttpsUrlSchema,
+    VAPID_PUBLIC_KEY: optionalTextSchema,
+    VAPID_PRIVATE_KEY: optionalTextSchema,
+    VAPID_SUBJECT: optionalHttpsUrlSchema,
+  })
+  // O push liga com as três variáveis; só parte delas é erro e a mensagem cita as que faltam.
+  .superRefine((env, context) => {
+    const missing = VAPID_VARIABLES.filter((name) => !env[name]);
+    if (missing.length === 0 || missing.length === VAPID_VARIABLES.length) return;
+    for (const name of missing) context.addIssue({ code: 'custom', path: [name], message: name });
+  });
 
 export interface Config {
   readonly databaseUrl: string;
@@ -67,6 +86,25 @@ export interface Config {
   readonly syncCron: string;
   /** URL de ping do healthchecks.io para a sincronização agendada; `null` desliga o aviso. */
   readonly healthcheckSyncUrl: string | null;
+  /** Chaves VAPID do Web Push; `null` desliga o push. */
+  readonly vapid: VapidConfig | null;
+}
+
+export interface VapidConfig {
+  readonly publicKey: string;
+  readonly privateKey: string;
+  /** O endereço do app na tailnet (https), não um e-mail pessoal. */
+  readonly subject: string;
+}
+
+function vapidFrom(env: z.output<typeof configSchema>): VapidConfig | null {
+  const {
+    VAPID_PUBLIC_KEY: publicKey,
+    VAPID_PRIVATE_KEY: privateKey,
+    VAPID_SUBJECT: subject,
+  } = env;
+  if (!publicKey || !privateKey || !subject) return null;
+  return { publicKey, privateKey, subject };
 }
 
 export class ConfigError extends Error {
@@ -93,5 +131,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     pluggyItemIds: parsed.data.PLUGGY_ITEM_IDS,
     syncCron: parsed.data.SYNC_CRON,
     healthcheckSyncUrl: parsed.data.HEALTHCHECK_SYNC_URL,
+    vapid: vapidFrom(parsed.data),
   };
 }

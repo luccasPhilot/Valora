@@ -1,5 +1,6 @@
 import { Bell } from 'lucide-react';
-import { type ComponentProps, useState } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,12 +41,33 @@ function BellButton({ unreadCount, ...props }: BellButtonProps) {
   );
 }
 
+// O destino do toque numa notificação de alerta (`/?alertas=1`): abre o painel e limpa o endereço.
+const OPEN_PANEL_PARAM = 'alertas';
+
+function useOpenFromNotificationLink(setIsOpen: (isOpen: boolean) => void): void {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isRequested = searchParams.get(OPEN_PANEL_PARAM) === '1';
+  useEffect(() => {
+    if (!isRequested) return;
+    setIsOpen(true);
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete(OPEN_PANEL_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [isRequested, setIsOpen, setSearchParams]);
+}
+
 /** O sino do topo: contador de não lidos e o painel com a lista de alertas. */
 export function AlertsBell() {
   const [isOpen, setIsOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE_QUERY);
   const unreadCount = useAlerts().data?.unreadCount ?? 0;
   const close = () => setIsOpen(false);
+  useOpenFromNotificationLink(setIsOpen);
 
   if (isPhone) {
     return (

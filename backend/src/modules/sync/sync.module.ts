@@ -5,7 +5,7 @@ import { ConnectionsRepository } from '../connections/connections.repository.js'
 import type { InvestmentsService } from '../investments/investments.service.js';
 import { PluggyClient } from './pluggy-client.js';
 import type { PluggySdk } from './pluggy-sdk.js';
-import { type SyncLogger, SyncService } from './sync.service.js';
+import { type SyncLogger, SyncService, type SyncServiceDependencies } from './sync.service.js';
 import { SyncUnitOfWork } from './sync.unit-of-work.js';
 import { SyncLock } from './sync-lock.repository.js';
 import { SyncRunsRepository } from './sync-runs.repository.js';
@@ -16,6 +16,7 @@ export interface SyncModuleDependencies {
   readonly pluggySdk: PluggySdk;
   readonly alerts: Pick<AlertEvaluator, 'evaluateAll'>;
   readonly manualInvestments: Pick<InvestmentsService, 'snapshotManualPositions'>;
+  readonly reviewInboxNotifier: SyncServiceDependencies['reviewInboxNotifier'];
   readonly logger: SyncLogger;
   readonly now: () => Date;
 }
@@ -30,6 +31,7 @@ export function createSyncService(deps: SyncModuleDependencies): SyncService {
     unitOfWork: new SyncUnitOfWork(deps.database.db),
     alerts: deps.alerts,
     manualInvestments: deps.manualInvestments,
+    reviewInboxNotifier: deps.reviewInboxNotifier,
     logger: deps.logger,
     now: deps.now,
   });

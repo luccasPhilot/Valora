@@ -52,6 +52,9 @@ import { plannedEntriesRoutes } from './modules/planned-entries/planned-entries.
 import { PlannedEntriesService } from './modules/planned-entries/planned-entries.service.js';
 import { projectionRoutes } from './modules/projection/projection.routes.js';
 import { ProjectionService } from './modules/projection/projection.service.js';
+import { createPushModule } from './modules/push/push.module.js';
+import { pushRoutes } from './modules/push/push.routes.js';
+import type { PushSender } from './modules/push/push-sender.js';
 import { reportsRoutes } from './modules/reports/reports.routes.js';
 import { ReportsService } from './modules/reports/reports.service.js';
 import type { PluggySdk } from './modules/sync/pluggy-sdk.js';
@@ -78,6 +81,8 @@ export interface AppDependencies {
   readonly logStream?: DestinationStream;
   /** Relógio da sincronização; os testes fixam a data das fixtures. */
   readonly now?: () => Date;
+  /** Quem envia o push; os testes passam um falso. Sem ele, o `web-push` com as chaves do `.env`. */
+  readonly pushSender?: PushSender;
 }
 
 export interface ValoraApp {
@@ -114,7 +119,19 @@ function registerModules(
   const { database } = deps;
   const healthService = new HealthService(new HealthRepository(database.db));
   const now = deps.now ?? (() => new Date());
-  const alerts = createAlertsModule({ database, logger: app.log, now });
+  const push = createPushModule({
+    config: deps.config,
+    database,
+    logger: app.log,
+    now,
+    sender: deps.pushSender,
+  });
+  const alerts = createAlertsModule({
+    database,
+    logger: app.log,
+    now,
+    pushNotifier: push.pushNotifier,
+  });
   const connectionsService = new ConnectionsService(
     new ConnectionsRepository(database.db),
     deps.config.pluggyItemIds,
@@ -130,6 +147,7 @@ function registerModules(
     pluggySdk: deps.pluggySdk,
     alerts: alerts.evaluator,
     manualInvestments: investmentsService,
+    reviewInboxNotifier: push.pushNotifier,
     logger: app.log,
     now,
   });
@@ -137,6 +155,7 @@ function registerModules(
   app.register(connectionsRoutes(connectionsService), { prefix: API_PREFIX });
   app.register(syncRoutes(syncService), { prefix: API_PREFIX });
   app.register(alertsRoutes(alerts.alertsService), { prefix: API_PREFIX });
+  app.register(pushRoutes(push.pushService), { prefix: API_PREFIX });
   const dataHealthService = new DataHealthService({
     repository: new DataHealthRepository(database.db),
     connections: new ConnectionsRepository(database.db),

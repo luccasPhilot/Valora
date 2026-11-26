@@ -516,3 +516,14 @@ export const alerts = pgTable(
     ),
   ],
 );
+
+// Uma inscrição de Web Push por aparelho. O `endpoint` identifica o aparelho no serviço de push:
+// fica só aqui e nunca vai para o log.
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: primaryId(),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: timestamptz('created_at').notNull().defaultNow(),
+  lastSuccessAt: timestamptz('last_success_at'),
+});

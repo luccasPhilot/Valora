@@ -38,6 +38,7 @@ export const queryKeys = {
   transactionSummary: ['transaction-summary'],
   transactionDetail: ['transaction-detail'],
   duplicateCount: ['possible-duplicate-count'],
+  pushPublicKey: ['push', 'public-key'],
 } as const satisfies Record<string, QueryKey>;
 
 /** O que o usuário acabou de gravar; cada mudança desatualiza as consultas de `invalidationsAfter`. */

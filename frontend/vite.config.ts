@@ -34,6 +34,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
+        // O push e o toque na notificação (public/push-handler.js).
+        importScripts: ['push-handler.js'],
         runtimeCaching: [
           {
             urlPattern: CACHEABLE_API_PATTERN,

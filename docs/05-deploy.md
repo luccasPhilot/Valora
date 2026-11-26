@@ -96,6 +96,17 @@ O app abre pelo ícone do Valora, em tela cheia, sem a barra do navegador.
 - Limpar os dados do site no navegador apaga esse cache. O iOS também pode apagá-lo se o app ficar muito tempo sem uso; basta abrir com rede de novo.
 - Um service worker travado numa versão velha se resolve apagando os dados do site (iPhone: Ajustes → Safari → Avançado → Dados de Sites) e abrindo de novo.
 
+## Notificações push
+
+O push é opcional e fica desligado até as chaves VAPID estarem no `infra/.env`.
+
+1. Gere o par de chaves uma vez, na pasta `backend` (`npm ci` antes, se for a primeira vez): `npm run push:keys`. O comando só imprime as linhas; nada é gravado em arquivo.
+2. Copie `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` para o `infra/.env`, e preencha `VAPID_SUBJECT` com o endereço do app na tailnet (`https://<nome-da-maquina>.<sua-tailnet>.ts.net`), não com um e-mail pessoal. A chave privada é segredo: nunca vai para o git nem para o log.
+3. Reinicie o backend (`docker compose -f infra/compose.yml up -d backend`). Sem as três variáveis o push segue desligado; com só parte delas o backend não sobe e a mensagem cita os nomes que faltam.
+4. No **iPhone** (iOS 16.4 ou mais novo), instale o Valora na tela de início ([Instalar no celular](#instalar-no-celular)), abra pelo ícone, vá em Ajustes, **Notificações**, toque em **Ativar neste aparelho**, permita e use **Enviar teste**. No Safari, fora da tela de início, a seção só mostra como instalar. No computador, a seção aparece no navegador depois que as chaves estão no servidor.
+
+Trocar as chaves invalida as inscrições: cada aparelho precisa ativar de novo. O texto das notificações nunca leva valor nem nome ([segurança](03-arquitetura.md#segurança)).
+
 ## Variáveis de ambiente
 
 Em produção, ficam em `infra/.env` no servidor. O repositório só tem os exemplos, sem valores reais: `infra/.env.example` (produção) e `backend/.env.example` (desenvolvimento).
@@ -111,6 +122,7 @@ Em produção, ficam em `infra/.env` no servidor. O repositório só tem os exem
 | `HEALTHCHECK_BACKUP_URL` | `https://hc-ping.com/<uuid>` | Opcional: aviso do backup semanal ([avisos de falha](#avisos-de-falha)) |
 | `HEALTHCHECK_SYNC_URL` | `https://hc-ping.com/<uuid>` | Opcional: aviso da sincronização agendada |
 | `HEALTHCHECK_DISK_URL` | `https://hc-ping.com/<uuid>` | Opcional: aviso de disco acima de 85% |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | (`npm run push:keys`; `https://<máquina>.<tailnet>.ts.net`) | Opcionais, as três juntas: ligam o push ([Notificações push](#notificações-push)) |
 
 **Tirar um banco:** remover o banco do Meu Pluggy não tira o Valora do ar nem limpa as telas. Use **"Remover do Valora"** no app (aviso no topo ou tela Contas): o banco é arquivado e o histórico fica guardado. Depois, se quiser, tire o id do `PLUGGY_ITEM_IDS` do `infra/.env` e reinicie o backend; deixar o id lá não faz mal, porque a sincronização pula o banco arquivado.
 

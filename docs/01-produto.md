@@ -308,7 +308,7 @@ Em Ajustes (e por um link em Contas), a tela **Saúde dos dados** (`/ajustes/sau
 Duas saídas legíveis, além do backup do servidor (que só serve para restaurar o próprio Valora). Nenhuma delas manda dado para fora: o arquivo só sai da casa quando você o baixa.
 
 - **"Exportar CSV", em Transações:** baixa todas as transações do filtro da tela (período, categoria, tipo, origem, conta e busca), não só as carregadas. Feito para o Excel em pt-BR: UTF-8 com BOM, separador `;`, colunas Data (`dd/mm/aaaa`), Descrição, Categoria ("Sem categoria" quando não tem), Tipo (Receita, Despesa ou Transferência, pela mesma regra da tela), Conta, Valor (`-89,90`, com vírgula e o hífen comum, sem "R$"), Situação (Pendente ou Confirmada), Origem (Banco ou Manual) e Parcela ("3 de 10", não "3/10", que o Excel transformaria em data). Texto que começa com `=`, `+`, `-` ou `@` ganha um apóstrofo para não virar fórmula. Enquanto busca as páginas, mostra "Preparando 340 de 1.200…" com "Cancelar"; acima de 10.000 transações, pede um período menor e não baixa nada. Com "Ocultar valores" ligado, avisa antes que o arquivo terá os valores. Nome: `valora-transacoes-2026-11-01-a-2026-11-30.csv`.
-- **"Baixar meus dados", em Ajustes:** um `.zip` com um CSV por tabela do Valora (`transactions.csv`, `accounts.csv`, `balance_snapshots.csv`...), as colunas com os nomes do banco, valores em centavos inteiros (`amount_cents`), datas `AAAA-MM-DD` e instantes ISO 8601 em UTC, e um `LEIA-ME.txt` que explica o formato. É uma cópia para guardar e reprocessar, não para ler no Excel. O JSON bruto do Pluggy fica de fora. Todas as tabelas saem de uma foto só do banco, mesmo com a sincronização rodando. Não restaura o Valora.
+- **"Baixar meus dados", em Ajustes:** um `.zip` com um CSV por tabela do Valora (`transactions.csv`, `accounts.csv`, `balance_snapshots.csv`...), as colunas com os nomes do banco, valores em centavos inteiros (`amount_cents`), datas `AAAA-MM-DD` e instantes ISO 8601 em UTC, e um `LEIA-ME.txt` que explica o formato. É uma cópia para guardar e reprocessar, não para ler no Excel. O JSON bruto do Pluggy e as inscrições de push (`push_subscriptions`, que guardam o endereço e as chaves do aparelho) ficam de fora. Todas as tabelas saem de uma foto só do banco, mesmo com a sincronização rodando. Não restaura o Valora.
 
 ## Fora do escopo
 
@@ -343,6 +343,14 @@ O sino no topo de cada tela lista os alertas ativos, com um contador de não lid
 - Na primeira sincronização depois de ativar, cada assinatura em andamento gera um alerta de uma vez só ("Marcar todos como lidos" zera o contador).
 - "Ver transações" abre a lista do dia da cobrança, pesquisando pela descrição.
 - A foto de 31/12 é a base dos bens e direitos no IR e só pode ser gravada naquele dia. Contam as contas de banco ativo (inclusive as ocultas dos totais, menos a conta "Dinheiro", que não tem foto) e as posições de investimento de banco ativo ou manuais com saldo diferente de zero. Em janeiro, só conta o que já existia em 31/12. Os dois alertas dizem só quantas contas e posições faltam e levam para Contas.
+
+## Notificações
+
+Os alertas também chegam como **push** no aparelho, mesmo com o app fechado. Funciona no iPhone com o Valora instalado na tela de início (iOS 16.4 ou mais novo) e nos navegadores de computador. Em Ajustes, a seção "Notificações" tem "Ativar neste aparelho" (o sistema pede a permissão no toque), "Enviar teste" e "Desativar". Cada aparelho tem a sua inscrição, e a seção só aparece quando o servidor tem as chaves de push no `.env`.
+
+- **O que dispara:** todo alerta **novo** (um por tipo da tabela de [Alertas](#alertas)) e a caixa "Para revisar" com 10 ou mais transações ao fim da sincronização agendada, no máximo uma vez por dia. Vários alertas criados numa mesma avaliação viram um push só ("3 alertas novos no Valora"). Alerta que continua ativo, resolvido ou dispensado não dispara de novo.
+- **Sem dados no texto:** o título é sempre "Valora" e o texto é fixo por tipo ("Um orçamento passou do limite", "Um banco parou de sincronizar", "Há transações para revisar"). Nunca leva valor, descrição, nome de categoria, de banco ou de conta. Tocar abre o sino ou a caixa "Para revisar".
+- Não há escolha de tipos: ou o aparelho recebe tudo, ou nada. A falha ao enviar nunca atrapalha a sincronização nem o que você estava gravando.
 
 ## Referência: Pierre
 

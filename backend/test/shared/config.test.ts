@@ -9,6 +9,12 @@ const VALID_ENV = {
   PLUGGY_ITEM_IDS: 'item-a,item-b',
 };
 
+const VAPID_ENV = {
+  VAPID_PUBLIC_KEY: 'chave-publica',
+  VAPID_PRIVATE_KEY: 'chave-privada',
+  VAPID_SUBJECT: 'https://valora.tailnet-1234.ts.net',
+};
+
 function loadAndCatch(env: NodeJS.ProcessEnv): ConfigError {
   try {
     loadConfig(env);
@@ -36,6 +42,7 @@ describe('loadConfig', () => {
       pluggyItemIds: ['item-a', 'item-b'],
       syncCron: '0 7 * * *',
       healthcheckSyncUrl: null,
+      vapid: null,
     });
   });
 
@@ -200,5 +207,57 @@ describe('loadConfig', () => {
     const error = loadAndCatch(env);
     // Assert
     expect(error.message).not.toContain('segredo-do-check');
+  });
+
+  it('should_turn_push_on_when_the_three_vapid_variables_are_set', () => {
+    // Arrange
+    const env = { ...VALID_ENV, ...VAPID_ENV };
+    // Act
+    const config = loadConfig(env);
+    // Assert
+    expect(config.vapid).toEqual({
+      publicKey: 'chave-publica',
+      privateKey: 'chave-privada',
+      subject: 'https://valora.tailnet-1234.ts.net',
+    });
+  });
+
+  it('should_turn_push_off_when_the_vapid_variables_are_empty', () => {
+    // Arrange
+    const env = { ...VALID_ENV, VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '', VAPID_SUBJECT: '' };
+    // Act
+    const config = loadConfig(env);
+    // Assert
+    expect(config.vapid).toBeNull();
+  });
+
+  it('should_name_only_the_missing_vapid_variables_when_just_one_is_set', () => {
+    // Arrange
+    const env = { ...VALID_ENV, VAPID_PUBLIC_KEY: VAPID_ENV.VAPID_PUBLIC_KEY };
+    // Act
+    const error = loadAndCatch(env);
+    // Assert
+    expect(error.message).toMatch(
+      /VAPID_PRIVATE_KEY.*VAPID_SUBJECT|VAPID_SUBJECT.*VAPID_PRIVATE_KEY/,
+    );
+    expect(error.message).not.toContain('VAPID_PUBLIC_KEY');
+  });
+
+  it('should_not_print_the_vapid_values_when_the_config_is_incomplete', () => {
+    // Arrange
+    const env = { ...VALID_ENV, VAPID_PRIVATE_KEY: VAPID_ENV.VAPID_PRIVATE_KEY };
+    // Act
+    const error = loadAndCatch(env);
+    // Assert
+    expect(error.message).not.toContain('chave-privada');
+  });
+
+  it('should_name_the_vapid_subject_when_it_is_not_https', () => {
+    // Arrange
+    const env = { ...VALID_ENV, ...VAPID_ENV, VAPID_SUBJECT: 'http://valora.local' };
+    // Act
+    const error = loadAndCatch(env);
+    // Assert
+    expect(error.message).toContain('VAPID_SUBJECT');
   });
 });
