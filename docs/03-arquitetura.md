@@ -250,6 +250,7 @@ Uma falha fora da gravação (criar a conexão, gravar o status dela) também fi
 | Sem tela de login na v1 | Só os seus aparelhos na Tailscale alcançam o app. Se um dia expor fora da Tailscale, login vira obrigatório |
 | Sincronização agendada, sem webhook | O Meu Pluggy só atualiza 1x/dia; webhook exigiria um endereço público |
 | Sincronização dentro do app | Um container a menos; o mesmo service atende o agendamento e o botão |
+| Deploy testa a imagem antes de trocar os containers, e o CI sobe a stack | O erro de um `import` que o Node recusa só aparece no `dist/` rodando no container (o `tsx` e o Vitest toleram). Construir, rodar o `boot-check` e o `nginx -t` num container descartável e só então fazer o `up` deixa a versão anterior no ar se a nova não carregar; o job `docker-boot` pega o mesmo erro antes da `main` |
 | Ocorrências de previsão calculadas na leitura | Uma previsão recorrente vale em muitos meses sem gravar uma linha por mês: só a sua decisão (`realized` ou `skipped`) é gravada, então mudar a previsão nunca deixa lixo e mês futuro e passado usam o mesmo cálculo |
 | Vínculo previsão × transação sempre manual | Como na possível duplicata, o app sugere e você escolhe: juntar sozinho erraria em silêncio. Uma transação realiza no máximo uma ocorrência (índice único) |
 | `GET /planned-entries` sem paginação | Exceção consciente à regra de paginar: são dezenas de previsões no máximo, e a tela precisa do mês inteiro de uma vez |

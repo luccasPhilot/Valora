@@ -233,10 +233,14 @@ O script (`infra/scripts/deploy.sh`) faz, nesta ordem:
 1. confere que o clone não tem alterações locais;
 2. faz o **backup** `predeploy` (se o banco já está no ar);
 3. traz a `main` do GitHub (`git fetch` e troca de versão);
-4. sobe com `docker compose up -d --build --wait`, um build por vez, esperando os healthchecks;
-5. limpa imagens antigas.
+4. **constrói** as imagens novas (`docker compose build`, um build por vez), sem mexer nos containers que estão rodando;
+5. **testa** as imagens novas em containers descartáveis, sem o banco e sem porta publicada: o backend roda `node dist/boot-check.js` (carrega todos os módulos compilados e valida o `infra/.env`) e o frontend roda `nginx -t`;
+6. só então sobe com `docker compose up -d --wait`, esperando os healthchecks;
+7. limpa imagens antigas.
 
 As migrations rodam no início do backend. Se algum container não ficar saudável, o script falha e mostra o log do backend. Ele **não volta o código sozinho**, porque voltar o código não desfaz migrations já aplicadas.
+
+**Se o teste do passo 5 falhar** (por exemplo, `boot-check: o módulo … não carrega` ou `Configuração inválida. Confira as variáveis: …`), nada foi trocado: **os containers antigos continuam no ar** e o banco não foi tocado, porque o teste roda antes das migrations. O clone, porém, já ficou na versão nova. Corrija o problema (o código, ou a variável que a mensagem cita no `infra/.env`) e rode o `deploy.sh` de novo, ou volte o código com o comando que o script mostra (`deploy.sh <versão anterior>`). A mensagem cita só módulos e nomes de variáveis, nunca valores.
 
 **Voltar uma versão:** `deploy.sh <commit ou tag>`. Se a versão ruim mexeu no banco, restaure também o `valora-predeploy-…` feito antes do deploy ruim ([restaurar](#restaurar)). Depois de voltar por commit ou tag o servidor fica em HEAD solto; um `deploy.sh` sem argumento volta para a `main`.
 
@@ -244,6 +248,7 @@ As migrations rodam no início do backend. Se algum container não ficar saudáv
 
 - `develop`: trabalho do dia a dia. `main`: produção, só recebe merge vindo da `develop`.
 - O CI (`.github/workflows/ci.yml`) roda em runner da GitHub em todo PR e em push na `develop` e na `main`: `typecheck`, `lint`, `format:check`, `test` e `build` no backend e no frontend, e os testes dos scripts de `infra/` (`bash infra/scripts/tests/run-tests.sh`).
+- O job `docker-boot` do CI sobe o `infra/compose.yml` inteiro com um `infra/.env` de valores falsos (sem segredo, sem push de imagem e sem chamar o Pluggy) e confere o `/api/v1/health` pelo frontend: um build que não inicia, uma migration que quebra no banco vazio ou um nginx que não sobe derrubam o CI antes de chegar na `main`.
 - O deploy é **manual e fica de fora do GitHub**: você roda o `deploy.sh` no servidor depois que o CI da `main` ficar verde. Assim o GitHub não tem nenhum caminho para executar código no servidor.
 - Recomendado: proteger a `main` (Settings → Branches) exigindo PR e o CI verde.
 

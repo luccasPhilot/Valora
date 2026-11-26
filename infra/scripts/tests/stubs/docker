@@ -8,6 +8,8 @@
 #   STUB_RESTORED_COUNT_<tabela> contagem de uma tabela no banco restaurado
 #   STUB_RESTORED_FILE           onde o pg_restore grava o que recebeu no stdin
 #   STUB_CALLS                   arquivo onde cada chamada é registrada
+#   STUB_BOOT_CHECK_FAILS=1      `node dist/boot-check.js` (smoke test do backend) falha
+#   STUB_NGINX_TEST_FAILS=1      `nginx -t` (smoke test do frontend) falha
 set -euo pipefail
 
 readonly DEFAULT_COUNT=10
@@ -52,6 +54,18 @@ main() {
       ;;
     *" psql "*) fake_psql "$@" ;;
     *" pg_restore "*) cat >"${STUB_RESTORED_FILE:-/dev/null}" ;;
+    *"boot-check.js"*)
+      [[ "${STUB_BOOT_CHECK_FAILS:-0}" != "1" ]] || {
+        echo "boot-check: o módulo app.js não carrega: simulado" >&2
+        exit 1
+      }
+      ;;
+    *" nginx -t "*)
+      [[ "${STUB_NGINX_TEST_FAILS:-0}" != "1" ]] || {
+        echo "nginx: configuration file test failed (simulado)" >&2
+        exit 1
+      }
+      ;;
   esac
 }
 

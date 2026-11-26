@@ -48,8 +48,26 @@ backup_if_database_is_running() {
   infra/scripts/backup.sh predeploy
 }
 
+build_images() {
+  # Só gera as imagens: os containers em execução não são tocados.
+  compose build || fail "o build das imagens falhou. Nada foi trocado: os containers antigos continuam no ar"
+}
+
+# Roda a imagem nova num container descartável, sem banco e sem porta publicada, antes de trocar
+# qualquer coisa: um build que o Node não carrega, um .env incompleto ou um nginx.conf inválido
+# param o deploy aqui, com a versão anterior ainda no ar.
+smoke_test_images() {
+  local previous_sha="$1"
+  log "testando as imagens novas antes de trocar os containers"
+  if compose run --rm -T --no-deps backend node dist/boot-check.js \
+    && compose run --rm -T --no-deps frontend nginx -t; then
+    return
+  fi
+  fail "o teste da imagem nova falhou. Nada foi trocado: os containers antigos continuam no ar. O clone ficou na versão nova; para voltar o código, rode: infra/scripts/deploy.sh ${previous_sha}"
+}
+
 start_stack() {
-  if compose up -d --build --wait --wait-timeout "$HEALTHCHECK_TIMEOUT_SECONDS"; then
+  if compose up -d --wait --wait-timeout "$HEALTHCHECK_TIMEOUT_SECONDS"; then
     return
   fi
   compose ps || true
@@ -76,15 +94,18 @@ clean_old_images() {
 
 main() {
   local ref="${1:-main}"
-  local target_sha
+  local target_sha current_sha
 
   cd "$VALORA_DIR"
   require_clean_checkout
   target_sha="$(resolve_target_sha "$ref")"
+  current_sha="$(git rev-parse --short HEAD)"
 
-  log "versão atual: $(git rev-parse --short HEAD) → nova: ${target_sha:0:7}"
+  log "versão atual: ${current_sha} → nova: ${target_sha:0:7}"
   backup_if_database_is_running
   checkout_target "$ref" "$target_sha"
+  build_images
+  smoke_test_images "$current_sha"
   start_stack
   clean_old_images
 
