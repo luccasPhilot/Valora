@@ -68,3 +68,36 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+
+  docker-boot:
+    name: Docker boot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Sobe o Compose de producao de verdade (banco, backend e frontend) com valores falsos: sem
+      # segredo do repositorio, sem push de imagem, sem deploy. O SYNC_CRON de 30 de fevereiro nunca
+      # cai em dia nenhum, entao nenhuma sincronizacao dispara e o Pluggy nao e chamado.
+      - name: Criar infra/.env de mentira
+        run: |
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "PLUGGY_CLIENT_ID=ci"
+            echo "PLUGGY_CLIENT_SECRET=ci"
+            echo "PLUGGY_ITEM_IDS=ci-item"
+            echo "SYNC_CRON=0 0 30 2 *"
+          } > infra/.env
+
+      - name: Subir a stack e esperar os healthchecks
+        run: docker compose -f infra/compose.yml up -d --build --wait --wait-timeout 180
+
+      - name: Conferir o healthcheck pelo frontend
+        run: curl -fsS http://127.0.0.1:3000/api/v1/health | grep -q '"database":"ok"'
+
+      - name: Mostrar os logs
+        if: failure()
+        run: docker compose -f infra/compose.yml logs --no-color --tail 100
+
+      - name: Derrubar a stack
+        if: always()
+        run: docker compose -f infra/compose.yml down -v
