@@ -1,8 +1,8 @@
 // Gera o par de chaves VAPID do Web Push. Rode uma vez e copie as linhas para o infra/.env.
 // Perder ou trocar as chaves invalida as inscrições: cada aparelho precisa ativar de novo.
-import webpush from 'web-push';
+import { generateVAPIDKeys } from 'web-push';
 
-const { publicKey, privateKey } = webpush.generateVAPIDKeys();
+const { publicKey, privateKey } = generateVAPIDKeys();
 
 console.log('Copie estas linhas para o infra/.env (a chave privada é segredo):');
 console.log(`VAPID_PUBLIC_KEY=${publicKey}`);

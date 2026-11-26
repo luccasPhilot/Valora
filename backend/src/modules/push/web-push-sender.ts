@@ -1,4 +1,4 @@
-import webpush from 'web-push';
+import { sendNotification, WebPushError } from 'web-push';
 
 import type { VapidConfig } from '../../shared/config.js';
 import type {
@@ -18,7 +18,7 @@ export class WebPushSender implements PushSender {
 
   async send(subscription: PushSubscriptionRecord, payload: PushPayload): Promise<PushSendResult> {
     try {
-      await webpush.sendNotification(
+      await sendNotification(
         {
           endpoint: subscription.endpoint,
           keys: { p256dh: subscription.p256dh, auth: subscription.auth },
@@ -36,8 +36,7 @@ export class WebPushSender implements PushSender {
       );
       return 'sent';
     } catch (error) {
-      const isGone =
-        error instanceof webpush.WebPushError && GONE_STATUS_CODES.includes(error.statusCode);
+      const isGone = error instanceof WebPushError && GONE_STATUS_CODES.includes(error.statusCode);
       return isGone ? 'gone' : 'failed';
     }
   }
